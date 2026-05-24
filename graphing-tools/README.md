@@ -6,16 +6,30 @@ Converts `knowledge-graph.json` → `graph.db` using Bun's native SQLite driver.
 
 ## Usage
 
+### Standalone Executable (Recommended)
+
+Build once, run anywhere without Bun installed:
+
 ```bash
-bun run graphing-tools/build-graph-db.ts <input.json> <output.db>
+# Build the executable
+bun run build
+
+# Run it
+./bin/build-graph-db <input.json> <output.db>
 ```
 
 Example:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts \
+./bin/build-graph-db \
   .understand-anything/knowledge-graph.json \
   .understand-anything/graph.db
+```
+
+### From Source
+
+```bash
+bun run graphing-tools/build-graph-db.ts <input.json> <output.db>
 ```
 
 ## Exit Codes
@@ -45,6 +59,14 @@ tour_steps(order_index, title, description, node_ids)
 ```
 
 Indexes: `idx_nodes_type`, `idx_nodes_name`, `idx_nodes_file_path`, `idx_nodes_layer_id`, `idx_edges_source`, `idx_edges_target`, `idx_edges_type`.
+
+## Building the Executable
+
+```bash
+bun build --compile ./graphing-tools/build-graph-db.ts --outfile ./bin/build-graph-db
+```
+
+This produces a single native binary with zero runtime dependencies. The `bun run build` script in `package.json` does this automatically.
 
 ## Tests
 

@@ -2,3 +2,4 @@ node_modules/
 .agents/
 *.db
 .DS_Store
+bin/

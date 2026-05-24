@@ -1,38 +1,56 @@
 {
-  "generated_at": "2026-05-24T08:48:11.741Z",
+  "generated_at": "2026-05-24T08:51:58.159Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
     "graphing-tools": [
       {
         "type": "file",
-        "path": "extract-structure.mjs",
-        "extension": "mjs",
-        "size": 10827
+        "path": "index.ts",
+        "extension": "ts",
+        "size": 71
       },
       {
         "type": "file",
         "path": "build-graph-db.test.ts",
         "extension": "ts",
-        "size": 1047
+        "size": 1971
       },
       {
         "type": "file",
-        "path": "merge-batch-graphs.py",
-        "extension": "py",
-        "size": 45497
+        "path": "layout.test.ts",
+        "extension": "ts",
+        "size": 1192
       },
       {
-        "type": "file",
-        "path": "build-fingerprints.mjs",
-        "extension": "mjs",
-        "size": 3250
+        "type": "directory",
+        "path": "legacy",
+        "children": [
+          {
+            "type": "file",
+            "path": "legacy/extract-structure.mjs",
+            "extension": "mjs",
+            "size": 10827
+          },
+          {
+            "type": "file",
+            "path": "legacy/merge-batch-graphs.py",
+            "extension": "py",
+            "size": 45497
+          },
+          {
+            "type": "file",
+            "path": "legacy/build-fingerprints.mjs",
+            "extension": "mjs",
+            "size": 3250
+          }
+        ]
       },
       {
         "type": "file",
         "path": "build-graph-db.ts",
         "extension": "ts",
-        "size": 916
+        "size": 960
       }
     ],
     "measure": [
@@ -104,7 +122,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 2365
+            "size": 4066
           },
           {
             "type": "file",
@@ -150,7 +168,7 @@
                 "type": "file",
                 "path": "tracks/graphdb_20260524/plan.md",
                 "extension": "md",
-                "size": 2591
+                "size": 2601
               },
               {
                 "type": "file",

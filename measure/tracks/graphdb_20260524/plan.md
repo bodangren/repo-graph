@@ -2,7 +2,7 @@
 
 ## Phase 1: Bootstrap & CLI
 
-- [ ] Task: Set up CLI entry point with argument parsing
+- [~] Task: Set up CLI entry point with argument parsing
     - [ ] Write unit tests for CLI argument validation (missing args, bad paths)
     - [ ] Implement `build-graph-db.ts` CLI with `Bun.argv` parsing
 - [ ] Task: Set up project layout and TypeScript configuration

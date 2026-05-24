@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T08:37:25.089Z",
+  "generated_at": "2026-05-24T08:48:11.741Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -12,6 +12,12 @@
       },
       {
         "type": "file",
+        "path": "build-graph-db.test.ts",
+        "extension": "ts",
+        "size": 1047
+      },
+      {
+        "type": "file",
         "path": "merge-batch-graphs.py",
         "extension": "py",
         "size": 45497
@@ -21,6 +27,12 @@
         "path": "build-fingerprints.mjs",
         "extension": "mjs",
         "size": 3250
+      },
+      {
+        "type": "file",
+        "path": "build-graph-db.ts",
+        "extension": "ts",
+        "size": 916
       }
     ],
     "measure": [
@@ -87,13 +99,26 @@
       {
         "type": "directory",
         "path": "generated",
-        "children": []
+        "children": [
+          {
+            "type": "file",
+            "path": "generated/architecture.json",
+            "extension": "json",
+            "size": 2365
+          },
+          {
+            "type": "file",
+            "path": "generated/routes.md",
+            "extension": "md",
+            "size": 1306
+          }
+        ]
       },
       {
         "type": "file",
         "path": "index.md",
         "extension": "md",
-        "size": 377
+        "size": 606
       },
       {
         "type": "file",
@@ -103,9 +128,51 @@
       },
       {
         "type": "file",
+        "path": "tracks.md",
+        "extension": "md",
+        "size": 209
+      },
+      {
+        "type": "file",
         "path": "product.md",
         "extension": "md",
         "size": 2434
+      },
+      {
+        "type": "directory",
+        "path": "tracks",
+        "children": [
+          {
+            "type": "directory",
+            "path": "tracks/graphdb_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/graphdb_20260524/plan.md",
+                "extension": "md",
+                "size": 2591
+              },
+              {
+                "type": "file",
+                "path": "tracks/graphdb_20260524/metadata.json",
+                "extension": "json",
+                "size": 301
+              },
+              {
+                "type": "file",
+                "path": "tracks/graphdb_20260524/spec.md",
+                "extension": "md",
+                "size": 2086
+              },
+              {
+                "type": "file",
+                "path": "tracks/graphdb_20260524/index.md",
+                "extension": "md",
+                "size": 128
+              }
+            ]
+          }
+        ]
       }
     ]
   }

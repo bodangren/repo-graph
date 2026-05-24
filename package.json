@@ -1,0 +1,14 @@
+{
+  "name": "repo-graph",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint graphing-tools/",
+    "doctor": "./measure/doctor.sh",
+    "generate": "./measure/generate.sh"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-boundaries": "^5.0.0"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-05-24T08:37:25.089Z",
+  "project_root": ".",
+  "measure_zone": "graphing-tools",
+  "directories": {
+    "graphing-tools": [
+      {
+        "type": "file",
+        "path": "extract-structure.mjs",
+        "extension": "mjs",
+        "size": 10827
+      },
+      {
+        "type": "file",
+        "path": "merge-batch-graphs.py",
+        "extension": "py",
+        "size": 45497
+      },
+      {
+        "type": "file",
+        "path": "build-fingerprints.mjs",
+        "extension": "mjs",
+        "size": 3250
+      }
+    ],
+    "measure": [
+      {
+        "type": "file",
+        "path": "tech-stack.md",
+        "extension": "md",
+        "size": 8261
+      },
+      {
+        "type": "file",
+        "path": "lessons-learned.md",
+        "extension": "md",
+        "size": 884
+      },
+      {
+        "type": "directory",
+        "path": "code_styleguides",
+        "children": [
+          {
+            "type": "file",
+            "path": "code_styleguides/javascript.md",
+            "extension": "md",
+            "size": 2736
+          },
+          {
+            "type": "file",
+            "path": "code_styleguides/general.md",
+            "extension": "md",
+            "size": 735
+          },
+          {
+            "type": "file",
+            "path": "code_styleguides/typescript.md",
+            "extension": "md",
+            "size": 3050
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "path": "product-guidelines.md",
+        "extension": "md",
+        "size": 1733
+      },
+      {
+        "type": "file",
+        "path": "generate.sh",
+        "extension": "sh",
+        "size": 2617
+      },
+      {
+        "type": "file",
+        "path": "doctor.sh",
+        "extension": "sh",
+        "size": 555
+      },
+      {
+        "type": "file",
+        "path": "workflow.md",
+        "extension": "md",
+        "size": 15495
+      },
+      {
+        "type": "directory",
+        "path": "generated",
+        "children": []
+      },
+      {
+        "type": "file",
+        "path": "index.md",
+        "extension": "md",
+        "size": 377
+      },
+      {
+        "type": "file",
+        "path": "tech-debt.md",
+        "extension": "md",
+        "size": 530
+      },
+      {
+        "type": "file",
+        "path": "product.md",
+        "extension": "md",
+        "size": 2434
+      }
+    ]
+  }
+}

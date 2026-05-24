@@ -22,36 +22,36 @@
 
 ## Phase 2: Test
 
-- [ ] Task: Write tests for CLI argument parsing
-    - [ ] Test each subcommand with valid arguments
-    - [ ] Test missing arguments → exit code 2
-    - [ ] Test unknown subcommand → exit code 2
-    - [ ] Test `--help` for each subcommand
-- [ ] Task: Write tests for scanner module
-    - [ ] Create mock `ts-morph` source files in test fixtures
-    - [ ] Test extraction of functions, classes, interfaces, type aliases
-    - [ ] Test import resolution (relative paths)
-    - [ ] Test edge creation (contains, imports, extends, implements)
-    - [ ] Test JSDoc summary extraction
-    - [ ] Test line number extraction
-- [ ] Task: Write tests for query command
-    - [ ] Test valid SQL execution
-    - [ ] Test invalid SQL → exit code 1
-    - [ ] Test empty result set handling
-    - [ ] Test table formatter output
-- [ ] Task: Write tests for search command
-    - [ ] Test keyword matching in name, summary, tags
-    - [ ] Test case-insensitive search
-    - [ ] Test limit of 20 results
-    - [ ] Test empty search
-- [ ] Task: Write tests for update command
-    - [ ] Test incremental delete + re-insert for changed files
-    - [ ] Test transaction rollback on error
-- [ ] Task: Write integration test
-    - [ ] Full scan of a sample TypeScript project
-    - [ ] Verify node count, edge count, and specific node existence
-    - [ ] Verify query returns correct results
-    - [ ] Verify update modifies only specified files
+- [x] Task: Write tests for CLI argument parsing
+    - [x] Test each subcommand with valid arguments
+    - [x] Test missing arguments → exit code 2
+    - [x] Test unknown subcommand → exit code 2
+    - [x] Test `--help` for each subcommand
+- [x] Task: Write tests for scanner module
+    - [x] Create mock `ts-morph` source files in test fixtures
+    - [x] Test extraction of functions, classes, interfaces, type aliases
+    - [x] Test import resolution (relative paths)
+    - [x] Test edge creation (contains, imports, extends, implements)
+    - [x] Test JSDoc summary extraction
+    - [x] Test line number extraction
+- [x] Task: Write tests for query command
+    - [x] Test valid SQL execution
+    - [x] Test invalid SQL → exit code 1
+    - [x] Test empty result set handling
+    - [x] Test table formatter output
+- [x] Task: Write tests for search command
+    - [x] Test keyword matching in name, summary, tags
+    - [x] Test case-insensitive search
+    - [x] Test limit of 20 results
+    - [x] Test empty search
+- [x] Task: Write tests for update command
+    - [x] Test incremental delete + re-insert for changed files
+    - [x] Test transaction rollback on error
+- [x] Task: Write integration test
+    - [x] Full scan of a sample TypeScript project
+    - [x] Verify node count, edge count, and specific node existence
+    - [x] Verify query returns correct results
+    - [x] Verify update modifies only specified files
 - [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ## Phase 3: Implement

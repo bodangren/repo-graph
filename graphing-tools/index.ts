@@ -1,1 +1,5 @@
-export { parseArgs, validateInputFile, main } from "./build-graph-db";
+export { parseArgs } from "./cli";
+export { scanProject } from "./scanner";
+export { runQuery, formatTable } from "./query";
+export { searchNodes } from "./search";
+export { main } from "./build-graph";

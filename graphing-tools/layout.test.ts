@@ -16,11 +16,12 @@ describe("project layout", () => {
     expect(existsSync("graphing-tools/index.ts")).toBe(true);
   });
 
-  it("barrel exports parseArgs, validateInputFile, and main", async () => {
-    const { parseArgs, validateInputFile, main } = await import("./index");
+  it("barrel exports parseArgs, main, scanProject, and searchNodes", async () => {
+    const { parseArgs, main, scanProject, searchNodes } = await import("./index");
     expect(typeof parseArgs).toBe("function");
-    expect(typeof validateInputFile).toBe("function");
     expect(typeof main).toBe("function");
+    expect(typeof scanProject).toBe("function");
+    expect(typeof searchNodes).toBe("function");
   });
 
   it("moves legacy scripts into legacy/ subdirectory", () => {

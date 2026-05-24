@@ -12,5 +12,18 @@ export function searchNodes(db: Database, keyword: string): SearchResult[] {
     ORDER BY type, name
     LIMIT 20
   `);
-  return stmt.all(like, like, like) as SearchResult[];
+  const rows = stmt.all(like, like, like) as Array<{
+    id: string;
+    type: string;
+    name: string;
+    file_path: string;
+    summary: string | null;
+  }>;
+  return rows.map((r) => ({
+    id: r.id,
+    type: r.type as SearchResult["type"],
+    name: r.name,
+    filePath: r.file_path,
+    summary: r.summary ?? undefined,
+  }));
 }

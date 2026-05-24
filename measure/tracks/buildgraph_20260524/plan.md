@@ -56,47 +56,47 @@
 
 ## Phase 3: Implement
 
-- [ ] Task: Install `ts-morph` dependency
-    - [ ] `bun add ts-morph`
-    - [ ] Update `tech-stack.md` with exact version
-- [ ] Task: Rewrite CLI entry point (`build-graph-db.ts` → `build-graph.ts`)
-    - [ ] Implement subcommand dispatcher
-    - [ ] Implement `--help` and `--version` flags
-    - [ ] Implement error handling with correct exit codes
-- [ ] Task: Implement `init` command
-    - [ ] Reuse `createSchema()` and `createIndexes()` from existing `schema.ts`/`indexes.ts`
-    - [ ] Add idempotent `CREATE TABLE IF NOT EXISTS` wrappers
-- [ ] Task: Implement scanner module (`scanner.ts`)
-    - [ ] Create `ts-morph` Project from `tsconfig.json`
-    - [ ] Extract file nodes
-    - [ ] Extract function nodes (declarations + arrow functions + methods)
-    - [ ] Extract class nodes + extends/implements edges
-    - [ ] Extract interface nodes
-    - [ ] Extract type alias nodes
-    - [ ] Extract import edges (resolve relative paths)
-    - [ ] Extract contains edges (file → child nodes)
-    - [ ] Extract JSDoc summaries
-    - [ ] Extract line numbers
-    - [ ] Compute layer_id from directory structure
-    - [ ] Batch insert into SQLite with transaction
-    - [ ] Print progress to stderr
-- [ ] Task: Implement `query` command
-    - [ ] Execute SQL against `graph.db`
-    - [ ] Format results as table
-    - [ ] Support `--json` flag for machine-readable output
-- [ ] Task: Implement `search` command
-    - [ ] Build parameterized SQL query with `LOWER()` + `LIKE`
-    - [ ] Format results as table
-- [ ] Task: Implement `update` command
-    - [ ] Delete existing nodes/edges for changed files
-    - [ ] Re-parse and re-insert
-    - [ ] Wrap in transaction
-- [ ] Task: Build compiled executable
-    - [ ] Add `build` script to `package.json`: `bun build --compile ./graphing-tools/build-graph.ts --outfile ./bin/build-graph`
-    - [ ] Verify executable runs standalone
-- [ ] Task: Update `graphing-tools/README.md`
-    - [ ] Document all subcommands with examples
-    - [ ] Document git hook integration
+- [x] Task: Install `ts-morph` dependency
+    - [x] `bun add ts-morph`
+    - [x] Update `tech-stack.md` with exact version
+- [x] Task: Rewrite CLI entry point (`build-graph-db.ts` → `build-graph.ts`)
+    - [x] Implement subcommand dispatcher
+    - [x] Implement `--help` and `--version` flags
+    - [x] Implement error handling with correct exit codes
+- [x] Task: Implement `init` command
+    - [x] Reuse `createSchema()` and `createIndexes()` from existing `schema.ts`/`indexes.ts`
+    - [x] Add idempotent `CREATE TABLE IF NOT EXISTS` wrappers
+- [x] Task: Implement scanner module (`scanner.ts`)
+    - [x] Create `ts-morph` Project from `tsconfig.json`
+    - [x] Extract file nodes
+    - [x] Extract function nodes (declarations + arrow functions + methods)
+    - [x] Extract class nodes + extends/implements edges
+    - [x] Extract interface nodes
+    - [x] Extract type alias nodes
+    - [x] Extract import edges (resolve relative paths)
+    - [x] Extract contains edges (file → child nodes)
+    - [x] Extract JSDoc summaries
+    - [x] Extract line numbers
+    - [x] Compute layer_id from directory structure
+    - [x] Batch insert into SQLite with transaction
+    - [x] Print progress to stderr
+- [x] Task: Implement `query` command
+    - [x] Execute SQL against `graph.db`
+    - [x] Format results as table
+    - [x] Support `--json` flag for machine-readable output
+- [x] Task: Implement `search` command
+    - [x] Build parameterized SQL query with `LOWER()` + `LIKE`
+    - [x] Format results as table
+- [x] Task: Implement `update` command
+    - [x] Delete existing nodes/edges for changed files
+    - [x] Re-parse and re-insert
+    - [x] Wrap in transaction
+- [x] Task: Build compiled executable
+    - [x] Add `build` script to `package.json`: `bun build --compile ./graphing-tools/build-graph.ts --outfile ./bin/build-graph`
+    - [x] Verify executable runs standalone
+- [x] Task: Update `graphing-tools/README.md`
+    - [x] Document all subcommands with examples
+    - [x] Document git hook integration
 - [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ## Phase 4: Generate Docs & Doctor

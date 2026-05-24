@@ -12,7 +12,7 @@
 
 ## Phase 2: Schema & Database Setup
 
-- [ ] Task: Create SQLite schema builder
+- [~] Task: Create SQLite schema builder
     - [ ] Write unit tests for schema creation (table names, column types)
     - [ ] Implement schema execution via `bun:sqlite` matching `measure/tech-stack.md`
 - [ ] Task: Build index creation

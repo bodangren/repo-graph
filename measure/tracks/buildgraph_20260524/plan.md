@@ -2,22 +2,22 @@
 
 ## Phase 1: Contract & Schema Definition
 
-- [ ] Task: Define CLI command contract
-    - [ ] Document argument parsing for all subcommands (init, scan, update, query, search)
-    - [ ] Define exit codes and error messages
-    - [ ] Define progress output format (stderr) for scan/update
-- [ ] Task: Update SQLite schema for scanner needs
-    - [ ] Add `line_start` and `line_end` columns to `nodes` table
-    - [ ] Verify node type enum covers: file, function, class, interface, type_alias
-    - [ ] Verify edge type enum covers: contains, imports, extends, implements
-    - [ ] Ensure `file_path` is NOT NULL (every node belongs to a file)
-- [ ] Task: Define scanner output contract
-    - [ ] Document node ID format: `<type>:<file_path>:<name>` (or `file:<file_path>` for files)
-    - [ ] Document edge source/target format
-    - [ ] Document layer_id heuristic: derived from directory structure (e.g., `src/auth/` → `layer:auth`)
-- [ ] Task: Define query/search output format
-    - [ ] Document table formatter (column widths, truncation, header style)
-    - [ ] Document JSON output option (`--json` flag for piping)
+- [x] Task: Define CLI command contract
+    - [x] Document argument parsing for all subcommands (init, scan, update, query, search)
+    - [x] Define exit codes and error messages
+    - [x] Define progress output format (stderr) for scan/update
+- [x] Task: Update SQLite schema for scanner needs
+    - [x] Add `line_start` and `line_end` columns to `nodes` table
+    - [x] Verify node type enum covers: file, function, class, interface, type_alias
+    - [x] Verify edge type enum covers: contains, imports, extends, implements
+    - [x] Ensure `file_path` is NOT NULL (every node belongs to a file)
+- [x] Task: Define scanner output contract
+    - [x] Document node ID format: `<type>:<file_path>:<name>` (or `file:<file_path>` for files)
+    - [x] Document edge source/target format
+    - [x] Document layer_id heuristic: derived from directory structure (e.g., `src/auth/` → `layer:auth`)
+- [x] Task: Define query/search output format
+    - [x] Document table formatter (column widths, truncation, header style)
+    - [x] Document JSON output option (`--json` flag for piping)
 - [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Test

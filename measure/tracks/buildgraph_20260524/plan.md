@@ -20,7 +20,7 @@
     - [x] Document JSON output option (`--json` flag for piping)
 - [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
-## Phase 2: Test
+## Phase 2: Test [checkpoint: 59a77d8]
 
 - [x] Task: Write tests for CLI argument parsing
     - [x] Test each subcommand with valid arguments

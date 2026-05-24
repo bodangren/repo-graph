@@ -32,12 +32,13 @@ describe("validateInputFile", () => {
 });
 
 describe("main", () => {
-  it("throws not implemented for valid args and existing file", async () => {
+  it("runs buildGraphDb for valid args and existing file", async () => {
     const tmp = "/tmp/test-graph-db-input-2.json";
+    const out = "/tmp/test-graph-db-output.db";
     await Bun.write(tmp, "{}");
-    await expect(
-      main(["bun", "script.ts", tmp, "out.db"])
-    ).rejects.toThrow("Not yet implemented");
+    await expect(main(["bun", "script.ts", tmp, out])).resolves.toBeUndefined();
+    expect(await Bun.file(out).exists()).toBe(true);
+    try { require("fs").unlinkSync(out); } catch { /* ignore */ }
   });
 });
 

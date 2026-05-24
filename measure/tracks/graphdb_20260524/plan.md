@@ -15,7 +15,7 @@
 - [x] Task: Create SQLite schema builder [017606c]
     - [x] Write unit tests for schema creation (table names, column types)
     - [x] Implement schema execution via `bun:sqlite` matching `measure/tech-stack.md`
-- [ ] Task: Build index creation
+- [~] Task: Build index creation
     - [ ] Write unit tests verifying all indexes exist after creation
     - [ ] Implement index creation statements
 - [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)

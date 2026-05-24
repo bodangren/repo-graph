@@ -1,6 +1,6 @@
 # Implementation Plan: graphdb_20260524
 
-## Phase 1: Bootstrap & CLI
+## Phase 1: Bootstrap & CLI [checkpoint: fa00011]
 
 - [x] Task: Set up CLI entry point with argument parsing [6d5a54b]
     - [x] Write unit tests for CLI argument validation (missing args, bad paths)
@@ -8,7 +8,7 @@
 - [x] Task: Set up project layout and TypeScript configuration [b5d099c]
     - [x] Write tests for module resolution and imports
     - [x] Create `tsconfig.json` and reorganize `graphing-tools/` for TypeScript
-- [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Schema & Database Setup
 

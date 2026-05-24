@@ -10,7 +10,7 @@
     - [x] Create `tsconfig.json` and reorganize `graphing-tools/` for TypeScript
 - [x] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
-## Phase 2: Schema & Database Setup
+## Phase 2: Schema & Database Setup [checkpoint: 99fd258]
 
 - [x] Task: Create SQLite schema builder [017606c]
     - [x] Write unit tests for schema creation (table names, column types)
@@ -18,7 +18,7 @@
 - [x] Task: Build index creation [c2e39e2]
     - [x] Write unit tests verifying all indexes exist after creation
     - [x] Implement index creation statements
-- [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ## Phase 3: Data Ingestion
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env bun
 import { Database } from "bun:sqlite";
 import { Project } from "ts-morph";
+import { readdirSync, statSync } from "fs";
+import { join } from "path";
 import { parseArgs } from "./cli";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
@@ -58,6 +60,63 @@ async function handleInit(dbPath: string): Promise<void> {
   }
 }
 
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".turbo", "out", "coverage"]);
+
+function discoverTsConfigs(root: string): string[] {
+  const results: string[] = [];
+
+  function walk(dir: string): void {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); }
+    catch { return; }
+
+    for (const entry of entries) {
+      if (SKIP_DIRS.has(entry.name)) continue;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name === "tsconfig.json") {
+        results.push(full);
+      }
+    }
+  }
+
+  walk(root);
+  return results;
+}
+
+export async function createProject(projectDir: string): Promise<Project> {
+  const rootConfig = join(projectDir, "tsconfig.json");
+
+  // Fast path: single root tsconfig
+  try {
+    if (statSync(rootConfig).isFile()) {
+      return new Project({ tsConfigFilePath: rootConfig });
+    }
+  } catch { /* no root tsconfig */ }
+
+  // Discover all tsconfigs
+  const configs = discoverTsConfigs(projectDir);
+
+  if (configs.length > 0) {
+    const project = new Project();
+    for (const cfg of configs) {
+      try {
+        project.addSourceFilesFromTsConfig(cfg);
+      } catch (err) {
+        console.error(`Warning: could not load ${cfg}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    return project;
+  }
+
+  // Fallback: glob all .ts/.tsx files
+  const project = new Project();
+  project.addSourceFilesAtPaths(join(projectDir, "**/*.ts"));
+  project.addSourceFilesAtPaths(join(projectDir, "**/*.tsx"));
+  return project;
+}
+
 async function handleScan(projectDir: string, dbPath: string): Promise<void> {
   const start = performance.now();
   const db = new Database(dbPath);
@@ -66,8 +125,7 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
     createSchema(db);
     createIndexes(db);
 
-    const tsConfigPath = `${projectDir}/tsconfig.json`;
-    const project = new Project({ tsConfigFilePath: tsConfigPath });
+    const project = await createProject(projectDir);
     const { nodes, edges } = scanProject(project);
 
     const insertNode = db.prepare(`

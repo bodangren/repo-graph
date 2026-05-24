@@ -22,7 +22,7 @@
 
 ## Phase 3: Data Ingestion
 
-- [ ] Task: Implement nodes table ingestion
+- [~] Task: Implement nodes table ingestion
     - [ ] Write unit tests for node insertion and batch behavior
     - [ ] Implement prepared statement batch insert for nodes with transaction wrapping
 - [ ] Task: Implement edges table ingestion

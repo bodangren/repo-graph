@@ -99,7 +99,7 @@
     - [x] Document git hook integration
 - [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
-## Phase 4: Generate Docs & Doctor
+## Phase 4: Generate Docs & Doctor [checkpoint: 167a672]
 
 - [x] Task: Run `./measure/generate.sh`
     - [x] Verify `measure/generated/` is updated

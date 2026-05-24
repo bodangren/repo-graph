@@ -9,3 +9,6 @@ This file tracks all major tracks for the project.
 
 - [x] **Track: Build the `build-graph` CLI tool — ts-morph scanner → SQLite knowledge graph**
   *Link: [./tracks/buildgraph_20260524/](./tracks/buildgraph_20260524/)*
+
+- [ ] **Track: Convenience query commands — deps, callers, path, stats, files + relative paths**
+  *Link: [./tracks/convenience_20260524/](./tracks/convenience_20260524/)*

@@ -1,11 +1,11 @@
 {
   "track_id": "graphdb_20260524",
   "type": "feature",
-  "status": "new",
+  "status": "completed",
   "created_at": "2026-05-24T08:40:40Z",
-  "updated_at": "2026-05-24T08:40:40Z",
+  "updated_at": "2026-05-24T09:40:00Z",
   "description": "Build graph.db builder with Bun and native SQLite",
   "estimated_tasks": 10,
-  "actual_tasks": null,
+  "actual_tasks": 10,
   "deviation_notes": ""
 }

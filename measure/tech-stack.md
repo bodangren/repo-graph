@@ -6,11 +6,13 @@
 |------------|---------|---------|
 | Bun | 1.2+ | Single runtime for all scripts and tooling |
 | `bun:sqlite` | built-in | Native SQLite driver (no external dependency) |
+| `ts-morph` | 28.x | TypeScript AST parser and project manager |
+| TypeScript | 5.x+ | Compiler API (via ts-morph) |
 
-- **Module system:** ES modules (`.ts` / `.mjs`)
+- **Module system:** ES modules (`.ts`)
 - **Package manager:** `bun` (built-in)
 - **No Python, no Node.js.** All tooling is unified under Bun.
-- **Note:** Existing `graphing-tools/` scripts are currently Node.js/Python and will be migrated to Bun in a future track.
+- **No external AI/LLM services.** Structure extraction is purely programmatic.
 
 ---
 
@@ -19,22 +21,24 @@
 ```sql
 -- Main graph tables
 CREATE TABLE nodes (
-  id          TEXT PRIMARY KEY,  -- e.g. "file:src/auth.ts", "function:src/auth.ts:validateToken"
-  type        TEXT NOT NULL,    -- file, function, class, config, document, service, pipeline, schema, resource, table, endpoint, module, concept
+  id          TEXT PRIMARY KEY,
+  type        TEXT NOT NULL,    -- file, function, class, interface, type_alias, variable, import, export
   name        TEXT NOT NULL,
-  file_path   TEXT,              -- NULL for non-file nodes (functions, classes)
-  summary     TEXT,
-  tags        TEXT,              -- JSON array as text: '["api-handler","auth"]'
-  complexity  TEXT,              -- simple, moderate, complex
-  language_notes TEXT,
-  layer_id    TEXT               -- FK to layers.id, NULL until architecture phase
+  file_path   TEXT NOT NULL,    -- absolute path to source file
+  line_start  INTEGER,          -- line number where node begins
+  line_end    INTEGER,          -- line number where node ends
+  summary     TEXT,             -- JSDoc comment or empty
+  tags        TEXT,             -- JSON array: '["public","deprecated","async"]'
+  complexity  TEXT,             -- simple, moderate, complex (derived from AST metrics)
+  language_notes TEXT,          -- e.g. "generic", "overloaded", "decorated"
+  layer_id    TEXT              -- FK to layers.id, computed from import patterns
 );
 
 CREATE TABLE edges (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   source      TEXT NOT NULL,    -- node id
   target      TEXT NOT NULL,    -- node id
-  type        TEXT NOT NULL,    -- imports, calls, contains, inherits, implements, exports, depends_on, tested_by, configures, documents, deploys, triggers, etc.
+  type        TEXT NOT NULL,    -- imports, calls, contains, extends, implements, exports, depends_on, tested_by
   direction   TEXT NOT NULL,    -- forward, backward, bidirectional
   weight      REAL DEFAULT 0.5
 );
@@ -43,7 +47,7 @@ CREATE TABLE layers (
   id          TEXT PRIMARY KEY,  -- e.g. "layer:data-access"
   name        TEXT NOT NULL,
   description TEXT,
-  node_ids    TEXT               -- JSON array of node ids in this layer
+  node_ids    TEXT               -- JSON array of node ids
 );
 
 CREATE TABLE tour_steps (
@@ -107,7 +111,6 @@ ORDER BY e.type;
 WITH RECURSIVE path(
   current_id, target_id, depth, path, types
 ) AS (
-  -- Anchor: start from source node
   SELECT e.target, e.target, 1,
          e.source || ' -> ' || e.target,
          e.type
@@ -116,14 +119,13 @@ WITH RECURSIVE path(
 
   UNION ALL
 
-  -- Recursive: follow edges from current node
   SELECT e.target, e.target, p.depth + 1,
          p.path || ' -> ' || e.target,
          p.types || ',' || e.type
     FROM edges e
     JOIN path p ON e.source = p.current_id
    WHERE p.depth < :max_hops
-     AND p.path NOT LIKE '%' || e.target || '%'  -- no cycles
+     AND p.path NOT LIKE '%' || e.target || '%'
 )
 SELECT path, types, depth
 FROM path
@@ -144,11 +146,10 @@ WHERE l.id = :layer_id;
 ### get_file_tree — all nodes for a given file path
 
 ```sql
-SELECT id, type, name, line_range, summary
+SELECT id, type, name, line_start, line_end, summary
 FROM nodes
 WHERE file_path = :file_path
-   OR id LIKE 'file:' || :file_path || '%'
-ORDER BY type;
+ORDER BY line_start;
 ```
 
 ### aggregation — count nodes by type, tag distribution
@@ -168,79 +169,90 @@ LIMIT 20;
 
 ---
 
-## Build Integration (Phase 7)
+## Build Integration
 
 In `graphing-tools/`:
 
 ```typescript
-// build-graph-db.ts
+// scanner.ts
+import { Project } from "ts-morph";
 import { Database } from "bun:sqlite";
 
-export function buildGraphDb(kgPath: string, dbPath: string) {
+export async function scanProject(projectRoot: string, dbPath: string) {
+  const project = new Project({ tsConfigFilePath: `${projectRoot}/tsconfig.json` });
   const db = new Database(dbPath);
-  const kg = await Bun.file(kgPath).json();
 
-  // Create tables
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS nodes (...);
-    CREATE TABLE IF NOT EXISTS edges (...);
-    CREATE INDEX idx_nodes_type ON nodes(type);
-    CREATE INDEX idx_edges_source ON edges(source);
-    CREATE INDEX idx_edges_target ON edges(target);
-  `);
+  createSchema(db);
+  createIndexes(db);
 
-  // Insert nodes
-  const insertNode = db.prepare(`INSERT INTO nodes VALUES (?,?,?,?,?,?,?,?,?)`);
-  for (const n of kg.nodes) {
-    insertNode.run(n.id, n.type, n.name, n.filePath, n.summary, JSON.stringify(n.tags), n.complexity, n.languageNotes, null);
+  for (const sourceFile of project.getSourceFiles()) {
+    const filePath = sourceFile.getFilePath();
+
+    // Extract file node
+    const fileNodeId = `file:${filePath}`;
+    insertNode(db, fileNodeId, "file", filePath.split("/").pop()!, filePath);
+
+    // Extract functions
+    for (const func of sourceFile.getFunctions()) {
+      const funcId = `function:${filePath}:${func.getName() || "anonymous"}`;
+      insertNode(db, funcId, "function", func.getName() || "anonymous", filePath,
+        func.getStartLineNumber(), func.getEndLineNumber());
+      insertEdge(db, fileNodeId, funcId, "contains", "forward");
+    }
+
+    // Extract classes
+    for (const cls of sourceFile.getClasses()) {
+      const clsId = `class:${filePath}:${cls.getName() || "anonymous"}`;
+      insertNode(db, clsId, "class", cls.getName() || "anonymous", filePath,
+        cls.getStartLineNumber(), cls.getEndLineNumber());
+      insertEdge(db, fileNodeId, clsId, "contains", "forward");
+
+      // Class inheritance
+      const ext = cls.getExtends();
+      if (ext) {
+        const baseName = ext.getExpression().getText();
+        insertEdge(db, clsId, `class:*:${baseName}`, "extends", "forward");
+      }
+    }
+
+    // Extract imports
+    for (const imp of sourceFile.getImportDeclarations()) {
+      const modulePath = imp.getModuleSpecifierValue();
+      insertEdge(db, fileNodeId, `file:${resolveImport(projectRoot, modulePath)}`, "imports", "forward");
+    }
   }
 
-  // Insert edges
-  const insertEdge = db.prepare(`INSERT INTO edges (source,target,type,direction,weight) VALUES (?,?,?,?,?)`);
-  for (const e of kg.edges) {
-    insertEdge.run(e.source, e.target, e.type, e.direction, e.weight);
-  }
-
-  // Insert layers
-  const insertLayer = db.prepare(`INSERT INTO layers VALUES (?,?,?,?)`);
-  for (const l of kg.layers) {
-    insertLayer.run(l.id, l.name, l.description, JSON.stringify(l.nodeIds));
-  }
-
-  // Update node layer_id
-  db.exec(`
-    UPDATE nodes SET layer_id = (
-      SELECT id FROM layers WHERE json_each(layers.node_ids) = nodes.id
-    )
-  `);
-
+  resolveLayerIds(db);
   db.close();
 }
 ```
 
-Called from Phase 7 after graph validation:
+Called during initial scan or full rebuild:
 ```bash
-bun run graphing-tools/build-graph-db.ts \
-  $PROJECT_ROOT/.understand-anything/knowledge-graph.json \
-  $PROJECT_ROOT/.understand-anything/graph.db
+repo-graph scan ./ ./graph.db
+```
+
+Called from git hook for incremental updates:
+```bash
+repo-graph update ./graph.db src/auth.ts src/utils.ts
 ```
 
 ---
 
-## Skill Integration (`/understand-chat`)
+## Skill Integration
 
-Add to skill instructions:
+Add to skill instructions for agents working on the codebase:
 
 ```markdown
 ## Query Interface
 
-The knowledge graph is stored in `.understand-anything/graph.db` (SQLite).
-Use `sqlite3` as a tool — run queries directly.
+The codebase is mapped in `./graph.db` (SQLite).
+Use `sqlite3` or write SQL directly via `bun:sqlite`.
 
 ### Schema
 
 ```sql
-nodes(id, type, name, file_path, summary, tags, complexity, language_notes, layer_id)
+nodes(id, type, name, file_path, line_start, line_end, summary, tags, complexity, language_notes, layer_id)
 edges(id, source, target, type, direction, weight)
 layers(id, name, description, node_ids)
 tour_steps(order_index, title, description, node_ids)
@@ -283,17 +295,12 @@ SELECT n.* FROM nodes n JOIN layers l ON n.layer_id=l.id WHERE l.id=:layer_id;
 
 ```
 graphing-tools/
-├── SCHEMA.md          -- Full CREATE TABLE statements + indexes
-├── QUERIES.md         -- Query pattern reference (find, deps, trace, etc.)
-├── build-graph-db.ts  -- Build script (Bun, runs in Phase 7)
-└── README.md          -- Integration guide for /understand-chat skill
-```
-
-Optionally promoted into `packages/core/` or `understand-anything-plugin/` at:
-```
-understand-anything-plugin/
-└── graphing-tools/
-    ├── build-graph-db.ts
-    ├── schema.sql
-    └── queries.md
+├── scanner.ts         -- ts-morph AST extraction → SQLite
+├── schema.ts          -- CREATE TABLE + indexes
+├── indexes.ts         -- Index creation
+├── ingest.ts          -- Batch insert helpers (shared between scan and update)
+├── query.ts           -- Common query functions (agent-facing API)
+├── build-graph-db.ts  -- CLI entry point (scan, update, query, search)
+├── README.md          -- Usage guide
+└── legacy/            -- Old Node.js/Python scripts (to be replaced)
 ```

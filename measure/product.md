@@ -2,47 +2,57 @@
 
 ## Problem
 
-Understand Anything produces an interactive JSON knowledge graph for codebase understanding. However, LLM-powered chat interactions (`/understand-chat`) currently rely on `grep` to search the flat JSON — an inefficient approach that makes multi-hop and cross-node-type queries impractical.
+AI agents working on large TypeScript codebases — legacy monorepos, enterprise applications, long-lived projects — have no persistent map of the code. Every task starts from zero context. Agents resort to `grep` for discovery, which is:
 
-Example limitations:
-- Finding "all functions that call the auth hook" requires multiple grep passes
-- Tracing a data flow from API → service → DB needs 3+ separate searches
-- No indexed lookup — every query scans the full JSON
+- **Slow** — O(n) scan across thousands of files for every query
+- **Shallow** — finds string matches, not semantic relationships (who calls whom, inheritance chains, layer boundaries)
+- **Ephemeral** — no memory between tasks; the agent re-discovers the same structure repeatedly
+- **Fragile** — renamed symbols, dynamic imports, and workspace aliases break string matching
+
+Example failures:
+- "Find all functions that call the auth hook" requires parsing import chains across packages
+- "Trace data flow from API handler → service → DB" needs multi-hop traversal
+- "What breaks if I rename this interface?" requires transitive dependency analysis
 
 ## Solution
 
-A **SQLite companion database** built alongside the existing JSON graph during analysis. The SQLite file becomes the queryable backend for all LLM chat interactions. The JSON remains the source of truth for the dashboard.
+A **standalone CLI tool** that programmatically scans TypeScript codebases, extracts structural knowledge via AST parsing, and stores it in a queryable SQLite database. The database becomes the agent's persistent memory of the codebase.
 
-## How it works
+### How it works
 
-1. **Build time**: Phase 7 of `/understand` generates `graph.db` alongside `knowledge-graph.json`
-   - Creates normalized tables: `nodes`, `edges`, `layers`, `tour_steps`
-   - Builds indexes on `id`, `type`, `name`, `tags`
-   - Zero additional services — single file, no daemon
+1. **Scan**: `repo-graph scan <dir> <db>` parses all `.ts`/`.tsx` files using `ts-morph`, extracts nodes (files, functions, classes, interfaces) and edges (imports, calls, contains, extends, implements).
 
-2. **Query time**: `/understand-chat` uses `sqlite3` as a tool
-   - LLM writes SQL against documented schema
-   - Query patterns (find_nodes, get_dependencies, trace_path) provided as skill instructions
-   - No MCP server, no extra infrastructure
+2. **Query**: Agents write SQL against a documented schema — indexed lookups, joins, recursive CTEs for path tracing.
 
-## Benefits
+3. **Update**: Git hooks run `repo-graph update <db> <changed-files>` to incrementally re-parse only touched files, keeping the graph fresh.
 
-- **Indexed random access** — O(log n) lookups vs O(n) JSON scan
-- **Multi-hop queries** — SQL joins + CTEs for A→B→C traversal
-- **Rich tooling** — Aggregations, grouping, filtering by type/tag/layer
-- **Single file** — `graph.db` in `.understand-anything/`, versioned alongside JSON
-- **Zero infra** — `sqlite3` CLI is ubiquitous, no server process needed
-- **LLM-friendly** — Query patterns documented as skill instructions, LLM writes SQL directly
+### Architecture
 
-## What lives where
+```
+TypeScript source files
+        ↓
+   ts-morph (AST parsing)
+        ↓
+    nodes, edges, layers
+        ↓
+    bun:sqlite (graph.db)
+        ↓
+   SQL queries (agent tools)
+```
+
+### Benefits
+
+- **Indexed random access** — O(log n) lookups vs O(n) grep scan
+- **Multi-hop queries** — SQL CTEs traverse A → B → C dependency chains
+- **Persistent memory** — graph.db survives across agent sessions
+- **Incremental updates** — git hooks keep the graph in sync, no full rebuilds
+- **Zero LLM for structure** — AST extraction is deterministic, fast, and free
+- **Single runtime** — Bun + ts-morph + bun:sqlite, no Python, no Node.js, no external services
+
+### What lives where
 
 | Artifact | Purpose |
 |----------|---------|
-| `.understand-anything/knowledge-graph.json` | Dashboard rendering (React Flow) |
-| `.understand-anything/graph.db` | LLM query backend (SQLite) |
-| `.understand-anything/meta.json` | Analysis metadata |
-| `copy/graphing-tools/` | SQL schema + query pattern docs |
-
-## Interaction with existing pipeline
-
-The SQLite build is additive — it happens in Phase 7, after the graph is assembled and validated. It does not change any upstream phase (scan, analyze, assemble, architecture, tour). The existing JSON pipeline is unaffected.
+| `graph.db` | Queryable knowledge graph (SQLite) |
+| `graphing-tools/` | Source code: scanner, schema, query patterns |
+| `graphing-tools/legacy/` | Old Node.js/Python scripts (to be replaced) |

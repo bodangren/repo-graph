@@ -5,8 +5,7 @@
   "scripts": {
     "lint": "eslint graphing-tools/",
     "doctor": "./measure/doctor.sh",
-    "generate": "./measure/generate.sh",
-    "build": "bun build --compile ./graphing-tools/build-graph-db.ts --outfile ./bin/build-graph-db"
+    "generate": "./measure/generate.sh"
   },
   "devDependencies": {
     "eslint": "^9.0.0",

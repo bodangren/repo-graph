@@ -4,21 +4,11 @@
 > Remove or condense entries that are no longer relevant to near-term planning.
 
 ## Architecture & Design
-<!-- Decisions made that future tracks should be aware of -->
 
-- (YYYY-MM-DD, track_id) Example: Chose X over Y because of Z constraint
+- (2026-05-24, graphdb_20260524) **Do not inherit product specs from external projects.** `product.md` and `tech-stack.md` were copied from the "Understand Anything" plugin spec, describing a JSON-to-SQLite companion tool. This repo is standalone. The resulting `build-graph-db.ts` read JSON input — completely wrong for a tool that should scan TypeScript directly. Always verify product context is intrinsic to the repo, not inherited from adjacent projects.
 
 ## Recurring Gotchas
-<!-- Problems encountered repeatedly; save future tracks from the same pain -->
-
-- (YYYY-MM-DD, track_id) Example: Always check for null before accessing config values
 
 ## Patterns That Worked Well
-<!-- Approaches worth repeating -->
-
-- (YYYY-MM-DD, track_id) Example: Writing acceptance criteria before implementation caught scope creep early
 
 ## Planning Improvements
-<!-- Notes on where estimates were wrong and why -->
-
-- (YYYY-MM-DD, track_id) Example: Underestimated integration testing time by 2x

@@ -36,7 +36,7 @@
     - [x] Implement UPDATE query to resolve and set `layer_id`
 - [x] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
-## Phase 4: Integration & Polish
+## Phase 4: Integration & Polish [checkpoint: f644cfe]
 
 - [x] Task: Wire up full pipeline (JSON → SQLite) [a2a35f0]
     - [x] Write integration test with a sample `knowledge-graph.json`
@@ -46,4 +46,4 @@
     - [x] Implement verbose error messages with context and next steps
 - [x] Task: Write README for graphing-tools/ [7013af8]
     - [x] Document usage, CLI args, exit codes, and schema overview
-- [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

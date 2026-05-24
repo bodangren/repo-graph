@@ -27,8 +27,10 @@ export function scanProject(project: Project): { nodes: GraphNode[]; edges: Grap
     });
 
     // Functions
+    let anonFuncIndex = 0;
     for (const func of sourceFile.getFunctions()) {
-      const name = func.getName() || "anonymous";
+      const rawName = func.getName();
+      const name = rawName || `anonymous${++anonFuncIndex}`;
       const id = `function:${filePath}:${name}`;
       const structure = func.getStructure();
       const summary = structure.docs && structure.docs.length > 0

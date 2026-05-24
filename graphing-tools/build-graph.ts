@@ -137,8 +137,16 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
       VALUES (?, ?, ?, ?, ?)
     `);
 
+    const seenNodes = new Set<string>();
+    const skippedNodes: string[] = [];
+
     db.transaction(() => {
       for (const n of nodes) {
+        if (seenNodes.has(n.id)) {
+          skippedNodes.push(n.id);
+          continue;
+        }
+        seenNodes.add(n.id);
         insertNode.run(
           n.id, n.type, n.name, n.filePath,
           n.lineStart ?? null, n.lineEnd ?? null,
@@ -151,6 +159,10 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
         insertEdge.run(e.source, e.target, e.type, e.direction, e.weight ?? 0.5);
       }
     })();
+
+    if (skippedNodes.length > 0) {
+      console.error(`Warning: skipped ${skippedNodes.length} duplicate node(s): ${skippedNodes.slice(0, 5).join(", ")}${skippedNodes.length > 5 ? "..." : ""}`);
+    }
 
     const elapsed = Math.round(performance.now() - start);
     console.error(`Scanned ${nodes.length} nodes, ${edges.length} edges in ${elapsed}ms`);

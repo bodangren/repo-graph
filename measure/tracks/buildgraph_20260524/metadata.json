@@ -1,0 +1,11 @@
+{
+  "track_id": "buildgraph_20260524",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-05-24T10:30:00Z",
+  "updated_at": "2026-05-24T10:30:00Z",
+  "description": "Build the build-graph CLI tool that scans TypeScript codebases via ts-morph and stores the knowledge graph in SQLite",
+  "estimated_tasks": 27,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

@@ -38,9 +38,9 @@
 
 ## Phase 4: Integration & Polish
 
-- [~] Task: Wire up full pipeline (JSON → SQLite)
-    - [ ] Write integration test with a sample `knowledge-graph.json`
-    - [ ] Implement orchestration function that runs schema → ingestion → resolution in order
+- [x] Task: Wire up full pipeline (JSON → SQLite) [a2a35f0]
+    - [x] Write integration test with a sample `knowledge-graph.json`
+    - [x] Implement orchestration function that runs schema → ingestion → resolution in order
 - [ ] Task: Add error handling and diagnostics
     - [ ] Write tests for error cases (missing file, invalid JSON, missing fields, DB locked)
     - [ ] Implement verbose error messages with context and next steps

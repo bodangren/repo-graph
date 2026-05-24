@@ -47,4 +47,14 @@ describe("buildGraphDb", () => {
 
     db.close();
   });
+
+  it("throws on invalid JSON", async () => {
+    await Bun.write(inputPath, "not json");
+    await expect(buildGraphDb(inputPath, outputPath)).rejects.toThrow("Invalid JSON");
+  });
+
+  it("throws when nodes field is missing", async () => {
+    await Bun.write(inputPath, JSON.stringify({ edges: [], layers: [], tour_steps: [] }));
+    await expect(buildGraphDb(inputPath, outputPath)).rejects.toThrow("Missing required field");
+  });
 });

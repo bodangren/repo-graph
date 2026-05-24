@@ -35,7 +35,8 @@ describe("main", () => {
   it("runs buildGraphDb for valid args and existing file", async () => {
     const tmp = "/tmp/test-graph-db-input-2.json";
     const out = "/tmp/test-graph-db-output.db";
-    await Bun.write(tmp, "{}");
+    const kg = { nodes: [], edges: [], layers: [], tour_steps: [] };
+    await Bun.write(tmp, JSON.stringify(kg));
     await expect(main(["bun", "script.ts", tmp, out])).resolves.toBeUndefined();
     expect(await Bun.file(out).exists()).toBe(true);
     try { require("fs").unlinkSync(out); } catch { /* ignore */ }

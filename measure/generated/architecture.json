@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T09:36:17.198Z",
+  "generated_at": "2026-05-24T09:38:32.020Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -32,7 +32,7 @@
         "type": "file",
         "path": "build-graph-db.test.ts",
         "extension": "ts",
-        "size": 2102
+        "size": 2185
       },
       {
         "type": "file",
@@ -80,7 +80,7 @@
         "type": "file",
         "path": "integration.test.ts",
         "extension": "ts",
-        "size": 1994
+        "size": 2429
       },
       {
         "type": "file",
@@ -92,7 +92,7 @@
         "type": "file",
         "path": "build-graph-db.ts",
         "extension": "ts",
-        "size": 1663
+        "size": 2846
       }
     ],
     "measure": [
@@ -164,7 +164,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 5224
+            "size": 5353
           },
           {
             "type": "file",
@@ -210,7 +210,7 @@
                 "type": "file",
                 "path": "tracks/graphdb_20260524/plan.md",
                 "extension": "md",
-                "size": 2737
+                "size": 2747
               },
               {
                 "type": "file",

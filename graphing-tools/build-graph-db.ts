@@ -26,17 +26,41 @@ import { ingestNodes, ingestEdges, ingestLayers, ingestTourSteps, resolveLayerId
 
 export async function buildGraphDb(inputPath: string, outputPath: string): Promise<void> {
   const raw = await Bun.file(inputPath).text();
-  const kg = JSON.parse(raw);
+
+  let kg: unknown;
+  try {
+    kg = JSON.parse(raw);
+  } catch {
+    throw new Error(`Invalid JSON in input file: ${inputPath}\nNext step: verify the file is valid JSON.`);
+  }
+
+  if (!kg || typeof kg !== "object") {
+    throw new Error(`Invalid input: ${inputPath} does not contain a JSON object.`);
+  }
+
+  const graph = kg as Record<string, unknown>;
+  const requiredFields = ["nodes", "edges", "layers", "tour_steps"];
+  for (const field of requiredFields) {
+    if (!(field in graph)) {
+      throw new Error(`Missing required field: ${field} in ${inputPath}\nNext step: ensure the knowledge graph JSON has all required top-level keys.`);
+    }
+    if (!Array.isArray(graph[field])) {
+      throw new Error(`Invalid type for field: ${field} in ${inputPath} (expected array)\nNext step: verify the knowledge graph structure.`);
+    }
+  }
 
   const db = new Database(outputPath);
   try {
     createSchema(db);
     createIndexes(db);
-    ingestNodes(db, kg.nodes ?? []);
-    ingestEdges(db, kg.edges ?? []);
-    ingestLayers(db, kg.layers ?? []);
-    ingestTourSteps(db, kg.tour_steps ?? []);
+    ingestNodes(db, graph.nodes as Parameters<typeof ingestNodes>[1]);
+    ingestEdges(db, graph.edges as Parameters<typeof ingestEdges>[1]);
+    ingestLayers(db, graph.layers as Parameters<typeof ingestLayers>[1]);
+    ingestTourSteps(db, graph.tour_steps as Parameters<typeof ingestTourSteps>[1]);
     resolveLayerIds(db);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`SQLite error while building graph.db: ${message}\nNext step: check disk space and file permissions for ${outputPath}.`);
   } finally {
     db.close();
   }

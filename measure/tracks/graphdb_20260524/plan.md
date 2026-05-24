@@ -20,7 +20,7 @@
     - [x] Implement index creation statements
 - [x] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
-## Phase 3: Data Ingestion
+## Phase 3: Data Ingestion [checkpoint: f653298]
 
 - [x] Task: Implement nodes table ingestion [39acc86]
     - [x] Write unit tests for node insertion and batch behavior
@@ -34,7 +34,7 @@
 - [x] Task: Implement layer_id resolution on nodes [548e653]
     - [x] Write unit tests verifying `nodes.layer_id` is correctly populated from `layers.node_ids`
     - [x] Implement UPDATE query to resolve and set `layer_id`
-- [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ## Phase 4: Integration & Polish
 

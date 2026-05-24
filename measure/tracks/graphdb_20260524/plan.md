@@ -41,9 +41,9 @@
 - [x] Task: Wire up full pipeline (JSON → SQLite) [a2a35f0]
     - [x] Write integration test with a sample `knowledge-graph.json`
     - [x] Implement orchestration function that runs schema → ingestion → resolution in order
-- [~] Task: Add error handling and diagnostics
-    - [ ] Write tests for error cases (missing file, invalid JSON, missing fields, DB locked)
-    - [ ] Implement verbose error messages with context and next steps
+- [x] Task: Add error handling and diagnostics [abe8932]
+    - [x] Write tests for error cases (missing file, invalid JSON, missing fields, DB locked)
+    - [x] Implement verbose error messages with context and next steps
 - [ ] Task: Write README for graphing-tools/
     - [ ] Document usage, CLI args, exit codes, and schema overview
 - [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

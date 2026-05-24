@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
-import { ingestNodes, ingestEdges } from "./ingest";
+import { ingestNodes, ingestEdges, ingestLayers, ingestTourSteps, resolveLayerIds } from "./ingest";
 
 describe("ingestNodes", () => {
   let db: Database;
@@ -110,5 +110,88 @@ describe("ingestEdges", () => {
 
     const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM edges").get();
     expect(count?.c).toBe(0);
+  });
+});
+
+describe("ingestLayers", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+    createIndexes(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("inserts layers with serialized nodeIds", () => {
+    const layers = [
+      { id: "layer:data-access", name: "Data Access", description: "DB layer", nodeIds: ["n1", "n2"] },
+    ];
+    ingestLayers(db, layers);
+
+    const row = db.query("SELECT * FROM layers WHERE id = ?").get("layer:data-access") as Record<string, unknown>;
+    expect(row).toBeDefined();
+    expect(row.name).toBe("Data Access");
+    expect(row.node_ids).toBe('["n1","n2"]');
+  });
+});
+
+describe("ingestTourSteps", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+    createIndexes(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("inserts tour steps with serialized nodeIds", () => {
+    const steps = [
+      { orderIndex: 0, title: "Intro", description: "First step", nodeIds: ["n1"] },
+    ];
+    ingestTourSteps(db, steps);
+
+    const row = db.query("SELECT * FROM tour_steps WHERE order_index = ?").get(0) as Record<string, unknown>;
+    expect(row).toBeDefined();
+    expect(row.title).toBe("Intro");
+    expect(row.node_ids).toBe('["n1"]');
+  });
+});
+
+describe("resolveLayerIds", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+    createIndexes(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("resolves layer_id from layers.node_ids", () => {
+    ingestNodes(db, [
+      { id: "n1", type: "function", name: "fn1", filePath: "a.ts", summary: "", tags: [], complexity: "simple", languageNotes: "" },
+      { id: "n2", type: "function", name: "fn2", filePath: "b.ts", summary: "", tags: [], complexity: "simple", languageNotes: "" },
+    ]);
+    ingestLayers(db, [
+      { id: "layer:core", name: "Core", description: "", nodeIds: ["n1"] },
+    ]);
+
+    resolveLayerIds(db);
+
+    const r1 = db.query<{ layer_id: string | null }, []>("SELECT layer_id FROM nodes WHERE id = 'n1'").get();
+    const r2 = db.query<{ layer_id: string | null }, []>("SELECT layer_id FROM nodes WHERE id = 'n2'").get();
+    expect(r1?.layer_id).toBe("layer:core");
+    expect(r2?.layer_id).toBeNull();
   });
 });

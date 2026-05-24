@@ -19,6 +19,20 @@ export interface KgEdge {
   weight?: number;
 }
 
+export interface KgLayer {
+  id: string;
+  name: string;
+  description?: string | null;
+  nodeIds?: string[];
+}
+
+export interface KgTourStep {
+  orderIndex: number;
+  title: string;
+  description?: string | null;
+  nodeIds?: string[];
+}
+
 export function ingestNodes(db: Database, nodes: KgNode[]): void {
   const insert = db.prepare(`
     INSERT INTO nodes (id, type, name, file_path, summary, tags, complexity, language_notes, layer_id)
@@ -57,4 +71,45 @@ export function ingestEdges(db: Database, edges: KgEdge[]): void {
   });
 
   insertAll(edges);
+}
+
+export function ingestLayers(db: Database, layers: KgLayer[]): void {
+  const insert = db.prepare(`
+    INSERT INTO layers (id, name, description, node_ids)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const insertAll = db.transaction((items: KgLayer[]) => {
+    for (const l of items) {
+      insert.run(l.id, l.name, l.description ?? null, JSON.stringify(l.nodeIds ?? []));
+    }
+  });
+
+  insertAll(layers);
+}
+
+export function ingestTourSteps(db: Database, steps: KgTourStep[]): void {
+  const insert = db.prepare(`
+    INSERT INTO tour_steps (order_index, title, description, node_ids)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const insertAll = db.transaction((items: KgTourStep[]) => {
+    for (const s of items) {
+      insert.run(s.orderIndex, s.title, s.description ?? null, JSON.stringify(s.nodeIds ?? []));
+    }
+  });
+
+  insertAll(steps);
+}
+
+export function resolveLayerIds(db: Database): void {
+  db.exec(`
+    UPDATE nodes SET layer_id = (
+      SELECT l.id
+      FROM layers l, json_each(l.node_ids) AS je
+      WHERE je.value = nodes.id
+      LIMIT 1
+    )
+  `);
 }

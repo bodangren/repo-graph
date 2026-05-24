@@ -28,10 +28,10 @@
 - [x] Task: Implement edges table ingestion [9b09b4c]
     - [x] Write unit tests for edge insertion and foreign key sanity
     - [x] Implement prepared statement batch insert for edges with transaction wrapping
-- [ ] Task: Implement layers and tour_steps ingestion
+- [~] Task: Implement layers and tour_steps ingestion
     - [ ] Write unit tests for layers/tour_steps insertion
     - [ ] Implement batch insert for layers and tour_steps
-- [ ] Task: Implement layer_id resolution on nodes
+- [~] Task: Implement layer_id resolution on nodes
     - [ ] Write unit tests verifying `nodes.layer_id` is correctly populated from `layers.node_ids`
     - [ ] Implement UPDATE query to resolve and set `layer_id`
 - [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)

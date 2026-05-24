@@ -101,15 +101,15 @@
 
 ## Phase 4: Generate Docs & Doctor
 
-- [ ] Task: Run `./measure/generate.sh`
-    - [ ] Verify `measure/generated/` is updated
-    - [ ] Commit generated docs
-- [ ] Task: Run `./measure/doctor.sh`
-    - [ ] Fix any ESLint errors
-    - [ ] Fix any boundary violations
-    - [ ] Fix any stale generated docs
-- [ ] Task: Run test suite with coverage
-    - [ ] `CI=true bun test --coverage`
-    - [ ] Verify >80% coverage
-    - [ ] Fix any coverage gaps
+- [x] Task: Run `./measure/generate.sh`
+    - [x] Verify `measure/generated/` is updated
+    - [x] Commit generated docs
+- [x] Task: Run `./measure/doctor.sh`
+    - [x] Fix any ESLint errors
+    - [x] Fix any boundary violations
+    - [x] Fix any stale generated docs
+- [x] Task: Run test suite with coverage
+    - [x] `CI=true bun test --coverage`
+    - [x] Verify >80% coverage (91.06%)
+    - [x] Fix any coverage gaps
 - [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

@@ -10,6 +10,15 @@
 - [Workflow](./workflow.md)
 - [Code Style Guides](./code_styleguides/)
 
+## Architecture & Facts
+- [Generated Architecture](./generated/architecture.json)
+- [Doctor Script](./doctor.sh)
+- [Generate Script](./generate.sh)
+
 ## Learning & Continuity
 - [Lessons Learned](./lessons-learned.md)
 - [Tech Debt Registry](./tech-debt.md)
+
+## Management
+- [Tracks Registry](./tracks.md)
+- [Tracks Directory](./tracks/)

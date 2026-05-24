@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T09:38:32.020Z",
+  "generated_at": "2026-05-24T10:47:49.575Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -8,7 +8,13 @@
         "type": "file",
         "path": "index.ts",
         "extension": "ts",
-        "size": 71
+        "size": 203
+      },
+      {
+        "type": "file",
+        "path": "search.ts",
+        "extension": "ts",
+        "size": 769
       },
       {
         "type": "file",
@@ -20,13 +26,73 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 1031
+        "size": 962
       },
       {
         "type": "file",
         "path": "indexes.test.ts",
         "extension": "ts",
         "size": 1425
+      },
+      {
+        "type": "directory",
+        "path": "fixtures",
+        "children": [
+          {
+            "type": "directory",
+            "path": "fixtures/sample-project",
+            "children": [
+              {
+                "type": "file",
+                "path": "fixtures/sample-project/tsconfig.json",
+                "extension": "json",
+                "size": 215
+              },
+              {
+                "type": "directory",
+                "path": "fixtures/sample-project/src",
+                "children": [
+                  {
+                    "type": "file",
+                    "path": "fixtures/sample-project/src/types.ts",
+                    "extension": "ts",
+                    "size": 243
+                  },
+                  {
+                    "type": "file",
+                    "path": "fixtures/sample-project/src/utils.ts",
+                    "extension": "ts",
+                    "size": 327
+                  },
+                  {
+                    "type": "file",
+                    "path": "fixtures/sample-project/src/auth.ts",
+                    "extension": "ts",
+                    "size": 414
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "path": "query.ts",
+        "extension": "ts",
+        "size": 1487
+      },
+      {
+        "type": "file",
+        "path": "scanner.ts",
+        "extension": "ts",
+        "size": 4486
+      },
+      {
+        "type": "file",
+        "path": "contract.ts",
+        "extension": "ts",
+        "size": 3832
       },
       {
         "type": "file",
@@ -48,9 +114,27 @@
       },
       {
         "type": "file",
+        "path": "update.test.ts",
+        "extension": "ts",
+        "size": 1367
+      },
+      {
+        "type": "file",
         "path": "layout.test.ts",
         "extension": "ts",
-        "size": 1192
+        "size": 1249
+      },
+      {
+        "type": "file",
+        "path": "search.test.ts",
+        "extension": "ts",
+        "size": 1829
+      },
+      {
+        "type": "file",
+        "path": "update.ts",
+        "extension": "ts",
+        "size": 2329
       },
       {
         "type": "directory",
@@ -80,7 +164,49 @@
         "type": "file",
         "path": "integration.test.ts",
         "extension": "ts",
-        "size": 2429
+        "size": 2614
+      },
+      {
+        "type": "file",
+        "path": "cli.test.ts",
+        "extension": "ts",
+        "size": 3963
+      },
+      {
+        "type": "file",
+        "path": "build-graph.ts",
+        "extension": "ts",
+        "size": 6014
+      },
+      {
+        "type": "file",
+        "path": "query.test.ts",
+        "extension": "ts",
+        "size": 2079
+      },
+      {
+        "type": "file",
+        "path": "cli.ts",
+        "extension": "ts",
+        "size": 1868
+      },
+      {
+        "type": "file",
+        "path": "scanner.test.ts",
+        "extension": "ts",
+        "size": 5230
+      },
+      {
+        "type": "file",
+        "path": "README.md",
+        "extension": "md",
+        "size": 2320
+      },
+      {
+        "type": "file",
+        "path": "contract.test.ts",
+        "extension": "ts",
+        "size": 1159
       },
       {
         "type": "file",
@@ -100,13 +226,13 @@
         "type": "file",
         "path": "tech-stack.md",
         "extension": "md",
-        "size": 8261
+        "size": 8724
       },
       {
         "type": "file",
         "path": "lessons-learned.md",
         "extension": "md",
-        "size": 884
+        "size": 763
       },
       {
         "type": "directory",
@@ -184,24 +310,54 @@
         "type": "file",
         "path": "tech-debt.md",
         "extension": "md",
-        "size": 530
+        "size": 1139
       },
       {
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 209
+        "size": 474
       },
       {
         "type": "file",
         "path": "product.md",
         "extension": "md",
-        "size": 2434
+        "size": 2642
       },
       {
         "type": "directory",
         "path": "tracks",
         "children": [
+          {
+            "type": "directory",
+            "path": "tracks/buildgraph_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/buildgraph_20260524/plan.md",
+                "extension": "md",
+                "size": 5517
+              },
+              {
+                "type": "file",
+                "path": "tracks/buildgraph_20260524/metadata.json",
+                "extension": "json",
+                "size": 371
+              },
+              {
+                "type": "file",
+                "path": "tracks/buildgraph_20260524/spec.md",
+                "extension": "md",
+                "size": 4418
+              },
+              {
+                "type": "file",
+                "path": "tracks/buildgraph_20260524/index.md",
+                "extension": "md",
+                "size": 131
+              }
+            ]
+          },
           {
             "type": "directory",
             "path": "tracks/graphdb_20260524",
@@ -210,13 +366,13 @@
                 "type": "file",
                 "path": "tracks/graphdb_20260524/plan.md",
                 "extension": "md",
-                "size": 2747
+                "size": 2789
               },
               {
                 "type": "file",
                 "path": "tracks/graphdb_20260524/metadata.json",
                 "extension": "json",
-                "size": 301
+                "size": 305
               },
               {
                 "type": "file",

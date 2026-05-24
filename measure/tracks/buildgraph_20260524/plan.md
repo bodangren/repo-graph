@@ -1,6 +1,6 @@
 # Implementation Plan: Build the `build-graph` CLI Tool
 
-## Phase 1: Contract & Schema Definition
+## Phase 1: Contract & Schema Definition [checkpoint: cf3cd13]
 
 - [x] Task: Define CLI command contract
     - [x] Document argument parsing for all subcommands (init, scan, update, query, search)

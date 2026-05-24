@@ -54,7 +54,7 @@
     - [x] Verify update modifies only specified files
 - [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
-## Phase 3: Implement
+## Phase 3: Implement [checkpoint: 0847628]
 
 - [x] Task: Install `ts-morph` dependency
     - [x] `bun add ts-morph`

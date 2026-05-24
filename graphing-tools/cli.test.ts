@@ -98,6 +98,78 @@ describe("parseArgs", () => {
     });
   });
 
+  describe("deps", () => {
+    it("parses deps <db> <name>", () => {
+      const result = parseArgs(argv(["deps", "./graph.db", "foo"]));
+      expect(result.subcommand).toBe("deps");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.name).toBe("foo");
+      expect(result.args.downstream).toBe(false);
+    });
+
+    it("parses deps with --downstream", () => {
+      const result = parseArgs(argv(["deps", "./graph.db", "foo", "--downstream"]));
+      expect(result.args.downstream).toBe(true);
+    });
+
+    it("throws on missing args", () => {
+      expect(() => parseArgs(argv(["deps"]))).toThrow("Usage: build-graph deps");
+    });
+  });
+
+  describe("callers", () => {
+    it("parses callers <db> <name>", () => {
+      const result = parseArgs(argv(["callers", "./graph.db", "foo"]));
+      expect(result.subcommand).toBe("callers");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.name).toBe("foo");
+    });
+
+    it("throws on missing args", () => {
+      expect(() => parseArgs(argv(["callers"]))).toThrow("Usage: build-graph callers");
+    });
+  });
+
+  describe("path", () => {
+    it("parses path <db> <from> <to>", () => {
+      const result = parseArgs(argv(["path", "./graph.db", "foo", "bar"]));
+      expect(result.subcommand).toBe("path");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.from).toBe("foo");
+      expect(result.args.to).toBe("bar");
+    });
+
+    it("throws on missing args", () => {
+      expect(() => parseArgs(argv(["path"]))).toThrow("Usage: build-graph path");
+    });
+  });
+
+  describe("stats", () => {
+    it("parses stats <db>", () => {
+      const result = parseArgs(argv(["stats", "./graph.db"]));
+      expect(result.subcommand).toBe("stats");
+      expect(result.args.dbPath).toBe("./graph.db");
+    });
+
+    it("throws on missing db", () => {
+      expect(() => parseArgs(argv(["stats"]))).toThrow("Usage: build-graph stats");
+    });
+  });
+
+  describe("files", () => {
+    it("parses files <db>", () => {
+      const result = parseArgs(argv(["files", "./graph.db"]));
+      expect(result.subcommand).toBe("files");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.pattern).toBeUndefined();
+    });
+
+    it("parses files <db> <pattern>", () => {
+      const result = parseArgs(argv(["files", "./graph.db", "auth"]));
+      expect(result.args.pattern).toBe("auth");
+    });
+  });
+
   describe("errors", () => {
     it("throws on unknown subcommand", () => {
       expect(() => parseArgs(argv(["foo"]))).toThrow("Unknown subcommand: foo");

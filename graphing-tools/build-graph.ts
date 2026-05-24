@@ -2,7 +2,7 @@
 import { Database } from "bun:sqlite";
 import { Project } from "ts-morph";
 import { readdirSync, statSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { parseArgs } from "./cli";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
@@ -10,6 +10,8 @@ import { scanProject } from "./scanner";
 import { runQuery, formatTable, formatJson } from "./query";
 import { searchNodes } from "./search";
 import { updateFiles } from "./update";
+import { runDeps, runCallers, runPath, runStats, runFiles } from "./commands";
+import { setMeta } from "./meta";
 import { ExitCode } from "./contract";
 
 const VERSION = "0.1.0";
@@ -27,6 +29,21 @@ function printHelp(subcommand?: string): void {
   } else if (subcommand === "search") {
     console.log("Usage: build-graph search <db> <keyword>");
     console.log("  Search for nodes by keyword.");
+  } else if (subcommand === "deps") {
+    console.log("Usage: build-graph deps <db> <node-name> [--downstream]");
+    console.log("  Find nodes that depend on the target (--downstream for reverse).");
+  } else if (subcommand === "callers") {
+    console.log("Usage: build-graph callers <db> <function-name>");
+    console.log("  Find functions/files that reference the target function.");
+  } else if (subcommand === "path") {
+    console.log("Usage: build-graph path <db> <from> <to>");
+    console.log("  Trace shortest dependency path between two nodes.");
+  } else if (subcommand === "stats") {
+    console.log("Usage: build-graph stats <db>");
+    console.log("  Print a summary dashboard of the codebase.");
+  } else if (subcommand === "files") {
+    console.log("Usage: build-graph files <db> [pattern]");
+    console.log("  List files with entity counts.");
   } else if (subcommand === "init") {
     console.log("Usage: build-graph init <db>");
     console.log("  Create a new graph database with schema and indexes.");
@@ -36,12 +53,17 @@ function printHelp(subcommand?: string): void {
     console.log("Usage: build-graph <command> [options]");
     console.log("");
     console.log("Commands:");
-    console.log("  init    <db>                 Create a new graph database");
-    console.log("  scan    <project-dir> <db>   Scan a TypeScript project");
-    console.log("  update  <db> <file...>       Incrementally update changed files");
-    console.log("  query   [--json] <db> <sql>  Run a SQL query");
-    console.log("  search  <db> <keyword>       Search nodes by keyword");
-    console.log("  help    [command]            Show help for a command");
+    console.log("  init     <db>                         Create a new graph database");
+    console.log("  scan     <project-dir> <db>           Scan a TypeScript project");
+    console.log("  update   <db> <file...>               Incrementally update changed files");
+    console.log("  query    [--json] <db> <sql>          Run a SQL query");
+    console.log("  search   <db> <keyword>               Search nodes by keyword");
+    console.log("  deps     <db> <node> [--downstream]   Find dependents/dependencies");
+    console.log("  callers  <db> <function>              Find function callers");
+    console.log("  path     <db> <from> <to>             Trace dependency path");
+    console.log("  stats    <db>                         Print codebase dashboard");
+    console.log("  files    <db> [pattern]               List files with counts");
+    console.log("  help     [command]                    Show help for a command");
     console.log("");
     console.log("Options:");
     console.log("  --version, -v    Show version");
@@ -49,11 +71,14 @@ function printHelp(subcommand?: string): void {
   }
 }
 
-async function handleInit(dbPath: string): Promise<void> {
+async function handleInit(dbPath: string, projectDir?: string): Promise<void> {
   const db = new Database(dbPath);
   try {
     createSchema(db);
     createIndexes(db);
+    if (projectDir) {
+      setMeta(db, "project_root", resolve(projectDir));
+    }
     console.error(`Initialized ${dbPath}`);
   } finally {
     db.close();
@@ -120,12 +145,14 @@ export async function createProject(projectDir: string): Promise<Project> {
 async function handleScan(projectDir: string, dbPath: string): Promise<void> {
   const start = performance.now();
   const db = new Database(dbPath);
+  const absProjectDir = resolve(projectDir);
 
   try {
     createSchema(db);
     createIndexes(db);
+    setMeta(db, "project_root", absProjectDir);
 
-    const project = await createProject(projectDir);
+    const project = await createProject(absProjectDir);
     const { nodes, edges } = scanProject(project);
 
     const insertNode = db.prepare(`
@@ -212,7 +239,58 @@ async function handleUpdate(dbPath: string, filePaths: string[]): Promise<void> 
   }
 }
 
-export async function main(argv: string[]): Promise<void> {
+async function handleDeps(dbPath: string, name: string, downstream: boolean): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runDeps(db, name, downstream);
+    if (output) console.log(output);
+    return exitCode;
+  } finally {
+    db.close();
+  }
+}
+
+async function handleCallers(dbPath: string, name: string): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runCallers(db, name);
+    if (output) console.log(output);
+    return exitCode;
+  } finally {
+    db.close();
+  }
+}
+
+async function handlePath(dbPath: string, from: string, to: string): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runPath(db, from, to);
+    if (output) console.log(output);
+    return exitCode;
+  } finally {
+    db.close();
+  }
+}
+
+async function handleStats(dbPath: string): Promise<void> {
+  const db = new Database(dbPath);
+  try {
+    console.log(runStats(db));
+  } finally {
+    db.close();
+  }
+}
+
+async function handleFiles(dbPath: string, pattern?: string): Promise<void> {
+  const db = new Database(dbPath);
+  try {
+    console.log(runFiles(db, pattern));
+  } finally {
+    db.close();
+  }
+}
+
+export async function main(argv: string[]): Promise<number> {
   const parsed = parseArgs(argv);
 
   switch (parsed.subcommand) {
@@ -231,14 +309,28 @@ export async function main(argv: string[]): Promise<void> {
     case "update":
       await handleUpdate(parsed.args.dbPath, parsed.args.filePaths);
       break;
+    case "deps":
+      return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream);
+    case "callers":
+      return await handleCallers(parsed.args.dbPath, parsed.args.name);
+    case "path":
+      return await handlePath(parsed.args.dbPath, parsed.args.from, parsed.args.to);
+    case "stats":
+      await handleStats(parsed.args.dbPath);
+      break;
+    case "files":
+      await handleFiles(parsed.args.dbPath, parsed.args.pattern);
+      break;
     case "help":
       printHelp(parsed.args.subcommand);
       break;
   }
+
+  return ExitCode.Success;
 }
 
 if (import.meta.main) {
-  main(process.argv).catch((err) => {
+  main(process.argv).then((code) => process.exit(code)).catch((err) => {
     const message = err instanceof Error ? err.message : String(err);
     console.error(message);
     process.exit(message.startsWith("Usage") ? ExitCode.Misuse : ExitCode.RuntimeError);

@@ -48,7 +48,11 @@ describe("EdgeType union", () => {
 
 describe("Subcommand union", () => {
   it("includes all required subcommands", () => {
-    const cmds: Subcommand[] = ["init", "scan", "update", "query", "search", "help"];
-    expect(cmds.length).toBe(6);
+    const cmds: Subcommand[] = [
+      "init", "scan", "update", "query", "search",
+      "deps", "callers", "path", "stats", "files",
+      "help",
+    ];
+    expect(cmds.length).toBe(11);
   });
 });

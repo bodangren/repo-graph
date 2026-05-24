@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T10:47:49.575Z",
+  "generated_at": "2026-05-24T13:16:05.152Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -18,6 +18,12 @@
       },
       {
         "type": "file",
+        "path": "paths.ts",
+        "extension": "ts",
+        "size": 265
+      },
+      {
+        "type": "file",
         "path": "ingest.ts",
         "extension": "ts",
         "size": 2675
@@ -26,7 +32,13 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 962
+        "size": 1052
+      },
+      {
+        "type": "file",
+        "path": "monorepo.test.ts",
+        "extension": "ts",
+        "size": 1570
       },
       {
         "type": "file",
@@ -73,8 +85,68 @@
                 ]
               }
             ]
+          },
+          {
+            "type": "directory",
+            "path": "fixtures/monorepo",
+            "children": [
+              {
+                "type": "directory",
+                "path": "fixtures/monorepo/frontend",
+                "children": [
+                  {
+                    "type": "file",
+                    "path": "fixtures/monorepo/frontend/tsconfig.json",
+                    "extension": "json",
+                    "size": 186
+                  },
+                  {
+                    "type": "directory",
+                    "path": "fixtures/monorepo/frontend/src",
+                    "children": [
+                      {
+                        "type": "file",
+                        "path": "fixtures/monorepo/frontend/src/app.ts",
+                        "extension": "ts",
+                        "size": 102
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "path": "fixtures/monorepo/convex",
+                "children": [
+                  {
+                    "type": "file",
+                    "path": "fixtures/monorepo/convex/tsconfig.json",
+                    "extension": "json",
+                    "size": 186
+                  },
+                  {
+                    "type": "directory",
+                    "path": "fixtures/monorepo/convex/src",
+                    "children": [
+                      {
+                        "type": "file",
+                        "path": "fixtures/monorepo/convex/src/api.ts",
+                        "extension": "ts",
+                        "size": 81
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
+      },
+      {
+        "type": "file",
+        "path": "commands.test.ts",
+        "extension": "ts",
+        "size": 6051
       },
       {
         "type": "file",
@@ -86,13 +158,13 @@
         "type": "file",
         "path": "scanner.ts",
         "extension": "ts",
-        "size": 4486
+        "size": 4562
       },
       {
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 3832
+        "size": 4462
       },
       {
         "type": "file",
@@ -104,13 +176,25 @@
         "type": "file",
         "path": "schema.test.ts",
         "extension": "ts",
-        "size": 2669
+        "size": 2875
+      },
+      {
+        "type": "file",
+        "path": "meta.ts",
+        "extension": "ts",
+        "size": 517
       },
       {
         "type": "file",
         "path": "indexes.ts",
         "extension": "ts",
         "size": 594
+      },
+      {
+        "type": "file",
+        "path": "paths.test.ts",
+        "extension": "ts",
+        "size": 686
       },
       {
         "type": "file",
@@ -129,6 +213,18 @@
         "path": "search.test.ts",
         "extension": "ts",
         "size": 1829
+      },
+      {
+        "type": "file",
+        "path": "resolve.test.ts",
+        "extension": "ts",
+        "size": 1760
+      },
+      {
+        "type": "file",
+        "path": "resolve.ts",
+        "extension": "ts",
+        "size": 2069
       },
       {
         "type": "file",
@@ -170,13 +266,19 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 3963
+        "size": 6401
+      },
+      {
+        "type": "file",
+        "path": "commands.ts",
+        "extension": "ts",
+        "size": 11906
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 6014
+        "size": 11447
       },
       {
         "type": "file",
@@ -186,9 +288,15 @@
       },
       {
         "type": "file",
+        "path": "meta.test.ts",
+        "extension": "ts",
+        "size": 1044
+      },
+      {
+        "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 1868
+        "size": 2990
       },
       {
         "type": "file",
@@ -206,7 +314,7 @@
         "type": "file",
         "path": "contract.test.ts",
         "extension": "ts",
-        "size": 1159
+        "size": 1230
       },
       {
         "type": "file",
@@ -290,7 +398,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 5353
+            "size": 9219
           },
           {
             "type": "file",
@@ -316,7 +424,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 474
+        "size": 649
       },
       {
         "type": "file",
@@ -336,13 +444,13 @@
                 "type": "file",
                 "path": "tracks/buildgraph_20260524/plan.md",
                 "extension": "md",
-                "size": 5517
+                "size": 5548
               },
               {
                 "type": "file",
                 "path": "tracks/buildgraph_20260524/metadata.json",
                 "extension": "json",
-                "size": 371
+                "size": 375
               },
               {
                 "type": "file",
@@ -385,6 +493,36 @@
                 "path": "tracks/graphdb_20260524/index.md",
                 "extension": "md",
                 "size": 128
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/convenience_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/convenience_20260524/plan.md",
+                "extension": "md",
+                "size": 4487
+              },
+              {
+                "type": "file",
+                "path": "tracks/convenience_20260524/metadata.json",
+                "extension": "json",
+                "size": 362
+              },
+              {
+                "type": "file",
+                "path": "tracks/convenience_20260524/spec.md",
+                "extension": "md",
+                "size": 3668
+              },
+              {
+                "type": "file",
+                "path": "tracks/convenience_20260524/index.md",
+                "extension": "md",
+                "size": 132
               }
             ]
           }

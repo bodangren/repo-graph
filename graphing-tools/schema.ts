@@ -35,5 +35,9 @@ export function createSchema(db: Database): void {
       description TEXT,
       node_ids TEXT
     );
+    CREATE TABLE IF NOT EXISTS meta (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
   `);
 }

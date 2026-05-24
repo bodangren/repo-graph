@@ -37,6 +37,12 @@ describe("createSchema", () => {
     expect(result).toBeDefined();
   });
 
+  it("creates the meta table", () => {
+    createSchema(db);
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get();
+    expect(result).toBeDefined();
+  });
+
   it("nodes table has correct columns", () => {
     createSchema(db);
     const cols = db.query<{ name: string }, []>("PRAGMA table_info(nodes)").all();

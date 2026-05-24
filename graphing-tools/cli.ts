@@ -41,6 +41,28 @@ export function parseArgs(argv: string[]): ParsedArgs {
       if (args.length < 3) throw new Error("Usage: build-graph search <db> <keyword>");
       return { subcommand: "search", args: { dbPath: args[1], keyword: args[2] } };
     }
+    case "deps": {
+      if (args.length < 3) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream]");
+      const downstream = args.includes("--downstream");
+      const filtered = args.filter((a) => a !== "--downstream");
+      return { subcommand: "deps", args: { dbPath: filtered[1], name: filtered[2], downstream } };
+    }
+    case "callers": {
+      if (args.length < 3) throw new Error("Usage: build-graph callers <db> <function-name>");
+      return { subcommand: "callers", args: { dbPath: args[1], name: args[2] } };
+    }
+    case "path": {
+      if (args.length < 4) throw new Error("Usage: build-graph path <db> <from> <to>");
+      return { subcommand: "path", args: { dbPath: args[1], from: args[2], to: args[3] } };
+    }
+    case "stats": {
+      if (args.length < 2) throw new Error("Usage: build-graph stats <db>");
+      return { subcommand: "stats", args: { dbPath: args[1] } };
+    }
+    case "files": {
+      if (args.length < 2) throw new Error("Usage: build-graph files <db> [pattern]");
+      return { subcommand: "files", args: { dbPath: args[1], pattern: args[2] } };
+    }
     case "help": {
       return { subcommand: "help", args: { subcommand: args[1] as Subcommand | undefined } };
     }

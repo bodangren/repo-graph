@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "help";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -36,6 +36,32 @@ export interface SearchArgs {
   keyword: string;
 }
 
+export interface DepsArgs {
+  dbPath: string;
+  name: string;
+  downstream: boolean;
+}
+
+export interface CallersArgs {
+  dbPath: string;
+  name: string;
+}
+
+export interface PathArgs {
+  dbPath: string;
+  from: string;
+  to: string;
+}
+
+export interface StatsArgs {
+  dbPath: string;
+}
+
+export interface FilesArgs {
+  dbPath: string;
+  pattern?: string;
+}
+
 export interface HelpArgs {
   subcommand?: Subcommand;
 }
@@ -48,6 +74,11 @@ export type ParsedArgs =
   | { subcommand: "update"; args: UpdateArgs }
   | { subcommand: "query"; args: QueryArgs }
   | { subcommand: "search"; args: SearchArgs }
+  | { subcommand: "deps"; args: DepsArgs }
+  | { subcommand: "callers"; args: CallersArgs }
+  | { subcommand: "path"; args: PathArgs }
+  | { subcommand: "stats"; args: StatsArgs }
+  | { subcommand: "files"; args: FilesArgs }
   | { subcommand: "help"; args: HelpArgs };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────

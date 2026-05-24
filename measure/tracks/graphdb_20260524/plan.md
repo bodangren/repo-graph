@@ -25,7 +25,7 @@
 - [x] Task: Implement nodes table ingestion [39acc86]
     - [x] Write unit tests for node insertion and batch behavior
     - [x] Implement prepared statement batch insert for nodes with transaction wrapping
-- [ ] Task: Implement edges table ingestion
+- [~] Task: Implement edges table ingestion
     - [ ] Write unit tests for edge insertion and foreign key sanity
     - [ ] Implement prepared statement batch insert for edges with transaction wrapping
 - [ ] Task: Implement layers and tour_steps ingestion

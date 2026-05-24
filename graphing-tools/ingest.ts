@@ -11,6 +11,14 @@ export interface KgNode {
   languageNotes?: string | null;
 }
 
+export interface KgEdge {
+  source: string;
+  target: string;
+  type: string;
+  direction: string;
+  weight?: number;
+}
+
 export function ingestNodes(db: Database, nodes: KgNode[]): void {
   const insert = db.prepare(`
     INSERT INTO nodes (id, type, name, file_path, summary, tags, complexity, language_notes, layer_id)
@@ -34,4 +42,19 @@ export function ingestNodes(db: Database, nodes: KgNode[]): void {
   });
 
   insertAll(nodes);
+}
+
+export function ingestEdges(db: Database, edges: KgEdge[]): void {
+  const insert = db.prepare(`
+    INSERT INTO edges (source, target, type, direction, weight)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  const insertAll = db.transaction((items: KgEdge[]) => {
+    for (const e of items) {
+      insert.run(e.source, e.target, e.type, e.direction, e.weight ?? 0.5);
+    }
+  });
+
+  insertAll(edges);
 }

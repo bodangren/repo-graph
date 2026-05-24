@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
-import { ingestNodes } from "./ingest";
+import { ingestNodes, ingestEdges } from "./ingest";
 
 describe("ingestNodes", () => {
   let db: Database;
@@ -61,6 +61,54 @@ describe("ingestNodes", () => {
     expect(() => ingestNodes(db, nodes)).toThrow();
 
     const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM nodes").get();
+    expect(count?.c).toBe(0);
+  });
+});
+
+describe("ingestEdges", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+    createIndexes(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("inserts a single edge", () => {
+    const edges = [{ source: "n1", target: "n2", type: "calls", direction: "forward", weight: 0.8 }];
+    ingestEdges(db, edges);
+
+    const row = db.query("SELECT * FROM edges WHERE source = ? AND target = ?").get("n1", "n2") as Record<string, unknown>;
+    expect(row).toBeDefined();
+    expect(row.type).toBe("calls");
+    expect(row.direction).toBe("forward");
+    expect(row.weight).toBe(0.8);
+  });
+
+  it("inserts multiple edges in a batch", () => {
+    const edges = [
+      { source: "n1", target: "n2", type: "calls", direction: "forward", weight: 0.5 },
+      { source: "n2", target: "n3", type: "imports", direction: "forward", weight: 0.5 },
+    ];
+    ingestEdges(db, edges);
+
+    const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM edges").get();
+    expect(count?.c).toBe(2);
+  });
+
+  it("rolls back on invalid edge", () => {
+    const edges = [
+      { source: "n1", target: "n2", type: "calls", direction: "forward", weight: 0.5 },
+      { source: "n1", target: null, type: "calls", direction: "forward", weight: 0.5 } as unknown as Parameters<typeof ingestEdges>[1][0],
+    ];
+
+    expect(() => ingestEdges(db, edges)).toThrow();
+
+    const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM edges").get();
     expect(count?.c).toBe(0);
   });
 });

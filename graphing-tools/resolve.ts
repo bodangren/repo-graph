@@ -44,8 +44,9 @@ export function resolveNode(db: Database, name: string): ResolveResult {
   }
 
   // Try partial name match
-  const like = `%${name.toLowerCase()}%`;
-  const partial = db.prepare("SELECT id, type, name, file_path FROM nodes WHERE LOWER(name) LIKE ?").all(like) as
+  const escaped = name.toLowerCase().replace(/%/g, "\\%").replace(/_/g, "\\_");
+  const like = `%${escaped}%`;
+  const partial = db.prepare("SELECT id, type, name, file_path FROM nodes WHERE LOWER(name) LIKE ? ESCAPE '\\'").all(like) as
     Array<{ id: string; type: string; name: string; file_path: string }>;
 
   if (partial.length === 1) {

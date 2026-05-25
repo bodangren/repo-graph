@@ -91,12 +91,12 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F4 test passes
     - [x] Commit: `fix(commands): Exclude contains edges from runCallers results`
 
-- [~] Task: Fix F5 — Ambiguous-before-none guard order in `runPath` (`commands.ts`)
-    - [ ] Reorder the three resolution checks so both ambiguous checks precede the none check
-    - [ ] Run `bun test`; confirm F5 test passes
-    - [ ] Commit: `fix(commands): Check ambiguous resolution before none in runPath`
+- [x] Task: Fix F5 — Ambiguous-before-none guard order in `runPath` (`commands.ts`) [d2edb04]
+    - [x] Reorder the three resolution checks so both ambiguous checks precede the none check
+    - [x] Run `bun test`; confirm F5 test passes
+    - [x] Commit: `fix(commands): Check ambiguous resolution before none in runPath`
 
-- [ ] Task: Fix F6 — Escape LIKE metacharacters in `resolveNode` (`resolve.ts`)
+- [~] Task: Fix F6 — Escape LIKE metacharacters in `resolveNode` (`resolve.ts`)
     - [ ] Before building the LIKE fragment, escape `%` → `\%` and `_` → `\_` in the lowercased name
     - [ ] Append `ESCAPE '\'` to the LIKE clause in the prepared statement
     - [ ] Apply the same escaping to the `runFiles` pattern parameter in `commands.ts:276`

@@ -273,8 +273,8 @@ export function runStats(db: Database): string {
 export function runFiles(db: Database, pattern?: string): string {
   const root = getProjectRoot(db);
 
-  const whereClause = pattern ? "WHERE file_path LIKE ?" : "";
-  const params = pattern ? [`%${pattern}%`] : [];
+  const whereClause = pattern ? "WHERE file_path LIKE ? ESCAPE '\\'" : "";
+  const params = pattern ? [`%${pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`] : [];
 
   const rows = db.prepare(`
     SELECT
@@ -304,9 +304,9 @@ export function runFiles(db: Database, pattern?: string): string {
     SELECT id, name, file_path
     FROM nodes
     WHERE type = 'file'
-    ${pattern ? "AND file_path LIKE ?" : ""}
+    ${pattern ? "AND file_path LIKE ? ESCAPE '\\'" : ""}
     ORDER BY file_path
-  `).all(...(pattern ? [`%${pattern}%`] : [])) as Array<{ id: string; name: string; file_path: string }>;
+  `).all(...(pattern ? [`%${pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`] : [])) as Array<{ id: string; name: string; file_path: string }>;
 
   const columns = ["name", "path", "functions", "classes", "interfaces", "type_aliases"];
   const data = fileRows.map((f) => {

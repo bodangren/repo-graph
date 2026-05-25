@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T03:49:59.912Z",
+  "generated_at": "2026-05-25T04:18:06.957Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -146,7 +146,7 @@
         "type": "file",
         "path": "commands.test.ts",
         "extension": "ts",
-        "size": 9887
+        "size": 15151
       },
       {
         "type": "file",
@@ -164,7 +164,7 @@
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 4556
+        "size": 5020
       },
       {
         "type": "file",
@@ -266,19 +266,19 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 6726
+        "size": 9465
       },
       {
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 11088
+        "size": 22154
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 11508
+        "size": 12985
       },
       {
         "type": "file",
@@ -296,7 +296,7 @@
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 2997
+        "size": 4699
       },
       {
         "type": "file",
@@ -314,7 +314,7 @@
         "type": "file",
         "path": "contract.test.ts",
         "extension": "ts",
-        "size": 1230
+        "size": 1331
       },
       {
         "type": "file",
@@ -398,7 +398,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 13026
+            "size": 14818
           },
           {
             "type": "file",
@@ -510,7 +510,7 @@
                 "type": "file",
                 "path": "tracks/bugfix_20260525/metadata.json",
                 "extension": "json",
-                "size": 334
+                "size": 638
               },
               {
                 "type": "file",

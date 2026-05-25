@@ -42,9 +42,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { subcommand: "search", args: { dbPath: args[1], keyword: args[2] } };
     }
     case "deps": {
-      if (args.length < 3) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream]");
       const downstream = args.includes("--downstream");
       const filtered = args.filter((a) => a !== "--downstream");
+      if (filtered.length < 3) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream]");
       return { subcommand: "deps", args: { dbPath: filtered[1], name: filtered[2], downstream } };
     }
     case "callers": {

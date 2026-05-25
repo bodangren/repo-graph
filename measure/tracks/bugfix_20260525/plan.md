@@ -71,7 +71,7 @@ Run `bun test` after each task group to confirm the new tests fail.
 
 Fix each bug. Run the full test suite after each fix. Commit individually.
 
-- [ ] Task: Fix F1 — `deps --downstream` no-name guard (`cli.ts`)
+- [~] Task: Fix F1 — `deps --downstream` no-name guard (`cli.ts`)
     - [ ] In the `deps` branch of `parseArgs`, after filtering flag tokens, check `filtered.length < 3` and throw usage error if the name is absent
     - [ ] Run `bun test`; confirm F1 test passes and all others still pass
     - [ ] Commit: `fix(cli): Guard deps --downstream when node name is missing`

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-24T13:16:05.152Z",
+  "generated_at": "2026-05-25T03:49:59.912Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -146,7 +146,7 @@
         "type": "file",
         "path": "commands.test.ts",
         "extension": "ts",
-        "size": 6051
+        "size": 9887
       },
       {
         "type": "file",
@@ -164,7 +164,7 @@
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 4462
+        "size": 4556
       },
       {
         "type": "file",
@@ -182,7 +182,7 @@
         "type": "file",
         "path": "meta.ts",
         "extension": "ts",
-        "size": 517
+        "size": 669
       },
       {
         "type": "file",
@@ -218,13 +218,13 @@
         "type": "file",
         "path": "resolve.test.ts",
         "extension": "ts",
-        "size": 1760
+        "size": 3066
       },
       {
         "type": "file",
         "path": "resolve.ts",
         "extension": "ts",
-        "size": 2069
+        "size": 2150
       },
       {
         "type": "file",
@@ -266,19 +266,19 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 6401
+        "size": 6726
       },
       {
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 11906
+        "size": 11088
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 11447
+        "size": 11508
       },
       {
         "type": "file",
@@ -290,13 +290,13 @@
         "type": "file",
         "path": "meta.test.ts",
         "extension": "ts",
-        "size": 1044
+        "size": 1558
       },
       {
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 2990
+        "size": 2997
       },
       {
         "type": "file",
@@ -398,7 +398,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 9219
+            "size": 13026
           },
           {
             "type": "file",
@@ -424,7 +424,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 649
+        "size": 972
       },
       {
         "type": "file",
@@ -463,6 +463,66 @@
                 "path": "tracks/buildgraph_20260524/index.md",
                 "extension": "md",
                 "size": 131
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/llmux_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/llmux_20260525/plan.md",
+                "extension": "md",
+                "size": 9138
+              },
+              {
+                "type": "file",
+                "path": "tracks/llmux_20260525/metadata.json",
+                "extension": "json",
+                "size": 361
+              },
+              {
+                "type": "file",
+                "path": "tracks/llmux_20260525/spec.md",
+                "extension": "md",
+                "size": 8083
+              },
+              {
+                "type": "file",
+                "path": "tracks/llmux_20260525/index.md",
+                "extension": "md",
+                "size": 126
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/bugfix_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/bugfix_20260525/plan.md",
+                "extension": "md",
+                "size": 8093
+              },
+              {
+                "type": "file",
+                "path": "tracks/bugfix_20260525/metadata.json",
+                "extension": "json",
+                "size": 334
+              },
+              {
+                "type": "file",
+                "path": "tracks/bugfix_20260525/spec.md",
+                "extension": "md",
+                "size": 7329
+              },
+              {
+                "type": "file",
+                "path": "tracks/bugfix_20260525/index.md",
+                "extension": "md",
+                "size": 127
               }
             ]
           },
@@ -510,7 +570,7 @@
                 "type": "file",
                 "path": "tracks/convenience_20260524/metadata.json",
                 "extension": "json",
-                "size": 362
+                "size": 365
               },
               {
                 "type": "file",

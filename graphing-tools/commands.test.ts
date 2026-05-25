@@ -111,9 +111,11 @@ describe("convenience commands", () => {
         ('file:/project/src/d.ts', 'file', 'd.ts', '/project/src/d.ts')`);
       db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
         ('file:/project/src/c.ts', 'file:/project/src/d.ts', 'imports', 'forward', 1)`);
-      const { output, exitCode } = runDeps(db, "a.ts", true, { depth: 2 });
+      // upstream from a.ts (who depends on a.ts): b.ts (depth 1), c.ts (depth 2)
+      const { output, exitCode } = runDeps(db, "a.ts", false, { depth: 2 });
       expect(exitCode).toBe(ExitCode.Success);
-      expect(output).toContain("d.ts");
+      expect(output).toContain("b.ts");
+      expect(output).toContain("c.ts");
     });
   });
 

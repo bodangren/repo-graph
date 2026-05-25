@@ -30,6 +30,7 @@ export function runDeps(
   const resolved = resolveNode(db, name);
 
   if (resolved.kind === "none") {
+    if (opts?.json) return { output: JSON.stringify({ results: [] }), exitCode: ExitCode.NotFound };
     return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
@@ -39,36 +40,114 @@ export function runDeps(
   }
 
   const node = resolved.node;
+  const depth = opts?.depth ?? 1;
+  const limit = opts?.limit ?? 0;
 
-  let rows: Array<{ type: string; name: string; file_path: string; edge_type: string }>;
+  let rows: Array<{ type: string; name: string; file_path: string; edge_type: string; depth: number }>;
 
-  if (downstream) {
-    // Who does this node depend on? (outgoing edges)
-    rows = db.prepare(`
-      SELECT n.type, n.name, n.file_path, e.type AS edge_type
-      FROM edges e
-      JOIN nodes n ON n.id = e.target
-      WHERE e.source = ?
-      ORDER BY n.type, n.name
-    `).all(node.id) as typeof rows;
+  if (depth > 1) {
+    const sql = downstream
+      ? `
+        WITH RECURSIVE traverse(id, type, name, file_path, edge_type, hops, path) AS (
+          SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, 1,
+                 e.source || ' → ' || e.target
+          FROM edges e
+          JOIN nodes n ON n.id = e.target
+          WHERE e.source = ?
+
+          UNION ALL
+
+          SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, t.hops + 1,
+                 t.path || ' → ' || e.target
+          FROM edges e
+          JOIN nodes n ON n.id = e.target
+          JOIN traverse t ON e.source = t.id
+          WHERE t.hops < ?
+            AND INSTR(' → ' || t.path || ' → ', ' → ' || e.target || ' → ') = 0
+        )
+        SELECT id, type, name, file_path, edge_type, hops AS depth
+        FROM traverse
+        ORDER BY hops, name
+      `
+      : `
+        WITH RECURSIVE traverse(id, type, name, file_path, edge_type, hops, path) AS (
+          SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, 1,
+                 e.source || ' → ' || e.target
+          FROM edges e
+          JOIN nodes n ON n.id = e.source
+          WHERE e.target = ?
+
+          UNION ALL
+
+          SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, t.hops + 1,
+                 t.path || ' → ' || e.target
+          FROM edges e
+          JOIN nodes n ON n.id = e.source
+          JOIN traverse t ON e.target = t.id
+          WHERE t.hops < ?
+            AND INSTR(' → ' || t.path || ' → ', ' → ' || e.source || ' → ') = 0
+        )
+        SELECT id, type, name, file_path, edge_type, hops AS depth
+        FROM traverse
+        ORDER BY hops, name
+      `;
+    rows = db.prepare(sql).all(node.id, depth) as typeof rows;
   } else {
-    // Who depends on this node? (incoming edges)
-    rows = db.prepare(`
-      SELECT n.type, n.name, n.file_path, e.type AS edge_type
-      FROM edges e
-      JOIN nodes n ON n.id = e.source
-      WHERE e.target = ?
-      ORDER BY n.type, n.name
-    `).all(node.id) as typeof rows;
+    const sql = downstream
+      ? `
+        SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
+        FROM edges e
+        JOIN nodes n ON n.id = e.target
+        WHERE e.source = ?
+        ORDER BY n.type, n.name
+      `
+      : `
+        SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
+        FROM edges e
+        JOIN nodes n ON n.id = e.source
+        WHERE e.target = ?
+        ORDER BY n.type, n.name
+      `;
+    rows = db.prepare(sql).all(node.id) as typeof rows;
   }
 
   if (rows.length === 0) {
+    if (opts?.json) return { output: JSON.stringify({ results: [] }), exitCode: ExitCode.NotFound };
     return { output: "(no results)", exitCode: ExitCode.NotFound };
   }
 
+  const total = rows.length;
+  const truncated = limit > 0 && rows.length > limit;
+  if (truncated) rows = rows.slice(0, limit);
+
+  if (opts?.json) {
+    const payload: Record<string, unknown> = {
+      node: { id: node.id, type: node.type, name: node.name, file_path: node.filePath },
+      results: rows.map((r) => ({
+        type: r.type,
+        name: r.name,
+        file_path: rel(r.file_path, root),
+        edge_type: r.edge_type,
+        depth: r.depth,
+      })),
+    };
+    if (truncated) {
+      payload.truncated = true;
+      payload.total = total;
+    }
+    return { output: JSON.stringify(payload), exitCode: ExitCode.Success };
+  }
+
   const columns = ["type", "name", "file_path", "edge_type"];
-  const data = rows.map((r) => [r.type, r.name, rel(r.file_path, root), r.edge_type]);
-  return { output: formatTable(columns, data), exitCode: 0 };
+  if (depth > 1) columns.push("depth");
+  const data = rows.map((r) => {
+    const row = [r.type, r.name, rel(r.file_path, root), r.edge_type];
+    if (depth > 1) row.push(String(r.depth));
+    return row;
+  });
+  let output = formatTable(columns, data);
+  if (truncated) output += `\n… and ${total - limit} more (use --limit to raise cap, default 100)`;
+  return { output, exitCode: ExitCode.Success };
 }
 
 // ── callers ────────────────────────────────────────────────────────────────
@@ -82,6 +161,7 @@ export function runCallers(
   const resolved = resolveNode(db, name);
 
   if (resolved.kind === "none") {
+    if (opts?.json) return { output: JSON.stringify({ results: [] }), exitCode: ExitCode.NotFound };
     return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
@@ -91,24 +171,84 @@ export function runCallers(
   }
 
   const node = resolved.node;
+  const depth = opts?.depth ?? 1;
+  const limit = opts?.limit ?? 0;
 
-  // Find edges where target is this node and source is a function or file
-  const rows = db.prepare(`
-    SELECT n.type, n.name, n.file_path, e.type AS edge_type
-    FROM edges e
-    JOIN nodes n ON n.id = e.source
-    WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
-      AND e.type IN ('calls', 'imports', 'depends_on')
-    ORDER BY n.type, n.name
-  `).all(node.id) as Array<{ type: string; name: string; file_path: string; edge_type: string }>;
+  let rows: Array<{ type: string; name: string; file_path: string; edge_type: string; depth: number }>;
+
+  if (depth > 1) {
+    rows = db.prepare(`
+      WITH RECURSIVE traverse(id, type, name, file_path, edge_type, hops, path) AS (
+        SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, 1,
+               e.source || ' → ' || e.target
+        FROM edges e
+        JOIN nodes n ON n.id = e.source
+        WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
+          AND e.type IN ('calls', 'imports', 'depends_on')
+
+        UNION ALL
+
+        SELECT n.id, n.type, n.name, n.file_path, e.type AS edge_type, t.hops + 1,
+               t.path || ' → ' || e.source
+        FROM edges e
+        JOIN nodes n ON n.id = e.source
+        JOIN traverse t ON e.target = t.id
+        WHERE t.hops < ?
+          AND INSTR(' → ' || t.path || ' → ', ' → ' || e.source || ' → ') = 0
+          AND e.type IN ('calls', 'imports', 'depends_on')
+      )
+      SELECT id, type, name, file_path, edge_type, hops AS depth
+      FROM traverse
+      ORDER BY hops, name
+    `).all(node.id, depth) as typeof rows;
+  } else {
+    rows = db.prepare(`
+      SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
+      FROM edges e
+      JOIN nodes n ON n.id = e.source
+      WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
+        AND e.type IN ('calls', 'imports', 'depends_on')
+      ORDER BY n.type, n.name
+    `).all(node.id) as typeof rows;
+  }
 
   if (rows.length === 0) {
+    if (opts?.json) return { output: JSON.stringify({ results: [] }), exitCode: ExitCode.NotFound };
     return { output: "(no results)", exitCode: ExitCode.NotFound };
   }
 
+  const total = rows.length;
+  const truncated = limit > 0 && rows.length > limit;
+  if (truncated) rows = rows.slice(0, limit);
+
+  if (opts?.json) {
+    const payload: Record<string, unknown> = {
+      node: { id: node.id, type: node.type, name: node.name, file_path: node.filePath },
+      results: rows.map((r) => ({
+        type: r.type,
+        name: r.name,
+        file_path: rel(r.file_path, root),
+        edge_type: r.edge_type,
+        depth: r.depth,
+      })),
+    };
+    if (truncated) {
+      payload.truncated = true;
+      payload.total = total;
+    }
+    return { output: JSON.stringify(payload), exitCode: ExitCode.Success };
+  }
+
   const columns = ["type", "name", "file_path", "edge_type"];
-  const data = rows.map((r) => [r.type, r.name, rel(r.file_path, root), r.edge_type]);
-  return { output: formatTable(columns, data), exitCode: 0 };
+  if (depth > 1) columns.push("depth");
+  const data = rows.map((r) => {
+    const row = [r.type, r.name, rel(r.file_path, root), r.edge_type];
+    if (depth > 1) row.push(String(r.depth));
+    return row;
+  });
+  let output = formatTable(columns, data);
+  if (truncated) output += `\n… and ${total - limit} more (use --limit to raise cap, default 100)`;
+  return { output, exitCode: ExitCode.Success };
 }
 
 // ── path ───────────────────────────────────────────────────────────────────
@@ -136,6 +276,7 @@ export function runPath(
   }
 
   if (fromResolved.kind === "none" || toResolved.kind === "none") {
+    if (opts?.json) return { output: JSON.stringify({ found: false }), exitCode: ExitCode.NotFound };
     return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
@@ -165,6 +306,7 @@ export function runPath(
   `).all(fromNode.id, toNode.id) as Array<{ path: string; hops: number }>;
 
   if (rows.length === 0) {
+    if (opts?.json) return { output: JSON.stringify({ found: false }), exitCode: ExitCode.NotFound };
     return { output: "(no path found)", exitCode: ExitCode.NotFound };
   }
 
@@ -184,7 +326,24 @@ export function runPath(
   }
 
   const readablePath = ids.map((id) => idToName.get(id) ?? id).join(" → ");
-  return { output: readablePath, exitCode: 0 };
+
+  if (opts?.json) {
+    const pathObjects = ids.map((id) => {
+      const row = db.prepare("SELECT id, type, name, file_path FROM nodes WHERE id = ?").get(id) as
+        | { id: string; type: string; name: string; file_path: string }
+        | undefined;
+      if (row) {
+        return { id: row.id, type: row.type, name: row.name, file_path: rel(row.file_path, root) };
+      }
+      return { id, type: "unknown", name: id, file_path: "" };
+    });
+    return {
+      output: JSON.stringify({ found: true, hops: rows[0].hops, path: pathObjects }),
+      exitCode: ExitCode.Success,
+    };
+  }
+
+  return { output: readablePath, exitCode: ExitCode.Success };
 }
 
 // ── stats ──────────────────────────────────────────────────────────────────
@@ -225,10 +384,20 @@ export function runStats(db: Database, opts?: { json?: boolean }): string {
 
   const pkgCounts = new Map<string, number>();
   for (const { file_path } of packages) {
-    const rel = root ? toRelativePath(file_path, root) : file_path;
-    const parts = rel.split("/");
+    const relPath = root ? toRelativePath(file_path, root) : file_path;
+    const parts = relPath.split("/");
     const pkg = parts[0] === "." ? (parts[1] ?? "root") : (parts[0] ?? "root");
     pkgCounts.set(pkg, (pkgCounts.get(pkg) ?? 0) + 1);
+  }
+
+  if (opts?.json) {
+    return JSON.stringify({
+      totals: { nodes: totalNodes, edges: totalEdges, files: totalFiles },
+      by_type: byType,
+      top_imported: topImported,
+      largest_files: largestFiles.map((r) => ({ file_path: rel(r.file_path, root), entities: r.c })),
+      packages: Object.fromEntries(pkgCounts),
+    });
   }
 
   const lines: string[] = [];
@@ -281,7 +450,91 @@ export function runInspect(
   name: string,
   opts?: { json?: boolean }
 ): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
-  return { output: "(no matches)", exitCode: ExitCode.NotFound };
+  const root = getProjectRoot(db);
+  const resolved = resolveNode(db, name);
+
+  if (resolved.kind === "none") {
+    if (opts?.json) return { output: JSON.stringify({ node: null }), exitCode: ExitCode.NotFound };
+    return { output: "(no matches)", exitCode: ExitCode.NotFound };
+  }
+
+  if (resolved.kind === "ambiguous") {
+    printDisambiguation(resolved.matches, root);
+    return { output: "", exitCode: ExitCode.Ambiguous };
+  }
+
+  const node = resolved.node;
+  const meta = db.prepare("SELECT line_start, line_end, summary, tags FROM nodes WHERE id = ?").get(node.id) as
+    | { line_start: number | null; line_end: number | null; summary: string | null; tags: string | null }
+    | undefined;
+
+  const outgoing = db.prepare(`
+    SELECT e.type, e.target, n.type AS target_type, n.name AS target_name
+    FROM edges e
+    JOIN nodes n ON n.id = e.target
+    WHERE e.source = ?
+    ORDER BY e.type, n.name
+  `).all(node.id) as Array<{ type: string; target: string; target_type: string; target_name: string }>;
+
+  const incoming = db.prepare(`
+    SELECT e.type, e.source, n.type AS source_type, n.name AS source_name
+    FROM edges e
+    JOIN nodes n ON n.id = e.source
+    WHERE e.target = ?
+    ORDER BY e.type, n.name
+  `).all(node.id) as Array<{ type: string; source: string; source_type: string; source_name: string }>;
+
+  if (opts?.json) {
+    return {
+      output: JSON.stringify({
+        node: {
+          id: node.id,
+          type: node.type,
+          name: node.name,
+          file_path: rel(node.filePath, root),
+          line_start: meta?.line_start ?? undefined,
+          line_end: meta?.line_end ?? undefined,
+          summary: meta?.summary ?? undefined,
+          tags: meta?.tags ? JSON.parse(meta.tags) : undefined,
+        },
+        outgoing: outgoing.map((r) => ({
+          type: r.type,
+          target_id: r.target,
+          target_name: r.target_name,
+          target_type: r.target_type,
+        })),
+        incoming: incoming.map((r) => ({
+          type: r.type,
+          source_id: r.source,
+          source_name: r.source_name,
+          source_type: r.source_type,
+        })),
+      }),
+      exitCode: ExitCode.Success,
+    };
+  }
+
+  const lines: string[] = [];
+  const location = meta?.line_start ? ` (${rel(node.filePath, root)}:${meta.line_start}${meta.line_end ? `–${meta.line_end}` : ""})` : "";
+  lines.push(`${node.type}:${node.name}${location}`);
+  if (meta?.tags) lines.push(`Tags: ${meta.tags}`);
+  if (meta?.summary) lines.push(`Summary: ${meta.summary}`);
+  lines.push("");
+
+  lines.push(`Outgoing edges (${outgoing.length}):`);
+  for (const e of outgoing) {
+    lines.push(`  ${e.type} → ${e.target_type}:${e.target_name}`);
+  }
+  if (outgoing.length === 0) lines.push("  (none)");
+  lines.push("");
+
+  lines.push(`Incoming edges (${incoming.length}):`);
+  for (const e of incoming) {
+    lines.push(`  ${e.type} ← ${e.source_type}:${e.source_name}`);
+  }
+  if (incoming.length === 0) lines.push("  (none)");
+
+  return { output: lines.join("\n"), exitCode: ExitCode.Success };
 }
 
 // ── files ──────────────────────────────────────────────────────────────────
@@ -291,6 +544,9 @@ export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean
 
   const whereClause = pattern ? "AND n.file_path LIKE ? ESCAPE '\\'" : "";
   const params = pattern ? [`%${pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`] : [];
+
+  const limit = opts?.limit ?? 0;
+  const limitClause = limit > 0 ? `LIMIT ${limit + 1}` : "";
 
   const rows = db.prepare(`
     SELECT n.name, n.file_path,
@@ -304,6 +560,7 @@ export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean
     ${whereClause}
     GROUP BY n.file_path
     ORDER BY n.file_path
+    ${limitClause}
   `).all(...params) as Array<{
     name: string;
     file_path: string;
@@ -313,8 +570,27 @@ export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean
     type_aliases: number;
   }>;
 
+  const truncated = limit > 0 && rows.length > limit;
+  const total = rows.length;
+  const displayRows = truncated ? rows.slice(0, limit) : rows;
+
+  if (opts?.json) {
+    const payload = displayRows.map((r) => ({
+      name: r.name,
+      path: rel(r.file_path, root),
+      functions: r.functions ?? 0,
+      classes: r.classes ?? 0,
+      interfaces: r.interfaces ?? 0,
+      type_aliases: r.type_aliases ?? 0,
+    }));
+    if (truncated) {
+      return JSON.stringify({ results: payload, truncated: true, total });
+    }
+    return JSON.stringify(payload);
+  }
+
   const columns = ["name", "path", "functions", "classes", "interfaces", "type_aliases"];
-  const data = rows.map((r) => [
+  const data = displayRows.map((r) => [
     r.name,
     rel(r.file_path, root),
     r.functions ?? 0,
@@ -323,5 +599,7 @@ export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean
     r.type_aliases ?? 0,
   ]);
 
-  return formatTable(columns, data);
+  let output = formatTable(columns, data);
+  if (truncated) output += `\n… and ${total - limit} more (use --limit to raise cap, default 100)`;
+  return output;
 }

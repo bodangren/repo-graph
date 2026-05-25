@@ -110,20 +110,20 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F7 tests pass
     - [x] Commit: `fix(cli): Print version string for --version / -v flag`
 
-- [~] Task: Fix F8+F9 — Single-query `runFiles` (`commands.ts`)
-    - [ ] Delete the dead `rows` GROUP BY query (lines 278–297)
-    - [ ] Replace the `fileRows` query + N+1 `.map()` loop with a single LEFT JOIN + GROUP BY query (see spec for SQL)
-    - [ ] Return `formatTable` directly from the result of the new query
-    - [ ] Run `bun test`; confirm all `runFiles` tests pass
-    - [ ] Commit: `fix(commands): Replace dead query and N+1 loop in runFiles with single LEFT JOIN`
+- [x] Task: Fix F8+F9 — Single-query `runFiles` (`commands.ts`) [eaeb659]
+    - [x] Delete the dead `rows` GROUP BY query (lines 278–297)
+    - [x] Replace the `fileRows` query + N+1 `.map()` loop with a single LEFT JOIN + GROUP BY query (see spec for SQL)
+    - [x] Return `formatTable` directly from the result of the new query
+    - [x] Run `bun test`; confirm all `runFiles` tests pass
+    - [x] Commit: `fix(commands): Replace dead query and N+1 loop in runFiles with single LEFT JOIN`
 
-- [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ---
 
 ## Phase 4 — Coverage, Generated Docs & Doctor
 
-- [ ] Task: Verify coverage ≥ 80%
+- [~] Task: Verify coverage ≥ 80%
     - [ ] `bun test --coverage`
     - [ ] Review report; all modified modules (`cli.ts`, `meta.ts`, `commands.ts`, `resolve.ts`) must be at or above threshold
 

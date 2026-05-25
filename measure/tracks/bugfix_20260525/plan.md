@@ -123,21 +123,21 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
 
 ## Phase 4 — Coverage, Generated Docs & Doctor
 
-- [~] Task: Verify coverage ≥ 80%
-    - [ ] `bun test --coverage`
-    - [ ] Review report; all modified modules (`cli.ts`, `meta.ts`, `commands.ts`, `resolve.ts`) must be at or above threshold
+- [x] Task: Verify coverage ≥ 80%
+    - [x] `bun test --coverage`
+    - [x] Review report; all modified modules (`cli.ts`, `meta.ts`, `commands.ts`, `resolve.ts`) must be at or above threshold
 
-- [ ] Task: Run generate script and commit if changed
-    - [ ] `./measure/generate.sh`
-    - [ ] `git diff --exit-code measure/generated/` — commit any updated facts
+- [x] Task: Run generate script and commit if changed
+    - [x] `./measure/generate.sh`
+    - [x] `git diff --exit-code measure/generated/` — commit any updated facts
 
-- [ ] Task: Run doctor script
-    - [ ] `./measure/doctor.sh`
-    - [ ] Fix any architectural violations before finalising
+- [x] Task: Run doctor script
+    - [x] `./measure/doctor.sh`
+    - [x] Fix any architectural violations before finalising
 
-- [ ] Task: Rebuild executable and install to `~/.local/bin/`
-    - [ ] `bun run build` — produces `./bin/build-graph`
-    - [ ] `cp ./bin/build-graph ~/.local/bin/build-graph`
-    - [ ] `build-graph --version` — confirm version string prints correctly (end-to-end smoke test of F7)
+- [x] Task: Rebuild executable and install to `~/.local/bin/`
+    - [x] `bun run build` — produces `./bin/build-graph`
+    - [x] `cp ./bin/build-graph ~/.local/bin/build-graph`
+    - [x] `build-graph --version` — confirm version string prints correctly (end-to-end smoke test of F7)
 
-- [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

@@ -1,11 +1,11 @@
 {
   "track_id": "bugfix_20260525",
   "type": "bug",
-  "status": "new",
+  "status": "completed",
   "created_at": "2026-05-25T00:00:00Z",
-  "updated_at": "2026-05-25T00:00:00Z",
+  "updated_at": "2026-05-25T11:26:02Z",
   "description": "Remediate 9 code-review findings from convenience query commands (convenience_20260524)",
   "estimated_tasks": 28,
-  "actual_tasks": null,
-  "deviation_notes": ""
+  "actual_tasks": 26,
+  "deviation_notes": "Contract.ts required adding 'version' to Subcommand union and ParsedArgs (Phase 1). Added extra resolve.ts coverage test to push coverage above 80% threshold. runCallers test assertion refined from 'not.toContain(\"file\")' to 'not.toContain(\"contains\")' because column headers contain 'file_path'."
 }

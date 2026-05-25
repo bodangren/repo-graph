@@ -22,3 +22,8 @@ This file tracks all major tracks for the project.
 
 - [x] **Track: LLM UX improvements — --json, exit code taxonomy, inspect, --limit, --depth**
   *Link: [./tracks/llmux_20260525/](./tracks/llmux_20260525/)*
+
+---
+
+- [ ] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges**
+  *Link: [./tracks/scanner_20260525/](./tracks/scanner_20260525/)*

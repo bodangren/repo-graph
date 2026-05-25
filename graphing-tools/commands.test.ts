@@ -124,7 +124,8 @@ describe("convenience commands", () => {
 
     it("returns ambiguous for source when target is missing", () => {
       db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
-        ('function:/project/src/c.ts:parse', 'function', 'parse', '/project/src/c.ts')`);
+        ('function:/project/src/c.ts:parse', 'function', 'parse', '/project/src/c.ts'),
+        ('function:/project/src/a.ts:parse', 'function', 'parse', '/project/src/a.ts')`);
       const { output, exitCode } = runPath(db, "parse", "missingNode");
       expect(exitCode).toBe(2);
       expect(output).toBe("");

@@ -86,12 +86,12 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F3 test passes
     - [x] Commit: `fix(commands): Use delimiter-bounded INSTR in path CTE cycle guard`
 
-- [~] Task: Fix F4 — Exclude `contains` edges from `runCallers` (`commands.ts`)
-    - [ ] Add `AND e.type IN ('calls', 'imports', 'depends_on')` to the `runCallers` query's WHERE clause
-    - [ ] Run `bun test`; confirm F4 test passes
-    - [ ] Commit: `fix(commands): Exclude contains edges from runCallers results`
+- [x] Task: Fix F4 — Exclude `contains` edges from `runCallers` (`commands.ts`) [e4cf4e2]
+    - [x] Add `AND e.type IN ('calls', 'imports', 'depends_on')` to the `runCallers` query's WHERE clause
+    - [x] Run `bun test`; confirm F4 test passes
+    - [x] Commit: `fix(commands): Exclude contains edges from runCallers results`
 
-- [ ] Task: Fix F5 — Ambiguous-before-none guard order in `runPath` (`commands.ts`)
+- [~] Task: Fix F5 — Ambiguous-before-none guard order in `runPath` (`commands.ts`)
     - [ ] Reorder the three resolution checks so both ambiguous checks precede the none check
     - [ ] Run `bun test`; confirm F5 test passes
     - [ ] Commit: `fix(commands): Check ambiguous resolution before none in runPath`

@@ -117,10 +117,6 @@ export function runPath(
   const fromResolved = resolveNode(db, fromName);
   const toResolved = resolveNode(db, toName);
 
-  if (fromResolved.kind === "none" || toResolved.kind === "none") {
-    return { output: "(no matches)", exitCode: 0 };
-  }
-
   if (fromResolved.kind === "ambiguous") {
     console.error(`Ambiguous source '${fromName}':`);
     printDisambiguation(fromResolved.matches, root);
@@ -131,6 +127,10 @@ export function runPath(
     console.error(`Ambiguous target '${toName}':`);
     printDisambiguation(toResolved.matches, root);
     return { output: "", exitCode: 2 };
+  }
+
+  if (fromResolved.kind === "none" || toResolved.kind === "none") {
+    return { output: "(no matches)", exitCode: 0 };
   }
 
   const fromNode = fromResolved.node;

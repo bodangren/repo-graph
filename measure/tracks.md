@@ -20,5 +20,5 @@ This file tracks all major tracks for the project.
 
 ---
 
-- [ ] **Track: LLM UX improvements — --json, exit code taxonomy, inspect, --limit, --depth**
+- [~] **Track: LLM UX improvements — --json, exit code taxonomy, inspect, --limit, --depth**
   *Link: [./tracks/llmux_20260525/](./tracks/llmux_20260525/)*

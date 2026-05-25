@@ -273,21 +273,21 @@ export function runStats(db: Database): string {
 export function runFiles(db: Database, pattern?: string): string {
   const root = getProjectRoot(db);
 
-  const whereClause = pattern ? "WHERE file_path LIKE ? ESCAPE '\\'" : "";
+  const whereClause = pattern ? "AND n.file_path LIKE ? ESCAPE '\\'" : "";
   const params = pattern ? [`%${pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`] : [];
 
   const rows = db.prepare(`
-    SELECT
-      name,
-      file_path,
-      SUM(CASE WHEN type = 'function' THEN 1 ELSE 0 END) AS functions,
-      SUM(CASE WHEN type = 'class' THEN 1 ELSE 0 END) AS classes,
-      SUM(CASE WHEN type = 'interface' THEN 1 ELSE 0 END) AS interfaces,
-      SUM(CASE WHEN type = 'type_alias' THEN 1 ELSE 0 END) AS type_aliases
-    FROM nodes
+    SELECT n.name, n.file_path,
+           SUM(CASE WHEN n2.type = 'function'   THEN 1 ELSE 0 END) AS functions,
+           SUM(CASE WHEN n2.type = 'class'      THEN 1 ELSE 0 END) AS classes,
+           SUM(CASE WHEN n2.type = 'interface'  THEN 1 ELSE 0 END) AS interfaces,
+           SUM(CASE WHEN n2.type = 'type_alias' THEN 1 ELSE 0 END) AS type_aliases
+    FROM nodes n
+    LEFT JOIN nodes n2 ON n2.file_path = n.file_path AND n2.type != 'file'
+    WHERE n.type = 'file'
     ${whereClause}
-    GROUP BY file_path
-    ORDER BY file_path
+    GROUP BY n.file_path
+    ORDER BY n.file_path
   `).all(...params) as Array<{
     name: string;
     file_path: string;
@@ -297,43 +297,15 @@ export function runFiles(db: Database, pattern?: string): string {
     type_aliases: number;
   }>;
 
-  // Filter to only rows that are file nodes (they have the file name as name)
-  // Actually the GROUP BY approach groups by file_path, but name will be from one row.
-  // Better: query file nodes specifically
-  const fileRows = db.prepare(`
-    SELECT id, name, file_path
-    FROM nodes
-    WHERE type = 'file'
-    ${pattern ? "AND file_path LIKE ? ESCAPE '\\'" : ""}
-    ORDER BY file_path
-  `).all(...(pattern ? [`%${pattern.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`] : [])) as Array<{ id: string; name: string; file_path: string }>;
-
   const columns = ["name", "path", "functions", "classes", "interfaces", "type_aliases"];
-  const data = fileRows.map((f) => {
-    const counts = db.prepare(`
-      SELECT
-        SUM(CASE WHEN type = 'function' THEN 1 ELSE 0 END) AS functions,
-        SUM(CASE WHEN type = 'class' THEN 1 ELSE 0 END) AS classes,
-        SUM(CASE WHEN type = 'interface' THEN 1 ELSE 0 END) AS interfaces,
-        SUM(CASE WHEN type = 'type_alias' THEN 1 ELSE 0 END) AS type_aliases
-      FROM nodes
-      WHERE file_path = ? AND type != 'file'
-    `).get(f.file_path) as {
-      functions: number | null;
-      classes: number | null;
-      interfaces: number | null;
-      type_aliases: number | null;
-    };
-
-    return [
-      f.name,
-      rel(f.file_path, root),
-      counts.functions ?? 0,
-      counts.classes ?? 0,
-      counts.interfaces ?? 0,
-      counts.type_aliases ?? 0,
-    ];
-  });
+  const data = rows.map((r) => [
+    r.name,
+    rel(r.file_path, root),
+    r.functions ?? 0,
+    r.classes ?? 0,
+    r.interfaces ?? 0,
+    r.type_aliases ?? 0,
+  ]);
 
   return formatTable(columns, data);
 }

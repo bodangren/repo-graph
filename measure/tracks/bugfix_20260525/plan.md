@@ -103,14 +103,14 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F6 tests pass
     - [x] Commit: `fix(resolve): Escape SQL LIKE metacharacters in partial name search`
 
-- [~] Task: Fix F7 — `--version` prints version string (`cli.ts`, `build-graph.ts`)
-    - [ ] In `parseArgs`, route `--version`/`-v` to `{ subcommand: "version", args: {} }`
-    - [ ] Add `"version"` to the `Subcommand` union in `contract.ts` if needed
-    - [ ] In `main()`, handle case `"version"`: `console.log(VERSION); return ExitCode.Success`
-    - [ ] Run `bun test`; confirm F7 tests pass
-    - [ ] Commit: `fix(cli): Print version string for --version / -v flag`
+- [x] Task: Fix F7 — `--version` prints version string (`cli.ts`, `build-graph.ts`) [f87c795]
+    - [x] In `parseArgs`, route `--version`/`-v` to `{ subcommand: "version", args: {} }`
+    - [x] Add `"version"` to the `Subcommand` union in `contract.ts` if needed
+    - [x] In `main()`, handle case `"version"`: `console.log(VERSION); return ExitCode.Success`
+    - [x] Run `bun test`; confirm F7 tests pass
+    - [x] Commit: `fix(cli): Print version string for --version / -v flag`
 
-- [ ] Task: Fix F8+F9 — Single-query `runFiles` (`commands.ts`)
+- [~] Task: Fix F8+F9 — Single-query `runFiles` (`commands.ts`)
     - [ ] Delete the dead `rows` GROUP BY query (lines 278–297)
     - [ ] Replace the `fileRows` query + N+1 `.map()` loop with a single LEFT JOIN + GROUP BY query (see spec for SQL)
     - [ ] Return `formatTable` directly from the result of the new query

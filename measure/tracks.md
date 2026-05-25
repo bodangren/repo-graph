@@ -30,5 +30,5 @@ This file tracks all major tracks for the project.
 
 ---
 
-- [ ] **Track: Scanner data-quality fixes — resolve dangling edges, defineTable extraction, queries/mutates, cross-package imports, inspect unresolved**
+- [x] **Track: Scanner data-quality fixes — resolve dangling edges, defineTable extraction, queries/mutates, cross-package imports, inspect unresolved**
   *Link: [./tracks/scannerfix_20260525/](./tracks/scannerfix_20260525/)*

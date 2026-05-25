@@ -93,6 +93,7 @@ export function runCallers(db: Database, name: string): { output: string; exitCo
     FROM edges e
     JOIN nodes n ON n.id = e.source
     WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
+      AND e.type IN ('calls', 'imports', 'depends_on')
     ORDER BY n.type, n.name
   `).all(node.id) as Array<{ type: string; name: string; file_path: string; edge_type: string }>;
 

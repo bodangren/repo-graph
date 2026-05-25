@@ -81,12 +81,12 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F2 tests pass
     - [x] Commit: `fix(meta): Return undefined gracefully when meta table is absent`
 
-- [~] Task: Fix F3 — INSTR cycle-guard boundary matching (`commands.ts`)
-    - [ ] Replace `AND INSTR(p.path, e.target) = 0` with `AND INSTR(' → ' || p.path || ' → ', ' → ' || e.target || ' → ') = 0` in the `runPath` CTE
-    - [ ] Run `bun test`; confirm F3 test passes
-    - [ ] Commit: `fix(commands): Use delimiter-bounded INSTR in path CTE cycle guard`
+- [x] Task: Fix F3 — INSTR cycle-guard boundary matching (`commands.ts`) [0cd59d5]
+    - [x] Replace `AND INSTR(p.path, e.target) = 0` with `AND INSTR(' → ' || p.path || ' → ', ' → ' || e.target || ' → ') = 0` in the `runPath` CTE
+    - [x] Run `bun test`; confirm F3 test passes
+    - [x] Commit: `fix(commands): Use delimiter-bounded INSTR in path CTE cycle guard`
 
-- [ ] Task: Fix F4 — Exclude `contains` edges from `runCallers` (`commands.ts`)
+- [~] Task: Fix F4 — Exclude `contains` edges from `runCallers` (`commands.ts`)
     - [ ] Add `AND e.type IN ('calls', 'imports', 'depends_on')` to the `runCallers` query's WHERE clause
     - [ ] Run `bun test`; confirm F4 test passes
     - [ ] Commit: `fix(commands): Exclude contains edges from runCallers results`

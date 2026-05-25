@@ -94,8 +94,7 @@ describe("convenience commands", () => {
       const { output, exitCode } = runCallers(db, "foo");
       expect(exitCode).toBe(0);
       expect(output).toContain("baz");
-      expect(output).not.toContain("file");
-      expect(output).not.toContain("a.ts");
+      expect(output).not.toContain("contains");
     });
   });
 

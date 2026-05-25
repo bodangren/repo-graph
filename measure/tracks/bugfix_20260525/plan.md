@@ -135,4 +135,9 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [ ] `./measure/doctor.sh`
     - [ ] Fix any architectural violations before finalising
 
+- [ ] Task: Rebuild executable and install to `~/.local/bin/`
+    - [ ] `bun run build` — produces `./bin/build-graph`
+    - [ ] `cp ./bin/build-graph ~/.local/bin/build-graph`
+    - [ ] `build-graph --version` — confirm version string prints correctly (end-to-end smoke test of F7)
+
 - [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

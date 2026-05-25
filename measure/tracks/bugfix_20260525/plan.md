@@ -23,47 +23,47 @@ before writing tests.
 Write failing tests for all 9 findings before touching production code.
 Run `bun test` after each task group to confirm the new tests fail.
 
-- [~] Task: Test F1 — `deps --downstream` no-name guard (`cli.test.ts`)
-    - [ ] Add: `parseArgs(["deps", "graph.db", "--downstream"])` throws a usage error
-    - [ ] Run tests; confirm new test fails
+- [x] Task: Test F1 — `deps --downstream` no-name guard (`cli.test.ts`)
+    - [x] Add: `parseArgs(["deps", "graph.db", "--downstream"])` throws a usage error
+    - [x] Run tests; confirm new test fails
 
-- [ ] Task: Test F2 — Graceful `meta` table fallback (`meta.test.ts`, `commands.test.ts`)
-    - [ ] Add in `meta.test.ts`: `getMeta` on a DB with no `meta` table returns `undefined` (not throws)
-    - [ ] Add in `commands.test.ts`: `runDeps` / `runStats` on a no-meta DB completes without throwing; output uses absolute paths
+- [x] Task: Test F2 — Graceful `meta` table fallback (`meta.test.ts`, `commands.test.ts`)
+    - [x] Add in `meta.test.ts`: `getMeta` on a DB with no `meta` table returns `undefined` (not throws)
+    - [x] Add in `commands.test.ts`: `runDeps` / `runStats` on a no-meta DB completes without throwing; output uses absolute paths
 
-- [ ] Task: Test F3 — INSTR cycle-guard prefix collision (`commands.test.ts`)
-    - [ ] Seed DB with nodes whose IDs share a prefix (e.g. `function:/a.ts:get` and `function:/a.ts:getter`)
-    - [ ] Add: `runPath(db, "get", "getter")` finds a path when one exists (currently returns "(no path found)")
-    - [ ] Run tests; confirm new test fails
+- [x] Task: Test F3 — INSTR cycle-guard prefix collision (`commands.test.ts`)
+    - [x] Seed DB with nodes whose IDs share a prefix (e.g. `function:/a.ts:get` and `function:/a.ts:getter`)
+    - [x] Add: `runPath(db, "get", "getter")` finds a path when one exists (currently returns "(no path found)")
+    - [x] Run tests; confirm new test fails
 
-- [ ] Task: Test F4 — `runCallers` excludes `contains` edges (`commands.test.ts`)
-    - [ ] Seed DB with a function and its owning file connected by a `contains` edge
-    - [ ] Add: `runCallers` output does not include the owning file node
-    - [ ] Run tests; confirm new test fails
+- [x] Task: Test F4 — `runCallers` excludes `contains` edges (`commands.test.ts`)
+    - [x] Seed DB with a function and its owning file connected by a `contains` edge
+    - [x] Add: `runCallers` output does not include the owning file node
+    - [x] Run tests; confirm new test fails
 
-- [ ] Task: Test F5 — `runPath` ambiguous-from + missing-to (`commands.test.ts`)
-    - [ ] Seed DB with two nodes named `parse` (ambiguous) and no node named `missingNode`
-    - [ ] Add: `runPath(db, "parse", "missingNode")` returns `exitCode: 2` and non-empty disambiguation output
-    - [ ] Run tests; confirm new test fails
+- [x] Task: Test F5 — `runPath` ambiguous-from + missing-to (`commands.test.ts`)
+    - [x] Seed DB with two nodes named `parse` (ambiguous) and no node named `missingNode`
+    - [x] Add: `runPath(db, "parse", "missingNode")` returns `exitCode: 2` and non-empty disambiguation output
+    - [x] Run tests; confirm new test fails
 
-- [ ] Task: Test F6 — LIKE metachar escaping (`resolve.test.ts`)
-    - [ ] Seed DB with a single node named `parse_url`
-    - [ ] Add: `resolveNode(db, "parse_url")` returns `kind: "single"` (not ambiguous)
-    - [ ] Add: `resolveNode(db, "100%handler")` returns `kind: "single"` when exactly one node is named `100%handler`
-    - [ ] Run tests; confirm new tests fail
+- [x] Task: Test F6 — LIKE metachar escaping (`resolve.test.ts`)
+    - [x] Seed DB with a single node named `parse_url`
+    - [x] Add: `resolveNode(db, "parse_url")` returns `kind: "single"` (not ambiguous)
+    - [x] Add: `resolveNode(db, "100%handler")` returns `kind: "single"` when exactly one node is named `100%handler`
+    - [x] Run tests; confirm new tests fail
 
-- [ ] Task: Test F7 — `--version` subcommand (`cli.test.ts`)
-    - [ ] Add: `parseArgs(["--version"])` returns `{ subcommand: "version", args: {} }`
-    - [ ] Add: `parseArgs(["-v"])` returns `{ subcommand: "version", args: {} }`
-    - [ ] Run tests; confirm new tests fail
+- [x] Task: Test F7 — `--version` subcommand (`cli.test.ts`)
+    - [x] Add: `parseArgs(["--version"])` returns `{ subcommand: "version", args: {} }`
+    - [x] Add: `parseArgs(["-v"])` returns `{ subcommand: "version", args: {} }`
+    - [x] Run tests; confirm new tests fail
 
-- [ ] Task: Test F8+F9 — `runFiles` single-query correctness (`commands.test.ts`)
-    - [ ] Seed DB with two files, each owning a mix of functions, classes, and interfaces
-    - [ ] Add: `runFiles(db)` output contains correct entity counts for each file
-    - [ ] Verify test passes now (output is correct); the fix will change internal query count, not output
-    - [ ] Run tests; baseline established
+- [x] Task: Test F8+F9 — `runFiles` single-query correctness (`commands.test.ts`)
+    - [x] Seed DB with two files, each owning a mix of functions, classes, and interfaces
+    - [x] Add: `runFiles(db)` output contains correct entity counts for each file
+    - [x] Verify test passes now (output is correct); the fix will change internal query count, not output
+    - [x] Run tests; baseline established
 
-- [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ---
 

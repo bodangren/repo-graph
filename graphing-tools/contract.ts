@@ -171,7 +171,8 @@ export type NodeType =
   | "export"
   | "schema"
   | "field"
-  | "route";
+  | "route"
+  | "param";
 
 export interface GraphEdge {
   source: NodeId;

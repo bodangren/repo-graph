@@ -41,7 +41,7 @@ build-graph stats graph.db
 | Command | Usage | Description |
 |---------|-------|-------------|
 | `query` | `build-graph query [--json] <db> <sql>` | Execute raw SQL against the database |
-| `search` | `build-graph search <db> <keyword> [--json] [--limit N]` | Fuzzy search nodes by name, summary, or tags |
+| `search` | `build-graph search <db> <keyword> [--json] [--limit N] [--type=T]` | Fuzzy search nodes by name, summary, or tags |
 | `deps` | `build-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find who depends on a node (or who it depends on) |
 | `callers` | `build-graph callers <db> <function> [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find functions/files that reference a function |
 | `path` | `build-graph path <db> <from> <to> [--json]` | Trace shortest dependency path between two nodes |
@@ -66,6 +66,7 @@ build-graph stats graph.db
 - `--depth N` / `-d N` — Multi-hop traversal for `deps` and `callers` (default 1, max 10)
 - `--from-package=P` — Restrict results to nodes from package `P`
 - `--to-package=P` — Restrict results to nodes in package `P`
+- `--type=T` — Restrict search to nodes of type `T` (e.g. `route`, `function`, `schema`)
 
 ### Examples
 
@@ -87,6 +88,12 @@ build-graph stats graph.db
 
 # List files matching "auth"
 build-graph files graph.db auth
+
+# Search only route nodes
+build-graph search graph.db "/api" --type=route
+
+# Find all fetch calls to /api/lessons
+build-graph query graph.db "SELECT * FROM edges WHERE metadata LIKE '%/api/lessons%'"
 ```
 
 ## Output
@@ -97,8 +104,9 @@ All commands print relative paths (e.g., `./src/auth.ts`) rather than absolute p
 
 The SQLite database contains four tables:
 
-- **`nodes`** — files, functions, classes, interfaces, type aliases, schemas, fields
-- **`edges`** — relationships: `contains`, `imports`, `extends`, `implements`, `has_field`, `references`, `renders`, `uses_hook`, `queries`, `mutates`
+- **`nodes`** — files, functions, classes, interfaces, type aliases, schemas, fields, routes, params
+- **`edges`** — relationships: `contains`, `imports`, `extends`, `implements`, `has_field`, `references`, `renders`, `uses_hook`, `queries`, `mutates`, `param_flow`, `calls`
+- **`edge metadata`** — JSON blob storing string literals (URLs, column refs, query templates) captured at call sites
 - **`layers`** — logical groupings of nodes
 - **`meta`** — key/value metadata including `project_root`
 

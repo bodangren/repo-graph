@@ -406,3 +406,175 @@ describe("scanSchemas defineTable inside defineSchema (FR2)", () => {
     expect(hasFieldEdges.length).toBe(2);
   });
 });
+
+
+describe("scanStringLiterals (FR1)", () => {
+  function makeProject(code: string): Project {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/api.ts", code);
+    return p;
+  }
+
+  it("stores string literal from fetch() in edge metadata", () => {
+    const p = makeProject(`
+      export async function getLessons() {
+        const res = await fetch('/api/lessons');
+        return res.json();
+      }
+    `);
+    const { edges } = scanProject(p);
+    const fetchEdge = edges.find((e) => e.type === "calls" && e.target.includes("fetch"));
+    // For now we expect calls edges to exist with metadata
+    // The scanner doesn't yet create calls edges, so this test will fail
+    // and guide implementation
+    expect(fetchEdge).toBeDefined();
+    expect(fetchEdge!.metadata).toBeDefined();
+    const meta = JSON.parse(fetchEdge!.metadata!);
+    expect(meta.string_literal).toBe("/api/lessons");
+  });
+
+  it("stores string literal from router.push() in edge metadata", () => {
+    const p = makeProject(`
+      export function navigate() {
+        router.push('/courses/[id]');
+      }
+    `);
+    const { edges } = scanProject(p);
+    const navEdge = edges.find((e) => e.type === "calls" && e.target.includes("push"));
+    expect(navEdge).toBeDefined();
+    expect(navEdge!.metadata).toBeDefined();
+    const meta = JSON.parse(navEdge!.metadata!);
+    expect(meta.string_literal).toBe("/courses/[id]");
+  });
+
+  it("stores column ref and value ref from eq() in metadata", () => {
+    const p = makeProject(`
+      export function findLesson(lessonSlug: string) {
+        return db.query.lessons.where(eq(scienceLessons.id, lessonSlug));
+      }
+    `);
+    const { edges } = scanProject(p);
+    const eqEdge = edges.find((e) => e.type === "calls" && e.target.includes("eq"));
+    expect(eqEdge).toBeDefined();
+    expect(eqEdge!.metadata).toBeDefined();
+    const meta = JSON.parse(eqEdge!.metadata!);
+    expect(meta.column_ref).toBe("scienceLessons.id");
+    expect(meta.value_ref).toBe("lessonSlug");
+  });
+
+  it("does not create metadata for non-string arguments", () => {
+    const p = makeProject(`
+      export function fetchWithVar(url: string) {
+        return fetch(url);
+      }
+    `);
+    const { edges } = scanProject(p);
+    const fetchEdge = edges.find((e) => e.type === "calls" && e.target.includes("fetch"));
+    if (fetchEdge) {
+      expect(fetchEdge.metadata).toBeUndefined();
+    }
+  });
+});
+
+
+describe("scanParamFlow (FR2)", () => {
+  it("creates param nodes and param_flow edges for destructured params", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/handler.ts", `
+      export function handler({ lessonId }: { lessonId: string }) {
+        const result = db.query(eq(lessons.id, lessonId));
+        return result;
+      }
+    `);
+    const { nodes, edges } = scanProject(p);
+
+    const paramNode = nodes.find((n) => n.type === "param" && n.name === "lessonId");
+    expect(paramNode).toBeDefined();
+
+    const flowEdges = edges.filter((e) => e.type === "param_flow");
+    expect(flowEdges.length).toBeGreaterThan(0);
+    expect(flowEdges.some((e) => e.source.includes("lessonId"))).toBe(true);
+  });
+
+  it("traces param usage to eq() call site", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/handler.ts", `
+      export function getLesson({ lessonId }: { lessonId: string }) {
+        return db.select().from(lessons).where(eq(lessons.id, lessonId));
+      }
+    `);
+    const { edges } = scanProject(p);
+
+    const flowEdges = edges.filter((e) => e.type === "param_flow");
+    expect(flowEdges.length).toBeGreaterThan(0);
+  });
+});
+
+describe("scanRoutes (FR3)", () => {
+  it("extracts Next.js route from route.ts", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/api/lessons/route.ts", `
+      export async function GET(request: Request) {
+        return Response.json({ lessons: [] });
+      }
+      export async function POST(request: Request) {
+        return Response.json({ created: true });
+      }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNodes = nodes.filter((n) => n.type === "route");
+    expect(routeNodes.length).toBe(2);
+    expect(routeNodes.some((r) => r.name === "GET /api/lessons")).toBe(true);
+    expect(routeNodes.some((r) => r.name === "POST /api/lessons")).toBe(true);
+  });
+
+  it("extracts dynamic params from Next.js file path", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/courses/[id]/page.tsx", `
+      export default function CoursePage({ params }: { params: { id: string } }) {
+        return <div>Course {params.id}</div>;
+      }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNode = nodes.find((n) => n.type === "route");
+    expect(routeNode).toBeDefined();
+    expect(routeNode!.tags).toContain("param:id");
+  });
+
+  it("extracts Hono routes", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/server.ts", `
+      import { Hono } from "hono";
+      const app = new Hono();
+      app.get('/api/lessons', (c) => c.json([]));
+      app.post('/api/lessons/:id', (c) => c.json({ created: true }));
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNodes = nodes.filter((n) => n.type === "route");
+    expect(routeNodes.length).toBe(2);
+    expect(routeNodes.some((r) => r.name === "GET /api/lessons")).toBe(true);
+    expect(routeNodes.some((r) => r.name === "POST /api/lessons/:id")).toBe(true);
+  });
+
+  it("extracts tRPC procedures", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/router.ts", `
+      import { router } from "./trpc";
+      export const appRouter = router({
+        lessons: {
+          getById: router.query(({ input }) => ({ id: input })),
+          create: router.mutation(({ input }) => ({ created: true })),
+        },
+      });
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNodes = nodes.filter((n) => n.type === "route");
+    expect(routeNodes.length).toBe(2);
+    expect(routeNodes.some((r) => r.name === "QUERY lessons.getById")).toBe(true);
+    expect(routeNodes.some((r) => r.name === "MUTATION lessons.create")).toBe(true);
+  });
+});

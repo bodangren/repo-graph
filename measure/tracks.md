@@ -32,3 +32,8 @@ This file tracks all major tracks for the project.
 
 - [x] **Track: Scanner data-quality fixes — resolve dangling edges, defineTable extraction, queries/mutates, cross-package imports, inspect unresolved**
   *Link: [./tracks/scannerfix_20260525/](./tracks/scannerfix_20260525/)*
+
+---
+
+- [ ] **Track: Migration-audit features — string-literal tracking, param-flow taint edges, route discovery**
+  *Link: [./tracks/migration_audit_20260525/](./tracks/migration_audit_20260525/)*

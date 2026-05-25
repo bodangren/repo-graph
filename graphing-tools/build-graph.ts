@@ -324,6 +324,9 @@ export async function main(argv: string[]): Promise<number> {
     case "help":
       printHelp(parsed.args.subcommand);
       break;
+    case "version":
+      console.log(VERSION);
+      break;
   }
 
   return ExitCode.Success;

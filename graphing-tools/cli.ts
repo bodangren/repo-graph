@@ -12,7 +12,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   }
 
   if (args[0] === "--version" || args[0] === "-v") {
-    return { subcommand: "help", args: {} };
+    return { subcommand: "version", args: {} };
   }
 
   const subcommand = args[0] as Subcommand;

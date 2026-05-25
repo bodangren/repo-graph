@@ -96,14 +96,14 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F5 test passes
     - [x] Commit: `fix(commands): Check ambiguous resolution before none in runPath`
 
-- [~] Task: Fix F6 — Escape LIKE metacharacters in `resolveNode` (`resolve.ts`)
-    - [ ] Before building the LIKE fragment, escape `%` → `\%` and `_` → `\_` in the lowercased name
-    - [ ] Append `ESCAPE '\'` to the LIKE clause in the prepared statement
-    - [ ] Apply the same escaping to the `runFiles` pattern parameter in `commands.ts:276`
-    - [ ] Run `bun test`; confirm F6 tests pass
-    - [ ] Commit: `fix(resolve): Escape SQL LIKE metacharacters in partial name search`
+- [x] Task: Fix F6 — Escape LIKE metacharacters in `resolveNode` (`resolve.ts`) [e3ece4f]
+    - [x] Before building the LIKE fragment, escape `%` → `\%` and `_` → `\_` in the lowercased name
+    - [x] Append `ESCAPE '\'` to the LIKE clause in the prepared statement
+    - [x] Apply the same escaping to the `runFiles` pattern parameter in `commands.ts:276`
+    - [x] Run `bun test`; confirm F6 tests pass
+    - [x] Commit: `fix(resolve): Escape SQL LIKE metacharacters in partial name search`
 
-- [ ] Task: Fix F7 — `--version` prints version string (`cli.ts`, `build-graph.ts`)
+- [~] Task: Fix F7 — `--version` prints version string (`cli.ts`, `build-graph.ts`)
     - [ ] In `parseArgs`, route `--version`/`-v` to `{ subcommand: "version", args: {} }`
     - [ ] Add `"version"` to the `Subcommand` union in `contract.ts` if needed
     - [ ] In `main()`, handle case `"version"`: `console.log(VERSION); return ExitCode.Success`

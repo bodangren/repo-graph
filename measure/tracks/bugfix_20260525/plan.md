@@ -76,12 +76,12 @@ Fix each bug. Run the full test suite after each fix. Commit individually.
     - [x] Run `bun test`; confirm F1 test passes and all others still pass
     - [x] Commit: `fix(cli): Guard deps --downstream when node name is missing`
 
-- [~] Task: Fix F2 — Graceful `meta` table fallback (`meta.ts`)
-    - [ ] Wrap the `db.prepare(…).get(key)` call in `getMeta` with try/catch; on `SqliteError` containing "no such table", return `undefined`
-    - [ ] Run `bun test`; confirm F2 tests pass
-    - [ ] Commit: `fix(meta): Return undefined gracefully when meta table is absent`
+- [x] Task: Fix F2 — Graceful `meta` table fallback (`meta.ts`) [9c446a7]
+    - [x] Wrap the `db.prepare(…).get(key)` call in `getMeta` with try/catch; on `SqliteError` containing "no such table", return `undefined`
+    - [x] Run `bun test`; confirm F2 tests pass
+    - [x] Commit: `fix(meta): Return undefined gracefully when meta table is absent`
 
-- [ ] Task: Fix F3 — INSTR cycle-guard boundary matching (`commands.ts`)
+- [~] Task: Fix F3 — INSTR cycle-guard boundary matching (`commands.ts`)
     - [ ] Replace `AND INSTR(p.path, e.target) = 0` with `AND INSTR(' → ' || p.path || ' → ', ' → ' || e.target || ' → ') = 0` in the `runPath` CTE
     - [ ] Run `bun test`; confirm F3 test passes
     - [ ] Commit: `fix(commands): Use delimiter-bounded INSTR in path CTE cycle guard`

@@ -152,7 +152,7 @@ export function runPath(
       FROM edges e
       JOIN path_cte p ON e.source = p.target_id
       WHERE p.hops < 20
-        AND INSTR(p.path, e.target) = 0
+        AND INSTR(' → ' || p.path || ' → ', ' → ' || e.target || ' → ') = 0
     )
     SELECT path, hops FROM path_cte WHERE target_id = ? ORDER BY hops LIMIT 1
   `).all(fromNode.id, toNode.id) as Array<{ path: string; hops: number }>;

@@ -413,6 +413,35 @@ describe("convenience commands", () => {
       expect(exitCode).toBe(ExitCode.Ambiguous);
       expect(output).toBe("");
     });
+
+    it("shows unresolved edges section for placeholder targets", () => {
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, tags) VALUES
+        ('function:/project/src/a.ts:Page', 'function', 'Page', '/project/src/a.ts', '["exported"]')`);
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, tags) VALUES
+        ('function:*:OtherComponent', 'function', 'OtherComponent', '', '["unresolved"]')`);
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('function:/project/src/a.ts:Page', 'function:*:OtherComponent', 'renders', 'forward', 1)`);
+      const { output, exitCode } = runInspect(db, "Page");
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("Unresolved edges");
+      expect(output).toContain("renders → function:OtherComponent");
+    });
+
+    it("shows unresolved edges in JSON output", () => {
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, tags) VALUES
+        ('function:/project/src/a.ts:Page', 'function', 'Page', '/project/src/a.ts', '["exported"]')`);
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, tags) VALUES
+        ('function:*:OtherComponent', 'function', 'OtherComponent', '', '["unresolved"]')`);
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('function:/project/src/a.ts:Page', 'function:*:OtherComponent', 'renders', 'forward', 1)`);
+      const { output, exitCode } = runInspect(db, "Page", { json: true });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.unresolved).toBeDefined();
+      expect(parsed.unresolved.length).toBe(1);
+      expect(parsed.unresolved[0].type).toBe("renders");
+      expect(parsed.unresolved[0].target_name).toBe("OtherComponent");
+    });
   });
 
   describe("no-meta DB fallback", () => {

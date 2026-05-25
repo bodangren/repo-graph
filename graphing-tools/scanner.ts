@@ -1,4 +1,4 @@
-import { Project, SyntaxKind, type SourceFile, type FunctionDeclaration, type ArrowFunction } from "ts-morph";
+import { Project, SyntaxKind, type SourceFile } from "ts-morph";
 import type { GraphNode, GraphEdge, EdgeType } from "./contract";
 
 export function scanProject(
@@ -157,25 +157,80 @@ export function scanProject(
       if (resolved) {
         const targetPath = resolved.getFilePath();
         addEdge(fileNodeId, `file:${targetPath}`, "imports");
+      } else {
+        // Fallback: compute expected path from relative import specifier
+        const specifier = imp.getModuleSpecifierValue();
+        if (specifier && !specifier.startsWith(".") && !specifier.startsWith("/")) {
+          // Skip non-relative imports (node_modules, aliases)
+          continue;
+        }
+        if (specifier) {
+          const { resolve } = require("path");
+          const sourceDir = filePath.substring(0, filePath.lastIndexOf("/"));
+          const computedPath = resolve(sourceDir, specifier);
+          // Try common TS extensions
+          const extensions = ["", ".ts", ".tsx", ".js", ".jsx"];
+          const fs = require("fs");
+          for (const ext of extensions) {
+            try {
+              if (fs.statSync(computedPath + ext).isFile()) {
+                addEdge(fileNodeId, `file:${computedPath + ext}`, "imports");
+                break;
+              }
+            } catch { /* not found */ }
+          }
+          // Also try index files in directories
+          for (const index of ["/index.ts", "/index.tsx", "/index.js", "/index.jsx"]) {
+            try {
+              if (fs.statSync(computedPath + index).isFile()) {
+                addEdge(fileNodeId, `file:${computedPath + index}`, "imports");
+                break;
+              }
+            } catch { /* not found */ }
+          }
+        }
       }
     }
   }
 
   // Run additional scanner passes
-  const schemaResult = scanSchemas(project);
+  const schemaResult = scanSchemas(project, packageMap);
   nodes.push(...schemaResult.nodes);
   edges.push(...schemaResult.edges);
 
-  const frameworkResult = scanFrameworkEdges(project);
+  const frameworkResult = scanFrameworkEdges(project, packageMap);
   nodes.push(...frameworkResult.nodes);
   edges.push(...frameworkResult.edges);
+
+  // Create placeholder nodes for dangling wildcard edge targets
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  for (const edge of edges) {
+    if (!nodeIds.has(edge.target) && edge.target.includes(":*:")) {
+      const parts = edge.target.split(":");
+      if (parts.length >= 3) {
+        const type = parts[0] as GraphNode["type"];
+        const name = parts.slice(2).join(":");
+        nodes.push({
+          id: edge.target,
+          type,
+          name,
+          filePath: "",
+          tags: ["unresolved"],
+        });
+        nodeIds.add(edge.target);
+      }
+    }
+  }
 
   return { nodes, edges };
 }
 
 // ── Runtime Schema Extraction Pass (S1) ────────────────────────────────────
 
-export function scanSchemas(project: Project): { nodes: GraphNode[]; edges: GraphEdge[] } {
+export function scanSchemas(
+  project: Project,
+  packageMap?: Map<string, string>
+): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
 
@@ -187,93 +242,143 @@ export function scanSchemas(project: Project): { nodes: GraphNode[]; edges: Grap
     edges.push({ source, target, type, direction: "forward", weight: 1.0 });
   }
 
-  for (const sourceFile of project.getSourceFiles()) {
-    const filePath = sourceFile.getFilePath();
+  function extractSchemaFromObjectLiteral(
+    schemaName: string,
+    objLiteral: import("ts-morph").ObjectLiteralExpression,
+    filePath: string,
+    lineStart: number,
+    lineEnd: number,
+    isExported: boolean,
+    packageId?: string
+  ): void {
+    const schemaId = `schema:${filePath}:${schemaName}`;
+    addNode({
+      id: schemaId,
+      type: "schema",
+      name: schemaName,
+      filePath,
+      lineStart,
+      lineEnd,
+      tags: isExported ? ["exported"] : undefined,
+      packageId,
+    });
+    addEdge(`file:${filePath}`, schemaId, "contains");
 
-    for (const stmt of sourceFile.getVariableStatements()) {
-      const isExported = stmt.isExported();
+    for (const prop of objLiteral.getProperties()) {
+      if (prop.getKind() === SyntaxKind.PropertyAssignment) {
+        const pa = prop.asKind(SyntaxKind.PropertyAssignment)!;
+        const fieldName = pa.getName();
+        const fieldId = `field:${filePath}:${schemaName}.${fieldName}`;
 
-      for (const decl of stmt.getDeclarations()) {
-        const varName = decl.getName();
-        const init = decl.getInitializer();
-        if (!init) continue;
+        addNode({
+          id: fieldId,
+          type: "field",
+          name: `${schemaName}.${fieldName}`,
+          filePath,
+          lineStart: pa.getStartLineNumber(),
+          lineEnd: pa.getEndLineNumber(),
+          packageId,
+        });
+        addEdge(schemaId, fieldId, "has_field");
 
-        let schemaName: string | undefined;
-        let objLiteral: import("ts-morph").ObjectLiteralExpression | undefined;
-
-        if (init.getKind() === SyntaxKind.CallExpression) {
-          const call = init.asKind(SyntaxKind.CallExpression)!;
-          const expr = call.getExpression();
-          const exprText = expr.getText();
-
-          // defineTable({ ... })
-          if (exprText === "defineTable") {
-            schemaName = varName;
-            const args = call.getArguments();
-            if (args.length > 0 && args[0].getKind() === SyntaxKind.ObjectLiteralExpression) {
-              objLiteral = args[0].asKind(SyntaxKind.ObjectLiteralExpression)!;
-            }
-          }
-          // z.object({ ... })
-          else if (exprText === "z.object") {
-            schemaName = varName;
-            const args = call.getArguments();
-            if (args.length > 0 && args[0].getKind() === SyntaxKind.ObjectLiteralExpression) {
-              objLiteral = args[0].asKind(SyntaxKind.ObjectLiteralExpression)!;
-            }
-          }
-        } else if (isExported && init.getKind() === SyntaxKind.ObjectLiteralExpression) {
-          // exported const object literal
-          schemaName = varName;
-          objLiteral = init.asKind(SyntaxKind.ObjectLiteralExpression)!;
-        }
-
-        if (schemaName && objLiteral) {
-          const schemaId = `schema:${filePath}:${schemaName}`;
-          addNode({
-            id: schemaId,
-            type: "schema",
-            name: schemaName,
-            filePath,
-            lineStart: decl.getStartLineNumber(),
-            lineEnd: decl.getEndLineNumber(),
-            tags: isExported ? ["exported"] : undefined,
-          });
-          addEdge(`file:${filePath}`, schemaId, "contains");
-
-          for (const prop of objLiteral.getProperties()) {
-            if (prop.getKind() === SyntaxKind.PropertyAssignment) {
-              const pa = prop.asKind(SyntaxKind.PropertyAssignment)!;
-              const fieldName = pa.getName();
-              const fieldId = `field:${filePath}:${schemaName}.${fieldName}`;
-
-              addNode({
-                id: fieldId,
-                type: "field",
-                name: `${schemaName}.${fieldName}`,
-                filePath,
-                lineStart: pa.getStartLineNumber(),
-                lineEnd: pa.getEndLineNumber(),
-              });
-              addEdge(schemaId, fieldId, "has_field");
-
-              // Detect v.id("tableName") references
-              const propInit = pa.getInitializer();
-              if (propInit?.getKind() === SyntaxKind.CallExpression) {
-                const propCall = propInit.asKind(SyntaxKind.CallExpression)!;
-                const propExpr = propCall.getExpression();
-                if (propExpr.getText() === "v.id") {
-                  const args = propCall.getArguments();
-                  if (args.length > 0 && args[0].getKind() === SyntaxKind.StringLiteral) {
-                    const refName = args[0].asKind(SyntaxKind.StringLiteral)!.getLiteralValue();
-                    addEdge(fieldId, `schema:*:${refName}`, "references");
-                  }
-                }
-              }
+        // Detect v.id("tableName") references
+        const propInit = pa.getInitializer();
+        if (propInit?.getKind() === SyntaxKind.CallExpression) {
+          const propCall = propInit.asKind(SyntaxKind.CallExpression)!;
+          const propExpr = propCall.getExpression();
+          if (propExpr.getText() === "v.id") {
+            const args = propCall.getArguments();
+            if (args.length > 0 && args[0].getKind() === SyntaxKind.StringLiteral) {
+              const refName = args[0].asKind(SyntaxKind.StringLiteral)!.getLiteralValue();
+              addEdge(fieldId, `schema:*:${refName}`, "references");
             }
           }
         }
       }
+    }
+  }
+
+  function tryExtractSchema(
+    call: import("ts-morph").CallExpression,
+    filePath: string,
+    packageId?: string
+  ): void {
+    const expr = call.getExpression();
+    const exprText = expr.getText();
+
+    let schemaName: string | undefined;
+    let objLiteral: import("ts-morph").ObjectLiteralExpression | undefined;
+
+    if (exprText === "defineTable" || exprText === "z.object") {
+      const args = call.getArguments();
+      if (args.length > 0 && args[0].getKind() === SyntaxKind.ObjectLiteralExpression) {
+        objLiteral = args[0].asKind(SyntaxKind.ObjectLiteralExpression)!;
+
+        // Try to find a name from parent context
+        const parent = call.getParent();
+        if (parent) {
+          if (parent.getKind() === SyntaxKind.PropertyAssignment) {
+            schemaName = parent.asKind(SyntaxKind.PropertyAssignment)!.getName();
+          } else if (parent.getKind() === SyntaxKind.VariableDeclaration) {
+            schemaName = parent.asKind(SyntaxKind.VariableDeclaration)!.getName();
+          }
+        }
+
+        if (schemaName && objLiteral) {
+          // Determine if exported by walking up to variable statement
+          let isExported = false;
+          let stmt = call.getParent();
+          while (stmt) {
+            if (stmt.getKind() === SyntaxKind.VariableStatement) {
+              isExported = stmt.asKind(SyntaxKind.VariableStatement)!.isExported();
+              break;
+            }
+            if (stmt.getKind() === SyntaxKind.SourceFile) break;
+            stmt = stmt.getParent();
+          }
+
+          extractSchemaFromObjectLiteral(
+            schemaName,
+            objLiteral,
+            filePath,
+            call.getStartLineNumber(),
+            call.getEndLineNumber(),
+            isExported,
+            packageId
+          );
+        }
+      }
+    }
+  }
+
+  for (const sourceFile of project.getSourceFiles()) {
+    const filePath = sourceFile.getFilePath();
+    const packageId = packageMap?.get(filePath);
+
+    // Scan variable declarations for exported const object literals (config schemas)
+    for (const stmt of sourceFile.getVariableStatements()) {
+      const isExported = stmt.isExported();
+      for (const decl of stmt.getDeclarations()) {
+        const varName = decl.getName();
+        const init = decl.getInitializer();
+        if (isExported && init?.getKind() === SyntaxKind.ObjectLiteralExpression) {
+          const objLiteral = init.asKind(SyntaxKind.ObjectLiteralExpression)!;
+          extractSchemaFromObjectLiteral(
+            varName,
+            objLiteral,
+            filePath,
+            decl.getStartLineNumber(),
+            decl.getEndLineNumber(),
+            true,
+            packageId
+          );
+        }
+      }
+    }
+
+    // Recursively scan all call expressions for defineTable / z.object
+    for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+      tryExtractSchema(call, filePath, packageId);
     }
   }
 
@@ -282,7 +387,10 @@ export function scanSchemas(project: Project): { nodes: GraphNode[]; edges: Grap
 
 // ── Framework-Aware Edge Extraction Pass (S2) ──────────────────────────────
 
-export function scanFrameworkEdges(project: Project): { nodes: GraphNode[]; edges: GraphEdge[] } {
+export function scanFrameworkEdges(
+  project: Project,
+  packageMap?: Map<string, string>
+): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const edges: GraphEdge[] = [];
 
   function addEdge(source: string, target: string, type: EdgeType): void {
@@ -303,7 +411,7 @@ export function scanFrameworkEdges(project: Project): { nodes: GraphNode[]; edge
         const exprText = expr.getText();
 
         // useQuery(api.x.y)
-        if (exprText === "useQuery") {
+        if (exprText === "useQuery" || exprText === "useSuspenseQuery") {
           const target = extractApiFunctionTarget(call);
           if (target) addEdge(sourceId, target, "queries");
         }
@@ -384,10 +492,9 @@ function extractApiFunctionTarget(call: import("ts-morph").CallExpression): stri
       current = pa.getExpression();
     }
     if (current.getKind() === SyntaxKind.Identifier) {
-      const id = current.asKind(SyntaxKind.Identifier)!;
-      if (id.getText() === "api") {
-        return `function:*:${parts.join(".")}`;
-      }
+      // Accept any root identifier name — the caller already verified it's
+      // useQuery/useMutation, so the argument semantics are correct.
+      return `function:*:${parts.join(".")}`;
     }
   }
   return undefined;

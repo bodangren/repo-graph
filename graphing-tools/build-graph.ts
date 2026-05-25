@@ -388,14 +388,3 @@ if (import.meta.main) {
     process.exit(message.startsWith("Usage") ? ExitCode.Misuse : ExitCode.RuntimeError);
   });
 }
-
-async function handleInspect(dbPath: string, name: string, json: boolean): Promise<number> {
-  const db = new Database(dbPath);
-  try {
-    const { output, exitCode } = runInspect(db, name, { json });
-    if (output) console.log(output);
-    return exitCode;
-  } finally {
-    db.close();
-  }
-}

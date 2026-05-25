@@ -319,6 +319,19 @@ describe("scanFrameworkEdges (S2)", () => {
     expect(mutates[0].target).toBe("function:*:projects.update");
   });
 
+  it("emits queries edge for useQuery with aliased api root", () => {
+    const p = makeProject(`
+      export function Dashboard() {
+        const projects = useQuery(convexApi.projects.getAll);
+        return null;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const queries = edges.filter((e) => e.type === "queries");
+    expect(queries.length).toBe(1);
+    expect(queries[0].target).toBe("function:*:projects.getAll");
+  });
+
   it("ignores intrinsic JSX elements like div", () => {
     const p = makeProject(`
       export function Box() {
@@ -328,5 +341,68 @@ describe("scanFrameworkEdges (S2)", () => {
     const { edges } = scanFrameworkEdges(p);
     const renders = edges.filter((e) => e.type === "renders");
     expect(renders.length).toBe(0);
+  });
+});
+
+describe("scanProject placeholder nodes (FR1)", () => {
+  it("creates placeholder nodes for dangling renders/uses_hook targets", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/page.tsx", `
+      export function Page() {
+        return <OtherComponent />;
+      }
+    `);
+    const { nodes, edges } = scanProject(p);
+    const rendersEdge = edges.find((e) => e.type === "renders");
+    expect(rendersEdge).toBeDefined();
+
+    const placeholder = nodes.find((n) => n.id === rendersEdge!.target);
+    expect(placeholder).toBeDefined();
+    expect(placeholder!.type).toBe("function");
+    expect(placeholder!.name).toBe("OtherComponent");
+    expect(placeholder!.tags).toContain("unresolved");
+  });
+
+  it("creates placeholder nodes for class extends wildcard targets", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/widget.ts", `
+      export class Widget extends BaseWidget {}
+    `);
+    const { nodes, edges } = scanProject(p);
+    const extendsEdge = edges.find((e) => e.type === "extends");
+    expect(extendsEdge).toBeDefined();
+
+    const placeholder = nodes.find((n) => n.id === extendsEdge!.target);
+    expect(placeholder).toBeDefined();
+    expect(placeholder!.type).toBe("class");
+    expect(placeholder!.name).toBe("BaseWidget");
+    expect(placeholder!.tags).toContain("unresolved");
+  });
+});
+
+describe("scanSchemas defineTable inside defineSchema (FR2)", () => {
+  it("extracts defineTable nested inside defineSchema", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/convex/schema.ts", `
+      import { defineSchema, defineTable } from "convex/server";
+      import { v } from "convex/values";
+      export default defineSchema({
+        users: defineTable({
+          name: v.string(),
+          email: v.string(),
+        }),
+      });
+    `);
+    const { nodes, edges } = scanSchemas(p);
+    const schemaNode = nodes.find((n) => n.type === "schema" && n.name === "users");
+    expect(schemaNode).toBeDefined();
+
+    const fieldNodes = nodes.filter((n) => n.type === "field");
+    expect(fieldNodes.length).toBe(2);
+    expect(fieldNodes.some((f) => f.name === "users.name")).toBe(true);
+    expect(fieldNodes.some((f) => f.name === "users.email")).toBe(true);
+
+    const hasFieldEdges = edges.filter((e) => e.type === "has_field");
+    expect(hasFieldEdges.length).toBe(2);
   });
 });

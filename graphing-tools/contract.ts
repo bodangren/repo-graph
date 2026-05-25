@@ -31,11 +31,6 @@ export interface QueryArgs {
   json?: boolean;
 }
 
-export interface SearchArgs {
-  dbPath: string;
-  keyword: string;
-}
-
 export interface DepsArgs {
   dbPath: string;
   name: string;

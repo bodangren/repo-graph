@@ -505,20 +505,29 @@ export function runInspect(
     | undefined;
 
   const outgoing = db.prepare(`
-    SELECT e.type, e.target, n.type AS target_type, n.name AS target_name
+    SELECT e.type, e.target, n.type AS target_type, n.name AS target_name, n.tags AS target_tags
     FROM edges e
     JOIN nodes n ON n.id = e.target
     WHERE e.source = ?
     ORDER BY e.type, n.name
-  `).all(node.id) as Array<{ type: string; target: string; target_type: string; target_name: string }>;
+  `).all(node.id) as Array<{ type: string; target: string; target_type: string; target_name: string; target_tags: string | null }>;
 
   const incoming = db.prepare(`
-    SELECT e.type, e.source, n.type AS source_type, n.name AS source_name
+    SELECT e.type, e.source, n.type AS source_type, n.name AS source_name, n.tags AS source_tags
     FROM edges e
     JOIN nodes n ON n.id = e.source
     WHERE e.target = ?
     ORDER BY e.type, n.name
-  `).all(node.id) as Array<{ type: string; source: string; source_type: string; source_name: string }>;
+  `).all(node.id) as Array<{ type: string; source: string; source_type: string; source_name: string; source_tags: string | null }>;
+
+  const unresolvedOutgoing = outgoing.filter((e) => {
+    try {
+      return e.target_tags && JSON.parse(e.target_tags).includes("unresolved");
+    } catch {
+      return false;
+    }
+  });
+  const resolvedOutgoing = outgoing.filter((e) => !unresolvedOutgoing.includes(e));
 
   if (opts?.json) {
     return {
@@ -533,7 +542,7 @@ export function runInspect(
           summary: meta?.summary ?? undefined,
           tags: meta?.tags ? JSON.parse(meta.tags) : undefined,
         },
-        outgoing: outgoing.map((r) => ({
+        outgoing: resolvedOutgoing.map((r) => ({
           type: r.type,
           target_id: r.target,
           target_name: r.target_name,
@@ -544,6 +553,12 @@ export function runInspect(
           source_id: r.source,
           source_name: r.source_name,
           source_type: r.source_type,
+        })),
+        unresolved: unresolvedOutgoing.map((r) => ({
+          type: r.type,
+          target_id: r.target,
+          target_name: r.target_name,
+          target_type: r.target_type,
         })),
       }),
       exitCode: ExitCode.Success,
@@ -557,11 +572,11 @@ export function runInspect(
   if (meta?.summary) lines.push(`Summary: ${meta.summary}`);
   lines.push("");
 
-  lines.push(`Outgoing edges (${outgoing.length}):`);
-  for (const e of outgoing) {
+  lines.push(`Outgoing edges (${resolvedOutgoing.length}):`);
+  for (const e of resolvedOutgoing) {
     lines.push(`  ${e.type} → ${e.target_type}:${e.target_name}`);
   }
-  if (outgoing.length === 0) lines.push("  (none)");
+  if (resolvedOutgoing.length === 0) lines.push("  (none)");
   lines.push("");
 
   lines.push(`Incoming edges (${incoming.length}):`);
@@ -569,6 +584,14 @@ export function runInspect(
     lines.push(`  ${e.type} ← ${e.source_type}:${e.source_name}`);
   }
   if (incoming.length === 0) lines.push("  (none)");
+  lines.push("");
+
+  if (unresolvedOutgoing.length > 0) {
+    lines.push(`Unresolved edges (${unresolvedOutgoing.length}):`);
+    for (const e of unresolvedOutgoing) {
+      lines.push(`  ${e.type} → ${e.target_type}:${e.target_name}`);
+    }
+  }
 
   return { output: lines.join("\n"), exitCode: ExitCode.Success };
 }

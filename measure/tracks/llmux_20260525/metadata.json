@@ -1,0 +1,11 @@
+{
+  "track_id": "llmux_20260525",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-05-25T00:00:00Z",
+  "updated_at": "2026-05-25T00:00:00Z",
+  "description": "LLM user experience improvements: --json on all commands, exit code taxonomy, inspect command, --limit, --depth",
+  "estimated_tasks": 30,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

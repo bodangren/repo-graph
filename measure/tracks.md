@@ -17,3 +17,8 @@ This file tracks all major tracks for the project.
 
 - [ ] **Track: Remediate code-review findings — convenience query commands (9 bugs)**
   *Link: [./tracks/bugfix_20260525/](./tracks/bugfix_20260525/)*
+
+---
+
+- [ ] **Track: LLM UX improvements — --json, exit code taxonomy, inspect, --limit, --depth**
+  *Link: [./tracks/llmux_20260525/](./tracks/llmux_20260525/)*

@@ -1,5 +1,36 @@
 import type { ParsedArgs, Subcommand } from "./contract";
 
+function parseFlags(args: string[]): {
+  flags: string[];
+  json: boolean;
+  limit?: number;
+  depth?: number;
+} {
+  const flags: string[] = [];
+  let json = false;
+  let limit: number | undefined;
+  let depth: number | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a === "--json" || a === "-j") {
+      json = true;
+    } else if (a === "--limit" || a === "-l") {
+      const next = args[++i];
+      if (next === undefined) throw new Error("Usage: --limit requires a number");
+      limit = Number(next);
+    } else if (a === "--depth" || a === "-d") {
+      const next = args[++i];
+      if (next === undefined) throw new Error("Usage: --depth requires a number");
+      depth = Number(next);
+    } else {
+      flags.push(a);
+    }
+  }
+
+  return { flags, json, limit, depth };
+}
+
 export function parseArgs(argv: string[]): ParsedArgs {
   const args = argv.slice(2);
 
@@ -38,30 +69,41 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { subcommand: "query", args: { dbPath: args[offset], sql: args[offset + 1], json } };
     }
     case "search": {
-      if (args.length < 3) throw new Error("Usage: build-graph search <db> <keyword>");
-      return { subcommand: "search", args: { dbPath: args[1], keyword: args[2] } };
+      const { flags, json, limit } = parseFlags(args.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph search <db> <keyword> [--json] [--limit N]");
+      return { subcommand: "search", args: { dbPath: flags[0], keyword: flags[1], json, limit } };
     }
     case "deps": {
       const downstream = args.includes("--downstream");
       const filtered = args.filter((a) => a !== "--downstream");
-      if (filtered.length < 3) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream]");
-      return { subcommand: "deps", args: { dbPath: filtered[1], name: filtered[2], downstream } };
+      const { flags, json, limit, depth } = parseFlags(filtered.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream] [--json] [--limit N] [--depth N]");
+      return { subcommand: "deps", args: { dbPath: flags[0], name: flags[1], downstream, json, limit, depth } };
     }
     case "callers": {
-      if (args.length < 3) throw new Error("Usage: build-graph callers <db> <function-name>");
-      return { subcommand: "callers", args: { dbPath: args[1], name: args[2] } };
+      const { flags, json, limit, depth } = parseFlags(args.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph callers <db> <function-name> [--json] [--limit N] [--depth N]");
+      return { subcommand: "callers", args: { dbPath: flags[0], name: flags[1], json, limit, depth } };
     }
     case "path": {
-      if (args.length < 4) throw new Error("Usage: build-graph path <db> <from> <to>");
-      return { subcommand: "path", args: { dbPath: args[1], from: args[2], to: args[3] } };
+      const { flags, json } = parseFlags(args.slice(1));
+      if (flags.length < 3) throw new Error("Usage: build-graph path <db> <from> <to> [--json]");
+      return { subcommand: "path", args: { dbPath: flags[0], from: flags[1], to: flags[2], json } };
     }
     case "stats": {
-      if (args.length < 2) throw new Error("Usage: build-graph stats <db>");
-      return { subcommand: "stats", args: { dbPath: args[1] } };
+      const { flags, json } = parseFlags(args.slice(1));
+      if (flags.length < 1) throw new Error("Usage: build-graph stats <db> [--json]");
+      return { subcommand: "stats", args: { dbPath: flags[0], json } };
     }
     case "files": {
-      if (args.length < 2) throw new Error("Usage: build-graph files <db> [pattern]");
-      return { subcommand: "files", args: { dbPath: args[1], pattern: args[2] } };
+      const { flags, json, limit } = parseFlags(args.slice(1));
+      if (flags.length < 1) throw new Error("Usage: build-graph files <db> [pattern] [--json] [--limit N]");
+      return { subcommand: "files", args: { dbPath: flags[0], pattern: flags[1], json, limit } };
+    }
+    case "inspect": {
+      const { flags, json } = parseFlags(args.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph inspect <db> <node-id-or-name> [--json]");
+      return { subcommand: "inspect", args: { dbPath: flags[0], name: flags[1], json } };
     }
     case "help": {
       return { subcommand: "help", args: { subcommand: args[1] as Subcommand | undefined } };

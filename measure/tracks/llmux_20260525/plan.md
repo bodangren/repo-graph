@@ -39,48 +39,48 @@ Run `bun test` after each task to confirm new tests fail.
     - [ ] Add: usage error path uses `ExitCode.Misuse` (3) not 2
     - [ ] Add: ambiguous path produces `exitCode: ExitCode.Ambiguous` (2) — should pass already
 
-- [ ] Task: Tests L1a — `--json` on `deps` and `callers` (`commands.test.ts`)
+- [x] Task: Tests L1a — `--json` on `deps` and `callers` (`commands.test.ts`)
     - [ ] Add: `runDeps(db, name, downstream, { json: true })` returns a valid JSON string
     - [ ] Add: JSON output contains `"node"` and `"results"` fields
     - [ ] Add: JSON not-found returns `{ "results": [] }` not "(no matches)" string
     - [ ] Add: `runCallers(db, name, { json: true })` mirrors the same shape
 
-- [ ] Task: Tests L1b — `--json` on `path` (`commands.test.ts`)
+- [x] Task: Tests L1b — `--json` on `path` (`commands.test.ts`)
     - [ ] Add: `runPath` with `json: true` and a valid path returns `{ found: true, hops: N, path: [{…}] }`
     - [ ] Add: `runPath` with `json: true` and no path returns `{ found: false }`
 
-- [ ] Task: Tests L1c — `--json` on `stats` and `files` (`commands.test.ts`)
+- [x] Task: Tests L1c — `--json` on `stats` and `files` (`commands.test.ts`)
     - [ ] Add: `runStats(db, { json: true })` returns a parseable JSON object (not ASCII art)
     - [ ] Add: `runFiles(db, undefined, { json: true })` returns a JSON array
 
-- [ ] Task: Tests L1d — `--json` on `search` (`commands.test.ts` or `search.test.ts`)
+- [x] Task: Tests L1d — `--json` on `search` (`commands.test.ts` or `search.test.ts`)
     - [ ] Add: search with `json: true` returns a JSON array of result objects
 
-- [ ] Task: Tests L3 — `inspect` command (`commands.test.ts`)
+- [x] Task: Tests L3 — `inspect` command (`commands.test.ts`)
     - [ ] Add: `runInspect(db, name)` on an existing node returns text with outgoing and incoming edges
     - [ ] Add: `runInspect(db, name, { json: true })` returns JSON with `node`, `outgoing`, `incoming`
     - [ ] Add: `runInspect(db, "missing")` returns `exitCode: ExitCode.NotFound`
     - [ ] Add: `runInspect(db, "ambig")` returns `exitCode: ExitCode.Ambiguous`
 
-- [ ] Task: Tests L4 — `--limit N` (`commands.test.ts`)
+- [x] Task: Tests L4 — `--limit N` (`commands.test.ts`)
     - [ ] Add: `runDeps` with `limit: 2` on a node with 5 deps returns 2 results + truncation footer
     - [ ] Add: `runDeps` with `limit: 2, json: true` returns `{ "results": […2 items…], "truncated": true, "total": 5 }`
     - [ ] Add: `runDeps` with `limit: 0` returns all results
 
-- [ ] Task: Tests L5 — `--depth N` (`commands.test.ts`)
+- [x] Task: Tests L5 — `--depth N` (`commands.test.ts`)
     - [ ] Seed DB with a 3-hop chain: A → B → C → D
     - [ ] Add: `runDeps(db, "A", false, { depth: 1 })` returns only B
     - [ ] Add: `runDeps(db, "A", false, { depth: 3 })` returns B (depth 1), C (depth 2), D (depth 3)
     - [ ] Add: `runDeps` with cycles in the graph does not loop infinitely
     - [ ] Add: `runCallers` with `depth: 2` returns transitive callers
 
-- [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ---
 
 ## Phase 3 — Implementation (Green Phase)
 
-- [ ] Task: Implement L2 — Exit code taxonomy (`commands.ts`, `build-graph.ts`, `cli.ts`)
+- [~] Task: Implement L2 — Exit code taxonomy (`commands.ts`, `build-graph.ts`, `cli.ts`)
     - [ ] Replace all `exitCode: 0` not-found returns in `commands.ts` with `ExitCode.NotFound`
     - [ ] Replace `exitCode: 2` ambiguous returns with `ExitCode.Ambiguous`
     - [ ] Update top-level catch in `build-graph.ts`: usage errors → `ExitCode.Misuse` (3), others → `ExitCode.RuntimeError` (4)

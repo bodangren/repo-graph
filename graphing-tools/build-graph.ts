@@ -212,10 +212,17 @@ async function handleQuery(dbPath: string, sql: string, json: boolean): Promise<
   }
 }
 
-async function handleSearch(dbPath: string, keyword: string): Promise<void> {
+async function handleSearch(dbPath: string, keyword: string, json: boolean, limit?: number): Promise<void> {
   const db = new Database(dbPath);
   try {
-    const results = searchNodes(db, keyword);
+    let results = searchNodes(db, keyword);
+    if (limit !== undefined && limit > 0 && results.length > limit) {
+      results = results.slice(0, limit);
+    }
+    if (json) {
+      console.log(JSON.stringify(results));
+      return;
+    }
     if (results.length === 0) {
       console.log("(no results)");
       return;
@@ -239,10 +246,10 @@ async function handleUpdate(dbPath: string, filePaths: string[]): Promise<void> 
   }
 }
 
-async function handleDeps(dbPath: string, name: string, downstream: boolean): Promise<number> {
+async function handleDeps(dbPath: string, name: string, downstream: boolean, json: boolean, limit?: number, depth?: number): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runDeps(db, name, downstream);
+    const { output, exitCode } = runDeps(db, name, downstream, { json, limit, depth });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -250,10 +257,10 @@ async function handleDeps(dbPath: string, name: string, downstream: boolean): Pr
   }
 }
 
-async function handleCallers(dbPath: string, name: string): Promise<number> {
+async function handleCallers(dbPath: string, name: string, json: boolean, limit?: number, depth?: number): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runCallers(db, name);
+    const { output, exitCode } = runCallers(db, name, { json, limit, depth });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -261,10 +268,10 @@ async function handleCallers(dbPath: string, name: string): Promise<number> {
   }
 }
 
-async function handlePath(dbPath: string, from: string, to: string): Promise<number> {
+async function handlePath(dbPath: string, from: string, to: string, json: boolean): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runPath(db, from, to);
+    const { output, exitCode } = runPath(db, from, to, { json });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -272,19 +279,30 @@ async function handlePath(dbPath: string, from: string, to: string): Promise<num
   }
 }
 
-async function handleStats(dbPath: string): Promise<void> {
+async function handleStats(dbPath: string, json: boolean): Promise<void> {
   const db = new Database(dbPath);
   try {
-    console.log(runStats(db));
+    console.log(runStats(db, { json }));
   } finally {
     db.close();
   }
 }
 
-async function handleFiles(dbPath: string, pattern?: string): Promise<void> {
+async function handleFiles(dbPath: string, pattern: string | undefined, json: boolean, limit?: number): Promise<void> {
   const db = new Database(dbPath);
   try {
-    console.log(runFiles(db, pattern));
+    console.log(runFiles(db, pattern, { json, limit }));
+  } finally {
+    db.close();
+  }
+}
+
+async function handleInspect(dbPath: string, name: string, json: boolean): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runInspect(db, name, { json });
+    if (output) console.log(output);
+    return exitCode;
   } finally {
     db.close();
   }
@@ -304,22 +322,25 @@ export async function main(argv: string[]): Promise<number> {
       await handleQuery(parsed.args.dbPath, parsed.args.sql, parsed.args.json ?? false);
       break;
     case "search":
-      await handleSearch(parsed.args.dbPath, parsed.args.keyword);
+      await handleSearch(parsed.args.dbPath, parsed.args.keyword, parsed.args.json ?? false, parsed.args.limit);
       break;
     case "update":
       await handleUpdate(parsed.args.dbPath, parsed.args.filePaths);
       break;
     case "deps":
-      return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream);
+      return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth);
     case "callers":
-      return await handleCallers(parsed.args.dbPath, parsed.args.name);
+      return await handleCallers(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth);
     case "path":
-      return await handlePath(parsed.args.dbPath, parsed.args.from, parsed.args.to);
+      return await handlePath(parsed.args.dbPath, parsed.args.from, parsed.args.to, parsed.args.json ?? false);
     case "stats":
-      await handleStats(parsed.args.dbPath);
+      await handleStats(parsed.args.dbPath, parsed.args.json ?? false);
       break;
     case "files":
-      await handleFiles(parsed.args.dbPath, parsed.args.pattern);
+      await handleFiles(parsed.args.dbPath, parsed.args.pattern, parsed.args.json ?? false, parsed.args.limit);
+      break;
+    case "inspect":
+      return await handleInspect(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false);
       break;
     case "help":
       printHelp(parsed.args.subcommand);
@@ -338,4 +359,15 @@ if (import.meta.main) {
     console.error(message);
     process.exit(message.startsWith("Usage") ? ExitCode.Misuse : ExitCode.RuntimeError);
   });
+}
+
+async function handleInspect(dbPath: string, name: string, json: boolean): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runInspect(db, name, { json });
+    if (output) console.log(output);
+    return exitCode;
+  } finally {
+    db.close();
+  }
 }

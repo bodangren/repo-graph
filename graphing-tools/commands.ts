@@ -3,7 +3,7 @@ import { formatTable } from "./query";
 import { toRelativePath } from "./paths";
 import { getProjectRoot } from "./meta";
 import { resolveNode, type ResolvedNode } from "./resolve";
-import type { SearchResult } from "./contract";
+import { ExitCode, type SearchResult } from "./contract";
 
 // ── Shared formatting ──────────────────────────────────────────────────────
 
@@ -25,17 +25,17 @@ export function runDeps(
   name: string,
   downstream: boolean,
   opts?: { json?: boolean; limit?: number; depth?: number }
-): { output: string; exitCode: 0 | 1 | 2 } {
+): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
   if (resolved.kind === "none") {
-    return { output: "(no matches)", exitCode: 0 };
+    return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
   if (resolved.kind === "ambiguous") {
     printDisambiguation(resolved.matches, root);
-    return { output: "", exitCode: 2 };
+    return { output: "", exitCode: ExitCode.Ambiguous };
   }
 
   const node = resolved.node;
@@ -63,7 +63,7 @@ export function runDeps(
   }
 
   if (rows.length === 0) {
-    return { output: "(no results)", exitCode: 0 };
+    return { output: "(no results)", exitCode: ExitCode.NotFound };
   }
 
   const columns = ["type", "name", "file_path", "edge_type"];
@@ -77,17 +77,17 @@ export function runCallers(
   db: Database,
   name: string,
   opts?: { json?: boolean; limit?: number; depth?: number }
-): { output: string; exitCode: 0 | 1 | 2 } {
+): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
   if (resolved.kind === "none") {
-    return { output: "(no matches)", exitCode: 0 };
+    return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
   if (resolved.kind === "ambiguous") {
     printDisambiguation(resolved.matches, root);
-    return { output: "", exitCode: 2 };
+    return { output: "", exitCode: ExitCode.Ambiguous };
   }
 
   const node = resolved.node;
@@ -103,7 +103,7 @@ export function runCallers(
   `).all(node.id) as Array<{ type: string; name: string; file_path: string; edge_type: string }>;
 
   if (rows.length === 0) {
-    return { output: "(no results)", exitCode: 0 };
+    return { output: "(no results)", exitCode: ExitCode.NotFound };
   }
 
   const columns = ["type", "name", "file_path", "edge_type"];
@@ -118,7 +118,7 @@ export function runPath(
   fromName: string,
   toName: string,
   opts?: { json?: boolean }
-): { output: string; exitCode: 0 | 1 | 2 } {
+): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
   const root = getProjectRoot(db);
   const fromResolved = resolveNode(db, fromName);
   const toResolved = resolveNode(db, toName);
@@ -126,17 +126,17 @@ export function runPath(
   if (fromResolved.kind === "ambiguous") {
     console.error(`Ambiguous source '${fromName}':`);
     printDisambiguation(fromResolved.matches, root);
-    return { output: "", exitCode: 2 };
+    return { output: "", exitCode: ExitCode.Ambiguous };
   }
 
   if (toResolved.kind === "ambiguous") {
     console.error(`Ambiguous target '${toName}':`);
     printDisambiguation(toResolved.matches, root);
-    return { output: "", exitCode: 2 };
+    return { output: "", exitCode: ExitCode.Ambiguous };
   }
 
   if (fromResolved.kind === "none" || toResolved.kind === "none") {
-    return { output: "(no matches)", exitCode: 0 };
+    return { output: "(no matches)", exitCode: ExitCode.NotFound };
   }
 
   const fromNode = fromResolved.node;
@@ -165,7 +165,7 @@ export function runPath(
   `).all(fromNode.id, toNode.id) as Array<{ path: string; hops: number }>;
 
   if (rows.length === 0) {
-    return { output: "(no path found)", exitCode: 0 };
+    return { output: "(no path found)", exitCode: ExitCode.NotFound };
   }
 
   // Replace IDs with human-readable names
@@ -280,8 +280,8 @@ export function runInspect(
   db: Database,
   name: string,
   opts?: { json?: boolean }
-): { output: string; exitCode: 0 | 1 | 2 } {
-  return { output: "(no matches)", exitCode: 0 };
+): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
+  return { output: "(no matches)", exitCode: ExitCode.NotFound };
 }
 
 // ── files ──────────────────────────────────────────────────────────────────

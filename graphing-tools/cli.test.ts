@@ -179,6 +179,86 @@ describe("parseArgs", () => {
     });
   });
 
+  describe("inspect", () => {
+    it("parses inspect <db> <name>", () => {
+      const result = parseArgs(argv(["inspect", "./graph.db", "foo"]));
+      expect(result.subcommand).toBe("inspect");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.name).toBe("foo");
+    });
+
+    it("parses inspect with --json", () => {
+      const result = parseArgs(argv(["inspect", "./graph.db", "foo", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+  });
+
+  describe("json flag", () => {
+    it("parses deps with --json", () => {
+      const result = parseArgs(argv(["deps", "./graph.db", "foo", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses callers with -j", () => {
+      const result = parseArgs(argv(["callers", "./graph.db", "foo", "-j"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses path with --json", () => {
+      const result = parseArgs(argv(["path", "./graph.db", "foo", "bar", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses stats with --json", () => {
+      const result = parseArgs(argv(["stats", "./graph.db", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses files with --json", () => {
+      const result = parseArgs(argv(["files", "./graph.db", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses search with --json", () => {
+      const result = parseArgs(argv(["search", "./graph.db", "auth", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+  });
+
+  describe("limit flag", () => {
+    it("parses deps with --limit 5", () => {
+      const result = parseArgs(argv(["deps", "./graph.db", "foo", "--limit", "5"]));
+      expect(result.args.limit).toBe(5);
+    });
+
+    it("parses callers with --limit 0", () => {
+      const result = parseArgs(argv(["callers", "./graph.db", "foo", "--limit", "0"]));
+      expect(result.args.limit).toBe(0);
+    });
+
+    it("parses files with --limit 10", () => {
+      const result = parseArgs(argv(["files", "./graph.db", "--limit", "10"]));
+      expect(result.args.limit).toBe(10);
+    });
+
+    it("parses search with --limit 20", () => {
+      const result = parseArgs(argv(["search", "./graph.db", "auth", "--limit", "20"]));
+      expect(result.args.limit).toBe(20);
+    });
+  });
+
+  describe("depth flag", () => {
+    it("parses deps with --depth 3", () => {
+      const result = parseArgs(argv(["deps", "./graph.db", "foo", "--depth", "3"]));
+      expect(result.args.depth).toBe(3);
+    });
+
+    it("parses callers with --depth 2", () => {
+      const result = parseArgs(argv(["callers", "./graph.db", "foo", "--depth", "2"]));
+      expect(result.args.depth).toBe(2);
+    });
+  });
+
   describe("errors", () => {
     it("throws on unknown subcommand", () => {
       expect(() => parseArgs(argv(["foo"]))).toThrow("Unknown subcommand: foo");

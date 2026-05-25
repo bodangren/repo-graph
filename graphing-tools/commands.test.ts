@@ -3,7 +3,8 @@ import { Database } from "bun:sqlite";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
 import { setMeta } from "./meta";
-import { runDeps, runCallers, runPath, runStats, runFiles } from "./commands";
+import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
+import { ExitCode } from "./contract";
 
 describe("convenience commands", () => {
   let db: Database;
@@ -43,20 +44,20 @@ describe("convenience commands", () => {
   describe("runDeps", () => {
     it("finds upstream dependents (default)", () => {
       const { output, exitCode } = runDeps(db, "foo", false);
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("baz");
       expect(output).toContain("depends_on");
     });
 
     it("finds downstream dependencies with --downstream", () => {
       const { output, exitCode } = runDeps(db, "baz", true);
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("foo");
     });
 
     it("shows relative paths", () => {
       const { output, exitCode } = runDeps(db, "foo", false);
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("./src/b.ts");
       expect(output).not.toContain("/project/src");
     });
@@ -66,42 +67,89 @@ describe("convenience commands", () => {
       db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
         ('function:/project/src/c.ts:bar', 'function', 'bar', '/project/src/c.ts')`);
       const { output, exitCode } = runDeps(db, "bar", false);
-      expect(exitCode).toBe(2);
+      expect(exitCode).toBe(ExitCode.Ambiguous);
       expect(output).toBe("");
     });
 
-    it("returns no results for unmatched name", () => {
+    it("returns not found for unmatched name", () => {
       const { output, exitCode } = runDeps(db, "zzz", false);
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.NotFound);
       expect(output).toBe("(no matches)");
+    });
+
+    it("returns JSON output when json: true", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { json: true });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.node).toBeDefined();
+      expect(Array.isArray(parsed.results)).toBe(true);
+      expect(parsed.results.length).toBeGreaterThan(0);
+    });
+
+    it("returns JSON not-found when json: true", () => {
+      const { output, exitCode } = runDeps(db, "zzz", false, { json: true });
+      expect(exitCode).toBe(ExitCode.NotFound);
+      const parsed = JSON.parse(output);
+      expect(parsed.results).toEqual([]);
+    });
+
+    it("respects limit", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { limit: 1 });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("… and 1 more");
+    });
+
+    it("returns all results when limit is 0", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { limit: 0 });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).not.toContain("… and");
+    });
+
+    it("respects depth for multi-hop traversal", () => {
+      // Seed a chain: a.ts → b.ts → c.ts
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:/project/src/d.ts', 'file', 'd.ts', '/project/src/d.ts')`);
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('file:/project/src/c.ts', 'file:/project/src/d.ts', 'imports', 'forward', 1)`);
+      const { output, exitCode } = runDeps(db, "a.ts", true, { depth: 2 });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("d.ts");
     });
   });
 
   describe("runCallers", () => {
     it("finds function callers", () => {
       const { output, exitCode } = runCallers(db, "foo");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("baz");
     });
 
-    it("returns no results for unmatched name", () => {
+    it("returns not found for unmatched name", () => {
       const { output, exitCode } = runCallers(db, "zzz");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.NotFound);
       expect(output).toBe("(no matches)");
     });
 
     it("does not list the owning file as a caller", () => {
       const { output, exitCode } = runCallers(db, "foo");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("baz");
       expect(output).not.toContain("contains");
+    });
+
+    it("returns JSON output when json: true", () => {
+      const { output, exitCode } = runCallers(db, "foo", { json: true });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.node).toBeDefined();
+      expect(Array.isArray(parsed.results)).toBe(true);
     });
   });
 
   describe("runPath", () => {
     it("traces a path between two nodes", () => {
       const { output, exitCode } = runPath(db, "c.ts", "a.ts");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).toContain("file:c.ts");
       expect(output).toContain("file:b.ts");
       expect(output).toContain("file:a.ts");
@@ -111,7 +159,7 @@ describe("convenience commands", () => {
       db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
         ('file:/project/src/d.ts', 'file', 'd.ts', '/project/src/d.ts')`);
       const { output, exitCode } = runPath(db, "d.ts", "a.ts");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.NotFound);
       expect(output).toBe("(no path found)");
     });
 
@@ -119,7 +167,7 @@ describe("convenience commands", () => {
       db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
         ('function:/project/src/c.ts:foo', 'function', 'foo', '/project/src/c.ts')`);
       const { output, exitCode } = runPath(db, "foo", "a.ts");
-      expect(exitCode).toBe(2);
+      expect(exitCode).toBe(ExitCode.Ambiguous);
     });
 
     it("returns ambiguous for source when target is missing", () => {
@@ -127,7 +175,7 @@ describe("convenience commands", () => {
         ('function:/project/src/c.ts:parse', 'function', 'parse', '/project/src/c.ts'),
         ('function:/project/src/a.ts:parse', 'function', 'parse', '/project/src/a.ts')`);
       const { output, exitCode } = runPath(db, "parse", "missingNode");
-      expect(exitCode).toBe(2);
+      expect(exitCode).toBe(ExitCode.Ambiguous);
       expect(output).toBe("");
     });
 
@@ -139,10 +187,28 @@ describe("convenience commands", () => {
       db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
         ('function:/project/src/a.ts:get', 'function:/project/src/a.ts:getter', 'calls', 'forward', 1)`);
       const { output, exitCode } = runPath(db, "get", "getter");
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       expect(output).not.toBe("(no path found)");
       expect(output).toContain("get");
       expect(output).toContain("getter");
+    });
+
+    it("returns JSON path when json: true", () => {
+      const { output, exitCode } = runPath(db, "c.ts", "a.ts", { json: true });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.found).toBe(true);
+      expect(parsed.hops).toBeGreaterThan(0);
+      expect(Array.isArray(parsed.path)).toBe(true);
+    });
+
+    it("returns JSON not-found when json: true", () => {
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:/project/src/d.ts', 'file', 'd.ts', '/project/src/d.ts')`);
+      const { output, exitCode } = runPath(db, "d.ts", "a.ts", { json: true });
+      expect(exitCode).toBe(ExitCode.NotFound);
+      const parsed = JSON.parse(output);
+      expect(parsed.found).toBe(false);
     });
   });
 
@@ -165,6 +231,13 @@ describe("convenience commands", () => {
       const output = runStats(db);
       expect(output).toContain("./src/");
       expect(output).not.toContain("/project/src/");
+    });
+
+    it("returns JSON when json: true", () => {
+      const output = runStats(db, { json: true });
+      const parsed = JSON.parse(output);
+      expect(typeof parsed.totals).toBe("object");
+      expect(Array.isArray(parsed.by_type)).toBe(true);
     });
   });
 
@@ -200,6 +273,53 @@ describe("convenience commands", () => {
       // b.ts now has baz, Helper, IHelper, T = 4 non-file entities
       // a.ts has foo, bar, Widget, IWidget = 4 non-file entities
     });
+
+    it("returns JSON array when json: true", () => {
+      const output = runFiles(db, undefined, { json: true });
+      const parsed = JSON.parse(output);
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed.length).toBeGreaterThan(0);
+      expect(parsed[0].name).toBeDefined();
+    });
+
+    it("respects limit on files", () => {
+      const output = runFiles(db, undefined, { limit: 2 });
+      expect(output).toContain("… and 1 more");
+    });
+  });
+
+  describe("runInspect", () => {
+    it("returns text output for existing node", () => {
+      const { output, exitCode } = runInspect(db, "foo");
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("foo");
+      expect(output).toContain("Outgoing edges");
+      expect(output).toContain("Incoming edges");
+    });
+
+    it("returns JSON for existing node when json: true", () => {
+      const { output, exitCode } = runInspect(db, "foo", { json: true });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.node).toBeDefined();
+      expect(parsed.node.name).toBe("foo");
+      expect(Array.isArray(parsed.outgoing)).toBe(true);
+      expect(Array.isArray(parsed.incoming)).toBe(true);
+    });
+
+    it("returns not found for missing node", () => {
+      const { output, exitCode } = runInspect(db, "zzz");
+      expect(exitCode).toBe(ExitCode.NotFound);
+      expect(output).toBe("(no matches)");
+    });
+
+    it("returns ambiguous for colliding names", () => {
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('function:/project/src/c.ts:foo', 'function', 'foo', '/project/src/c.ts')`);
+      const { output, exitCode } = runInspect(db, "foo");
+      expect(exitCode).toBe(ExitCode.Ambiguous);
+      expect(output).toBe("");
+    });
   });
 
   describe("no-meta DB fallback", () => {
@@ -213,7 +333,7 @@ describe("convenience commands", () => {
       db2.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
         ('function:/project/src/a.ts:foo', 'file:/project/src/a.ts', 'depends_on', 'forward', 1)`);
       const { output, exitCode } = runDeps(db2, "foo", true);
-      expect(exitCode).toBe(0);
+      expect(exitCode).toBe(ExitCode.Success);
       // Should use absolute paths since no project_root in meta
       expect(output).toContain("/project/src/a.ts");
       db2.close();

@@ -23,8 +23,9 @@ function printDisambiguation(matches: SearchResult[], root: string | undefined):
 export function runDeps(
   db: Database,
   name: string,
-  downstream: boolean
-): { output: string; exitCode: 0 | 2 } {
+  downstream: boolean,
+  opts?: { json?: boolean; limit?: number; depth?: number }
+): { output: string; exitCode: 0 | 1 | 2 } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
@@ -72,7 +73,11 @@ export function runDeps(
 
 // ── callers ────────────────────────────────────────────────────────────────
 
-export function runCallers(db: Database, name: string): { output: string; exitCode: 0 | 2 } {
+export function runCallers(
+  db: Database,
+  name: string,
+  opts?: { json?: boolean; limit?: number; depth?: number }
+): { output: string; exitCode: 0 | 1 | 2 } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
@@ -111,8 +116,9 @@ export function runCallers(db: Database, name: string): { output: string; exitCo
 export function runPath(
   db: Database,
   fromName: string,
-  toName: string
-): { output: string; exitCode: 0 | 2 } {
+  toName: string,
+  opts?: { json?: boolean }
+): { output: string; exitCode: 0 | 1 | 2 } {
   const root = getProjectRoot(db);
   const fromResolved = resolveNode(db, fromName);
   const toResolved = resolveNode(db, toName);
@@ -183,7 +189,7 @@ export function runPath(
 
 // ── stats ──────────────────────────────────────────────────────────────────
 
-export function runStats(db: Database): string {
+export function runStats(db: Database, opts?: { json?: boolean }): string {
   const root = getProjectRoot(db);
 
   const totalNodes = (db.prepare("SELECT COUNT(*) AS c FROM nodes").get() as { c: number }).c;
@@ -268,9 +274,19 @@ export function runStats(db: Database): string {
   return lines.join("\n");
 }
 
+// ── inspect ────────────────────────────────────────────────────────────────
+
+export function runInspect(
+  db: Database,
+  name: string,
+  opts?: { json?: boolean }
+): { output: string; exitCode: 0 | 1 | 2 } {
+  return { output: "(no matches)", exitCode: 0 };
+}
+
 // ── files ──────────────────────────────────────────────────────────────────
 
-export function runFiles(db: Database, pattern?: string): string {
+export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean; limit?: number }): string {
   const root = getProjectRoot(db);
 
   const whereClause = pattern ? "AND n.file_path LIKE ? ESCAPE '\\'" : "";

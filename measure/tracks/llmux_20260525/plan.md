@@ -11,20 +11,20 @@ depth (L5). Each task follows TDD. Commit after each top-level task.
 Update `contract.ts` to define the new exit code taxonomy and extend arg interfaces before
 writing any tests or implementation code.
 
-- [ ] Task: Expand `ExitCode` in `contract.ts`
-    - [ ] Add `NotFound: 1`, keep `Ambiguous: 2` (explicit), change `Misuse: 3`, change `RuntimeError: 4`
-    - [ ] Update `ExitCodeValue` type to include all five values
-    - [ ] Note: this is a non-breaking contract change — no runtime call sites yet
+- [x] Task: Expand `ExitCode` in `contract.ts`
+    - [x] Add `NotFound: 1`, keep `Ambiguous: 2` (explicit), change `Misuse: 3`, change `RuntimeError: 4`
+    - [x] Update `ExitCodeValue` type to include all five values
+    - [x] Note: this is a non-breaking contract change — no runtime call sites yet
 
-- [ ] Task: Extend arg interfaces for new flags
-    - [ ] Add `json?: boolean` to `DepsArgs`, `CallersArgs`, `PathArgs`, `StatsArgs`, `FilesArgs`, `SearchArgs`
-    - [ ] Add `limit?: number` to `DepsArgs`, `CallersArgs`, `FilesArgs`, `SearchArgs`
-    - [ ] Add `depth?: number` to `DepsArgs`, `CallersArgs`
-    - [ ] Add `"inspect"` to `Subcommand` union; add `InspectArgs { dbPath: string; name: string; json?: boolean }`
-    - [ ] Add `"version"` to `Subcommand` union (coordinate with bugfix_20260525 F7 if already done)
-    - [ ] Add `InspectArgs` variant to `ParsedArgs` union
+- [x] Task: Extend arg interfaces for new flags
+    - [x] Add `json?: boolean` to `DepsArgs`, `CallersArgs`, `PathArgs`, `StatsArgs`, `FilesArgs`, `SearchArgs`
+    - [x] Add `limit?: number` to `DepsArgs`, `CallersArgs`, `FilesArgs`, `SearchArgs`
+    - [x] Add `depth?: number` to `DepsArgs`, `CallersArgs`
+    - [x] Add `"inspect"` to `Subcommand` union; add `InspectArgs { dbPath: string; name: string; json?: boolean }`
+    - [x] Add `"version"` to `Subcommand` union (coordinate with bugfix_20260525 F7 if already done)
+    - [x] Add `InspectArgs` variant to `ParsedArgs` union
 
-- [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ---
 
@@ -33,7 +33,7 @@ writing any tests or implementation code.
 Write all failing tests before touching implementation. Group by feature.
 Run `bun test` after each task to confirm new tests fail.
 
-- [ ] Task: Tests L2 — Exit code taxonomy (`cli.test.ts`, `commands.test.ts`)
+- [~] Task: Tests L2 — Exit code taxonomy (`cli.test.ts`, `commands.test.ts`)
     - [ ] Add: commands returning not-found produce `exitCode: ExitCode.NotFound` (1)
     - [ ] Add: `build-graph.ts` top-level catch uses `ExitCode.RuntimeError` (4) not 1
     - [ ] Add: usage error path uses `ExitCode.Misuse` (3) not 2

@@ -10,11 +10,11 @@ then fix the production code. Commit after each fix so changes are bisectable.
 No schema or contract changes are required. Confirm the relevant contracts are already correct
 before writing tests.
 
-- [~] Task: Verify contract invariants
+- [x] Task: Verify contract invariants [2bd72ab]
     - [x] Confirm `schema.ts` already has `CREATE TABLE IF NOT EXISTS meta` (no migration needed)
     - [x] Confirm `contract.ts` `ExitCode` values cover all new failure paths (exit 2 for mis-use, exit 1 for runtime error)
     - [x] Confirm `ParsedArgs` type in `contract.ts` does not need a `"version"` subcommand entry (add if missing)
-- [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ---
 

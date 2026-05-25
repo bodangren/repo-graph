@@ -24,7 +24,7 @@ export function runDeps(
   db: Database,
   name: string,
   downstream: boolean,
-  opts?: { json?: boolean; limit?: number; depth?: number }
+  opts?: { json?: boolean; limit?: number; depth?: number; fromPackage?: string; toPackage?: string }
 ): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
@@ -42,6 +42,8 @@ export function runDeps(
   const node = resolved.node;
   const depth = opts?.depth ?? 1;
   const limit = opts?.limit ?? 0;
+  const fromPackage = opts?.fromPackage;
+  const toPackage = opts?.toPackage;
 
   let rows: Array<{ type: string; name: string; file_path: string; edge_type: string; depth: number }>;
 
@@ -53,7 +55,10 @@ export function runDeps(
                  e.source || ' → ' || e.target
           FROM edges e
           JOIN nodes n ON n.id = e.target
+          JOIN nodes ns ON ns.id = e.source
           WHERE e.source = ?
+            AND (?2 IS NULL OR ns.package_id = ?2)
+            AND (?3 IS NULL OR n.package_id = ?3)
 
           UNION ALL
 
@@ -61,8 +66,11 @@ export function runDeps(
                  t.path || ' → ' || e.target
           FROM edges e
           JOIN nodes n ON n.id = e.target
+          JOIN nodes ns ON ns.id = e.source
           JOIN traverse t ON e.source = t.id
           WHERE t.hops < ?
+            AND (?2 IS NULL OR ns.package_id = ?2)
+            AND (?3 IS NULL OR n.package_id = ?3)
             AND INSTR(' → ' || t.path || ' → ', ' → ' || e.target || ' → ') = 0
         )
         SELECT id, type, name, file_path, edge_type, hops AS depth
@@ -75,7 +83,10 @@ export function runDeps(
                  e.source || ' → ' || e.target
           FROM edges e
           JOIN nodes n ON n.id = e.source
+          JOIN nodes nt ON nt.id = e.target
           WHERE e.target = ?
+            AND (?2 IS NULL OR n.package_id = ?2)
+            AND (?3 IS NULL OR nt.package_id = ?3)
 
           UNION ALL
 
@@ -83,32 +94,41 @@ export function runDeps(
                  t.path || ' → ' || e.target
           FROM edges e
           JOIN nodes n ON n.id = e.source
+          JOIN nodes nt ON nt.id = e.target
           JOIN traverse t ON e.target = t.id
           WHERE t.hops < ?
+            AND (?2 IS NULL OR n.package_id = ?2)
+            AND (?3 IS NULL OR nt.package_id = ?3)
             AND INSTR(' → ' || t.path || ' → ', ' → ' || e.source || ' → ') = 0
         )
         SELECT id, type, name, file_path, edge_type, hops AS depth
         FROM traverse
         ORDER BY hops, name
       `;
-    rows = db.prepare(sql).all(node.id, depth) as typeof rows;
+    rows = db.prepare(sql).all(node.id, fromPackage ?? null, toPackage ?? null, depth) as typeof rows;
   } else {
     const sql = downstream
       ? `
         SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
         FROM edges e
         JOIN nodes n ON n.id = e.target
+        JOIN nodes ns ON ns.id = e.source
         WHERE e.source = ?
+          AND (?2 IS NULL OR ns.package_id = ?2)
+          AND (?3 IS NULL OR n.package_id = ?3)
         ORDER BY n.type, n.name
       `
       : `
         SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
         FROM edges e
         JOIN nodes n ON n.id = e.source
+        JOIN nodes nt ON nt.id = e.target
         WHERE e.target = ?
+          AND (?2 IS NULL OR n.package_id = ?2)
+          AND (?3 IS NULL OR nt.package_id = ?3)
         ORDER BY n.type, n.name
       `;
-    rows = db.prepare(sql).all(node.id) as typeof rows;
+    rows = db.prepare(sql).all(node.id, fromPackage ?? null, toPackage ?? null) as typeof rows;
   }
 
   if (rows.length === 0) {
@@ -155,7 +175,7 @@ export function runDeps(
 export function runCallers(
   db: Database,
   name: string,
-  opts?: { json?: boolean; limit?: number; depth?: number }
+  opts?: { json?: boolean; limit?: number; depth?: number; fromPackage?: string; toPackage?: string }
 ): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
@@ -173,6 +193,8 @@ export function runCallers(
   const node = resolved.node;
   const depth = opts?.depth ?? 1;
   const limit = opts?.limit ?? 0;
+  const fromPackage = opts?.fromPackage;
+  const toPackage = opts?.toPackage;
 
   let rows: Array<{ type: string; name: string; file_path: string; edge_type: string; depth: number }>;
 
@@ -183,8 +205,11 @@ export function runCallers(
                e.source || ' → ' || e.target
         FROM edges e
         JOIN nodes n ON n.id = e.source
+        JOIN nodes nt ON nt.id = e.target
         WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
           AND e.type IN ('calls', 'imports', 'depends_on')
+          AND (?2 IS NULL OR n.package_id = ?2)
+          AND (?3 IS NULL OR nt.package_id = ?3)
 
         UNION ALL
 
@@ -192,24 +217,30 @@ export function runCallers(
                t.path || ' → ' || e.source
         FROM edges e
         JOIN nodes n ON n.id = e.source
+        JOIN nodes nt ON nt.id = e.target
         JOIN traverse t ON e.target = t.id
         WHERE t.hops < ?
           AND INSTR(' → ' || t.path || ' → ', ' → ' || e.source || ' → ') = 0
           AND e.type IN ('calls', 'imports', 'depends_on')
+          AND (?2 IS NULL OR n.package_id = ?2)
+          AND (?3 IS NULL OR nt.package_id = ?3)
       )
       SELECT id, type, name, file_path, edge_type, hops AS depth
       FROM traverse
       ORDER BY hops, name
-    `).all(node.id, depth) as typeof rows;
+    `).all(node.id, fromPackage ?? null, toPackage ?? null, depth) as typeof rows;
   } else {
     rows = db.prepare(`
       SELECT n.type, n.name, n.file_path, e.type AS edge_type, 1 AS depth
       FROM edges e
       JOIN nodes n ON n.id = e.source
+      JOIN nodes nt ON nt.id = e.target
       WHERE e.target = ? AND (n.type = 'function' OR n.type = 'file')
         AND e.type IN ('calls', 'imports', 'depends_on')
+        AND (?2 IS NULL OR n.package_id = ?2)
+        AND (?3 IS NULL OR nt.package_id = ?3)
       ORDER BY n.type, n.name
-    `).all(node.id) as typeof rows;
+    `).all(node.id, fromPackage ?? null, toPackage ?? null) as typeof rows;
   }
 
   if (rows.length === 0) {
@@ -377,16 +408,21 @@ export function runStats(db: Database, opts?: { json?: boolean }): string {
     LIMIT 10
   `).all() as Array<{ file_path: string; c: number }>;
 
-  // Package breakdown: first directory segment after root
-  const packages = db.prepare(`
-    SELECT DISTINCT file_path FROM nodes WHERE type = 'file'
-  `).all() as Array<{ file_path: string }>;
+  // Package breakdown using package_id when available, falling back to first path segment
+  const fileNodes = db.prepare(`
+    SELECT file_path, package_id FROM nodes WHERE type = 'file'
+  `).all() as Array<{ file_path: string; package_id: string | null }>;
 
   const pkgCounts = new Map<string, number>();
-  for (const { file_path } of packages) {
-    const relPath = root ? toRelativePath(file_path, root) : file_path;
-    const parts = relPath.split("/");
-    const pkg = parts[0] === "." ? (parts[1] ?? "root") : (parts[0] ?? "root");
+  for (const { file_path, package_id } of fileNodes) {
+    let pkg: string;
+    if (package_id) {
+      pkg = package_id;
+    } else {
+      const relPath = root ? toRelativePath(file_path, root) : file_path;
+      const parts = relPath.split("/");
+      pkg = parts[0] === "." ? (parts[1] ?? "root") : (parts[0] ?? "root");
+    }
     pkgCounts.set(pkg, (pkgCounts.get(pkg) ?? 0) + 1);
   }
 

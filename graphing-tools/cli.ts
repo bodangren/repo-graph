@@ -5,11 +5,15 @@ function parseFlags(args: string[]): {
   json: boolean;
   limit?: number;
   depth?: number;
+  fromPackage?: string;
+  toPackage?: string;
 } {
   const flags: string[] = [];
   let json = false;
   let limit: number | undefined;
   let depth: number | undefined;
+  let fromPackage: string | undefined;
+  let toPackage: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -23,12 +27,16 @@ function parseFlags(args: string[]): {
       const next = args[++i];
       if (next === undefined) throw new Error("Usage: --depth requires a number");
       depth = Number(next);
+    } else if (a.startsWith("--from-package=")) {
+      fromPackage = a.slice("--from-package=".length);
+    } else if (a.startsWith("--to-package=")) {
+      toPackage = a.slice("--to-package=".length);
     } else {
       flags.push(a);
     }
   }
 
-  return { flags, json, limit, depth };
+  return { flags, json, limit, depth, fromPackage, toPackage };
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -76,14 +84,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
     case "deps": {
       const downstream = args.includes("--downstream");
       const filtered = args.filter((a) => a !== "--downstream");
-      const { flags, json, limit, depth } = parseFlags(filtered.slice(1));
-      if (flags.length < 2) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream] [--json] [--limit N] [--depth N]");
-      return { subcommand: "deps", args: { dbPath: flags[0], name: flags[1], downstream, json, limit, depth } };
+      const { flags, json, limit, depth, fromPackage, toPackage } = parseFlags(filtered.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph deps <db> <node-name> [--downstream] [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]");
+      return { subcommand: "deps", args: { dbPath: flags[0], name: flags[1], downstream, json, limit, depth, fromPackage, toPackage } };
     }
     case "callers": {
-      const { flags, json, limit, depth } = parseFlags(args.slice(1));
-      if (flags.length < 2) throw new Error("Usage: build-graph callers <db> <function-name> [--json] [--limit N] [--depth N]");
-      return { subcommand: "callers", args: { dbPath: flags[0], name: flags[1], json, limit, depth } };
+      const { flags, json, limit, depth, fromPackage, toPackage } = parseFlags(args.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph callers <db> <function-name> [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]");
+      return { subcommand: "callers", args: { dbPath: flags[0], name: flags[1], json, limit, depth, fromPackage, toPackage } };
     }
     case "path": {
       const { flags, json } = parseFlags(args.slice(1));

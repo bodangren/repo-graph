@@ -7,10 +7,11 @@ import { parseArgs } from "./cli";
 import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
 import { scanProject } from "./scanner";
+import { dirname, basename } from "path";
 import { runQuery, formatTable, formatJson } from "./query";
 import { searchNodes } from "./search";
 import { updateFiles } from "./update";
-import { runDeps, runCallers, runPath, runStats, runFiles } from "./commands";
+import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
 import { setMeta } from "./meta";
 import { ExitCode } from "./contract";
 
@@ -110,13 +111,34 @@ function discoverTsConfigs(root: string): string[] {
   return results;
 }
 
-export async function createProject(projectDir: string): Promise<Project> {
+function getPackageIdForFile(filePath: string, tsConfigPaths: string[]): string {
+  let best: string | undefined;
+  let bestDepth = -1;
+  const dir = dirname(filePath);
+  for (const cfg of tsConfigPaths) {
+    const cfgDir = dirname(cfg);
+    if (dir === cfgDir || dir.startsWith(cfgDir + "/")) {
+      const depth = cfgDir.split("/").length;
+      if (depth > bestDepth) {
+        best = cfg;
+        bestDepth = depth;
+      }
+    }
+  }
+  if (best) {
+    return basename(dirname(best));
+  }
+  return "root";
+}
+
+export async function createProject(projectDir: string): Promise<{ project: Project; tsConfigPaths: string[] }> {
   const rootConfig = join(projectDir, "tsconfig.json");
 
   // Fast path: single root tsconfig
   try {
     if (statSync(rootConfig).isFile()) {
-      return new Project({ tsConfigFilePath: rootConfig });
+      const project = new Project({ tsConfigFilePath: rootConfig });
+      return { project, tsConfigPaths: [rootConfig] };
     }
   } catch { /* no root tsconfig */ }
 
@@ -132,14 +154,14 @@ export async function createProject(projectDir: string): Promise<Project> {
         console.error(`Warning: could not load ${cfg}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    return project;
+    return { project, tsConfigPaths: configs };
   }
 
   // Fallback: glob all .ts/.tsx files
   const project = new Project();
   project.addSourceFilesAtPaths(join(projectDir, "**/*.ts"));
   project.addSourceFilesAtPaths(join(projectDir, "**/*.tsx"));
-  return project;
+  return { project, tsConfigPaths: [] };
 }
 
 async function handleScan(projectDir: string, dbPath: string): Promise<void> {
@@ -152,12 +174,17 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
     createIndexes(db);
     setMeta(db, "project_root", absProjectDir);
 
-    const project = await createProject(absProjectDir);
-    const { nodes, edges } = scanProject(project);
+    const { project, tsConfigPaths } = await createProject(absProjectDir);
+    const packageMap = new Map<string, string>();
+    for (const sf of project.getSourceFiles()) {
+      const fp = sf.getFilePath();
+      packageMap.set(fp, getPackageIdForFile(fp, tsConfigPaths));
+    }
+    const { nodes, edges } = scanProject(project, packageMap);
 
     const insertNode = db.prepare(`
-      INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id, package_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertEdge = db.prepare(`
       INSERT INTO edges (source, target, type, direction, weight)
@@ -179,7 +206,8 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
           n.lineStart ?? null, n.lineEnd ?? null,
           n.summary ?? null,
           n.tags ? JSON.stringify(n.tags) : null,
-          n.layerId ?? null
+          n.layerId ?? null,
+          n.packageId ?? null
         );
       }
       for (const e of edges) {
@@ -246,10 +274,10 @@ async function handleUpdate(dbPath: string, filePaths: string[]): Promise<void> 
   }
 }
 
-async function handleDeps(dbPath: string, name: string, downstream: boolean, json: boolean, limit?: number, depth?: number): Promise<number> {
+async function handleDeps(dbPath: string, name: string, downstream: boolean, json: boolean, limit?: number, depth?: number, fromPackage?: string, toPackage?: string): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runDeps(db, name, downstream, { json, limit, depth });
+    const { output, exitCode } = runDeps(db, name, downstream, { json, limit, depth, fromPackage, toPackage });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -257,10 +285,10 @@ async function handleDeps(dbPath: string, name: string, downstream: boolean, jso
   }
 }
 
-async function handleCallers(dbPath: string, name: string, json: boolean, limit?: number, depth?: number): Promise<number> {
+async function handleCallers(dbPath: string, name: string, json: boolean, limit?: number, depth?: number, fromPackage?: string, toPackage?: string): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runCallers(db, name, { json, limit, depth });
+    const { output, exitCode } = runCallers(db, name, { json, limit, depth, fromPackage, toPackage });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -328,9 +356,9 @@ export async function main(argv: string[]): Promise<number> {
       await handleUpdate(parsed.args.dbPath, parsed.args.filePaths);
       break;
     case "deps":
-      return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth);
+      return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth, parsed.args.fromPackage, parsed.args.toPackage);
     case "callers":
-      return await handleCallers(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth);
+      return await handleCallers(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth, parsed.args.fromPackage, parsed.args.toPackage);
     case "path":
       return await handlePath(parsed.args.dbPath, parsed.args.from, parsed.args.to, parsed.args.json ?? false);
     case "stats":

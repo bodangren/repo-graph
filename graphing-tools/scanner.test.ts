@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "bun:test";
-import { Project } from "ts-morph";
-import { scanProject } from "./scanner";
+import { Project, SyntaxKind } from "ts-morph";
+import { scanProject, scanSchemas, scanFrameworkEdges } from "./scanner";
 import type { GraphNode, GraphEdge } from "./contract";
 
 describe("scanProject", () => {
@@ -131,5 +131,202 @@ describe("scanProject", () => {
       );
       expect(implEdges.length).toBeGreaterThan(0);
     });
+  });
+
+  describe("package labeling (S3)", () => {
+    it("labels nodes with package_id when packageMap is provided", () => {
+      const pkgProject = new Project({ useInMemoryFileSystem: true });
+      pkgProject.createSourceFile("/frontend/src/app.ts", `export function main() {}`);
+      pkgProject.createSourceFile("/backend/src/api.ts", `export function handle() {}`);
+
+      const packageMap = new Map<string, string>([
+        ["/frontend/src/app.ts", "frontend"],
+        ["/backend/src/api.ts", "backend"],
+      ]);
+
+      const { nodes } = scanProject(pkgProject, packageMap);
+      const appFile = nodes.find((n) => n.name === "app.ts" && n.type === "file");
+      const apiFile = nodes.find((n) => n.name === "api.ts" && n.type === "file");
+      expect(appFile?.packageId).toBe("frontend");
+      expect(apiFile?.packageId).toBe("backend");
+    });
+
+    it("uses 'root' as fallback when file not in packageMap", () => {
+      const pkgProject = new Project({ useInMemoryFileSystem: true });
+      pkgProject.createSourceFile("/src/app.ts", `export function main() {}`);
+      const packageMap = new Map<string, string>();
+      const { nodes } = scanProject(pkgProject, packageMap);
+      const appFile = nodes.find((n) => n.name === "app.ts");
+      expect(appFile?.packageId).toBe("root");
+    });
+  });
+});
+
+describe("scanSchemas (S1)", () => {
+  function makeProject(code: string): Project {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/schema.ts", code);
+    return p;
+  }
+
+  it("extracts defineTable call as schema node with field children", () => {
+    const p = makeProject(`
+      import { defineTable } from "convex/server";
+      import { v } from "convex/values";
+      export const users = defineTable({
+        name: v.string(),
+        email: v.string(),
+      });
+    `);
+    const { nodes, edges } = scanSchemas(p);
+    const schemaNode = nodes.find((n) => n.type === "schema" && n.name === "users");
+    expect(schemaNode).toBeDefined();
+
+    const fieldNodes = nodes.filter((n) => n.type === "field");
+    expect(fieldNodes.length).toBe(2);
+    expect(fieldNodes.some((f) => f.name === "users.name")).toBe(true);
+    expect(fieldNodes.some((f) => f.name === "users.email")).toBe(true);
+
+    const hasFieldEdges = edges.filter((e) => e.type === "has_field");
+    expect(hasFieldEdges.length).toBe(2);
+  });
+
+  it("extracts z.object call as schema node with field children", () => {
+    const p = makeProject(`
+      import { z } from "zod";
+      export const UserSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+      });
+    `);
+    const { nodes, edges } = scanSchemas(p);
+    const schemaNode = nodes.find((n) => n.type === "schema" && n.name === "UserSchema");
+    expect(schemaNode).toBeDefined();
+
+    const fieldNodes = nodes.filter((n) => n.type === "field");
+    expect(fieldNodes.length).toBe(2);
+    expect(fieldNodes.some((f) => f.name === "UserSchema.name")).toBe(true);
+
+    const hasFieldEdges = edges.filter((e) => e.type === "has_field");
+    expect(hasFieldEdges.length).toBe(2);
+  });
+
+  it("extracts exported const object literal as config schema", () => {
+    const p = makeProject(`
+      export const config = {
+        apiUrl: "https://api.example.com",
+        timeout: 30,
+      };
+    `);
+    const { nodes, edges } = scanSchemas(p);
+    const schemaNode = nodes.find((n) => n.type === "schema" && n.name === "config");
+    expect(schemaNode).toBeDefined();
+
+    const fieldNodes = nodes.filter((n) => n.type === "field");
+    expect(fieldNodes.length).toBe(2);
+    expect(fieldNodes.some((f) => f.name === "config.apiUrl")).toBe(true);
+    expect(fieldNodes.some((f) => f.name === "config.timeout")).toBe(true);
+
+    const hasFieldEdges = edges.filter((e) => e.type === "has_field");
+    expect(hasFieldEdges.length).toBe(2);
+  });
+
+  it("creates references edge for v.id('tableName')", () => {
+    const p = makeProject(`
+      import { defineTable } from "convex/server";
+      import { v } from "convex/values";
+      export const users = defineTable({
+        name: v.string(),
+        projectId: v.id("projects"),
+      });
+    `);
+    const { edges } = scanSchemas(p);
+    const refEdges = edges.filter((e) => e.type === "references");
+    expect(refEdges.length).toBe(1);
+    expect(refEdges[0].target).toBe("schema:*:projects");
+  });
+
+  it("skips non-exported const objects", () => {
+    const p = makeProject(`
+      const internal = { secret: "xyz" };
+    `);
+    const { nodes } = scanSchemas(p);
+    expect(nodes.length).toBe(0);
+  });
+});
+
+describe("scanFrameworkEdges (S2)", () => {
+  function makeProject(code: string): Project {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/src/comp.tsx", code);
+    return p;
+  }
+
+  it("emits renders edge for JSX component references", () => {
+    const p = makeProject(`
+      function Child() { return null; }
+      export function Parent() {
+        return <Child />;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const renders = edges.filter((e) => e.type === "renders");
+    expect(renders.length).toBe(1);
+    expect(renders[0].source).toContain(":Parent");
+    expect(renders[0].target).toContain(":Child");
+  });
+
+  it("emits uses_hook edge for useHook() calls", () => {
+    const p = makeProject(`
+      function useAuth() { return {}; }
+      export function Dashboard() {
+        const user = useAuth();
+        return null;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const hooks = edges.filter((e) => e.type === "uses_hook");
+    expect(hooks.length).toBe(1);
+    expect(hooks[0].source).toContain(":Dashboard");
+    expect(hooks[0].target).toContain(":useAuth");
+  });
+
+  it("emits queries edge for useQuery(api.module.fn)", () => {
+    const p = makeProject(`
+      export function Dashboard() {
+        const projects = useQuery(api.projects.getAll);
+        return null;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const queries = edges.filter((e) => e.type === "queries");
+    expect(queries.length).toBe(1);
+    expect(queries[0].source).toContain(":Dashboard");
+    expect(queries[0].target).toBe("function:*:projects.getAll");
+  });
+
+  it("emits mutates edge for useMutation(api.module.fn)", () => {
+    const p = makeProject(`
+      export function Dashboard() {
+        const update = useMutation(api.projects.update);
+        return null;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const mutates = edges.filter((e) => e.type === "mutates");
+    expect(mutates.length).toBe(1);
+    expect(mutates[0].source).toContain(":Dashboard");
+    expect(mutates[0].target).toBe("function:*:projects.update");
+  });
+
+  it("ignores intrinsic JSX elements like div", () => {
+    const p = makeProject(`
+      export function Box() {
+        return <div>hello</div>;
+      }
+    `);
+    const { edges } = scanFrameworkEdges(p);
+    const renders = edges.filter((e) => e.type === "renders");
+    expect(renders.length).toBe(0);
   });
 });

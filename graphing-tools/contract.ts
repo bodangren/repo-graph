@@ -43,6 +43,8 @@ export interface DepsArgs {
   json?: boolean;
   limit?: number;
   depth?: number;
+  fromPackage?: string;
+  toPackage?: string;
 }
 
 export interface CallersArgs {
@@ -51,6 +53,8 @@ export interface CallersArgs {
   json?: boolean;
   limit?: number;
   depth?: number;
+  fromPackage?: string;
+  toPackage?: string;
 }
 
 export interface PathArgs {
@@ -157,6 +161,7 @@ export interface GraphNode {
   complexity?: "simple" | "moderate" | "complex";
   languageNotes?: string;
   layerId?: string;
+  packageId?: string;
 }
 
 export type NodeType =
@@ -167,7 +172,9 @@ export type NodeType =
   | "type_alias"
   | "variable"
   | "import"
-  | "export";
+  | "export"
+  | "schema"
+  | "field";
 
 export interface GraphEdge {
   source: NodeId;
@@ -185,7 +192,13 @@ export type EdgeType =
   | "calls"
   | "depends_on"
   | "exports"
-  | "tested_by";
+  | "tested_by"
+  | "has_field"
+  | "references"
+  | "renders"
+  | "uses_hook"
+  | "queries"
+  | "mutates";
 
 // ── Query/Search output contract ───────────────────────────────────────────
 

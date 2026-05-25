@@ -13,7 +13,8 @@ export function createSchema(db: Database): void {
       tags TEXT,
       complexity TEXT,
       language_notes TEXT,
-      layer_id TEXT
+      layer_id TEXT,
+      package_id TEXT
     );
     CREATE TABLE IF NOT EXISTS edges (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

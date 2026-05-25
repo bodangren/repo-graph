@@ -41,6 +41,97 @@ describe("convenience commands", () => {
     db.close();
   });
 
+  describe("runDeps with package filters (S4)", () => {
+    beforeEach(() => {
+      // Add package_id to existing seed nodes
+      db.exec(`UPDATE nodes SET package_id = 'frontend' WHERE file_path LIKE '%/src/a.ts'`);
+      db.exec(`UPDATE nodes SET package_id = 'backend' WHERE file_path LIKE '%/src/b.ts'`);
+      db.exec(`UPDATE nodes SET package_id = 'frontend' WHERE file_path LIKE '%/src/c.ts'`);
+    });
+
+    it("filters deps by fromPackage", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { fromPackage: "backend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("baz");
+      expect(output).not.toContain("a.ts");
+    });
+
+    it("filters deps by toPackage", () => {
+      // upstream deps: toPackage filters the target side (foo), which is in frontend
+      const { output, exitCode } = runDeps(db, "foo", false, { toPackage: "frontend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("baz");
+    });
+
+    it("excludes deps when toPackage does not match target", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { toPackage: "backend" });
+      expect(exitCode).toBe(ExitCode.NotFound);
+      expect(output).toBe("(no results)");
+    });
+
+    it("combines fromPackage and toPackage", () => {
+      // fromPackage=backend filters source (baz), toPackage=frontend filters target (foo)
+      const { output, exitCode } = runDeps(db, "foo", false, { fromPackage: "backend", toPackage: "frontend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("baz");
+    });
+
+    it("returns JSON with package filters", () => {
+      const { output, exitCode } = runDeps(db, "foo", false, { json: true, fromPackage: "backend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      const parsed = JSON.parse(output);
+      expect(parsed.results.length).toBe(1);
+      expect(parsed.results[0].name).toBe("baz");
+    });
+  });
+
+  describe("runCallers with package filters (S4)", () => {
+    beforeEach(() => {
+      db.exec(`UPDATE nodes SET package_id = 'frontend' WHERE file_path LIKE '%/src/a.ts'`);
+      db.exec(`UPDATE nodes SET package_id = 'backend' WHERE file_path LIKE '%/src/b.ts'`);
+    });
+
+    it("filters callers by fromPackage", () => {
+      const { output, exitCode } = runCallers(db, "foo", { fromPackage: "backend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("baz");
+    });
+
+    it("excludes callers from other packages", () => {
+      // Insert another caller in frontend
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, package_id) VALUES
+        ('function:/project/src/c.ts:fooCaller', 'function', 'fooCaller', '/project/src/c.ts', 'frontend')`);
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('function:/project/src/c.ts:fooCaller', 'function:/project/src/a.ts:foo', 'calls', 'forward', 1)`);
+      const { output, exitCode } = runCallers(db, "foo", { fromPackage: "backend" });
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).toContain("baz");
+      expect(output).not.toContain("fooCaller");
+    });
+  });
+
+  describe("runStats package breakdown (S4)", () => {
+    beforeEach(() => {
+      db.exec(`UPDATE nodes SET package_id = 'frontend' WHERE file_path LIKE '%/src/a.ts'`);
+      db.exec(`UPDATE nodes SET package_id = 'backend' WHERE file_path LIKE '%/src/b.ts'`);
+      db.exec(`UPDATE nodes SET package_id = 'frontend' WHERE file_path LIKE '%/src/c.ts'`);
+    });
+
+    it("shows package breakdown in text output", () => {
+      const output = runStats(db);
+      expect(output).toContain("frontend");
+      expect(output).toContain("backend");
+    });
+
+    it("shows package breakdown in JSON output", () => {
+      const output = runStats(db, { json: true });
+      const parsed = JSON.parse(output);
+      expect(parsed.packages).toBeDefined();
+      expect(typeof parsed.packages.frontend).toBe("number");
+      expect(typeof parsed.packages.backend).toBe("number");
+    });
+  });
+
   describe("runDeps", () => {
     it("finds upstream dependents (default)", () => {
       const { output, exitCode } = runDeps(db, "foo", false);
@@ -327,7 +418,7 @@ describe("convenience commands", () => {
   describe("no-meta DB fallback", () => {
     it("runDeps works on DB without meta table", () => {
       const db2 = new Database(":memory:");
-      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT);
+      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT, package_id TEXT);
                   CREATE TABLE edges (id INTEGER PRIMARY KEY, source TEXT, target TEXT, type TEXT, direction TEXT, weight REAL);`);
       db2.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
         ('file:/project/src/a.ts', 'file', 'a.ts', '/project/src/a.ts'),
@@ -343,7 +434,7 @@ describe("convenience commands", () => {
 
     it("runStats works on DB without meta table", () => {
       const db2 = new Database(":memory:");
-      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT);
+      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT, package_id TEXT);
                   CREATE TABLE edges (id INTEGER PRIMARY KEY, source TEXT, target TEXT, type TEXT, direction TEXT, weight REAL);`);
       db2.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
         ('file:/project/src/a.ts', 'file', 'a.ts', '/project/src/a.ts')`);

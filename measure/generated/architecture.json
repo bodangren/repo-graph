@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T04:18:06.957Z",
+  "generated_at": "2026-05-25T05:04:28.773Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -32,13 +32,13 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 1052
+        "size": 1075
       },
       {
         "type": "file",
         "path": "monorepo.test.ts",
         "extension": "ts",
-        "size": 1570
+        "size": 1582
       },
       {
         "type": "file",
@@ -146,7 +146,7 @@
         "type": "file",
         "path": "commands.test.ts",
         "extension": "ts",
-        "size": 15151
+        "size": 19253
       },
       {
         "type": "file",
@@ -158,13 +158,13 @@
         "type": "file",
         "path": "scanner.ts",
         "extension": "ts",
-        "size": 4562
+        "size": 13345
       },
       {
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 5020
+        "size": 5250
       },
       {
         "type": "file",
@@ -230,7 +230,7 @@
         "type": "file",
         "path": "update.ts",
         "extension": "ts",
-        "size": 2329
+        "size": 2378
       },
       {
         "type": "directory",
@@ -272,13 +272,13 @@
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 22154
+        "size": 23985
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 12985
+        "size": 14204
       },
       {
         "type": "file",
@@ -296,13 +296,13 @@
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 4699
+        "size": 5217
       },
       {
         "type": "file",
         "path": "scanner.test.ts",
         "extension": "ts",
-        "size": 5230
+        "size": 12313
       },
       {
         "type": "file",
@@ -398,7 +398,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 14818
+            "size": 14819
           },
           {
             "type": "file",
@@ -424,7 +424,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 972
+        "size": 1135
       },
       {
         "type": "file",
@@ -480,7 +480,7 @@
                 "type": "file",
                 "path": "tracks/llmux_20260525/metadata.json",
                 "extension": "json",
-                "size": 361
+                "size": 525
               },
               {
                 "type": "file",
@@ -553,6 +553,36 @@
                 "path": "tracks/graphdb_20260524/index.md",
                 "extension": "md",
                 "size": 128
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/scanner_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/scanner_20260525/plan.md",
+                "extension": "md",
+                "size": 5644
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_20260525/metadata.json",
+                "extension": "json",
+                "size": 371
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_20260525/spec.md",
+                "extension": "md",
+                "size": 5566
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_20260525/index.md",
+                "extension": "md",
+                "size": 122
               }
             ]
           },

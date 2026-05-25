@@ -19,8 +19,8 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
 
   const deleteNodes = db.prepare("DELETE FROM nodes WHERE file_path = ?");
   const deleteEdges = db.prepare("DELETE FROM edges WHERE source IN (SELECT id FROM nodes WHERE file_path = ?) OR target IN (SELECT id FROM nodes WHERE file_path = ?)");
-  const insertNode = db.prepare(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertNode = db.prepare(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id, package_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insertEdge = db.prepare(`INSERT INTO edges (source, target, type, direction, weight)
     VALUES (?, ?, ?, ?, ?)`);
 
@@ -51,7 +51,8 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
           node.lineStart ?? null, node.lineEnd ?? null,
           node.summary ?? null,
           node.tags ? JSON.stringify(node.tags) : null,
-          node.layerId ?? null
+          node.layerId ?? null,
+          node.packageId ?? null
         );
         stats.nodesInserted++;
       }

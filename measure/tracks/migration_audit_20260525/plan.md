@@ -2,11 +2,11 @@
 
 ## Phase 1: Contract & Schema Definition
 
-- [ ] Task: Extend database schema for edge metadata
-  - [ ] Add `metadata TEXT` column to `edges` table
-  - [ ] Add `route` to `NodeType` union in contract.ts
-  - [ ] Add `param_flow` to `EdgeType` union in contract.ts
-  - [ ] Verify backward compatibility: old DBs without `metadata` load gracefully
+- [x] Task: Extend database schema for edge metadata [6d691cc]
+  - [x] Add `metadata TEXT` column to `edges` table
+  - [x] Add `route` to `NodeType` union in contract.ts
+  - [x] Add `param_flow` to `EdgeType` union in contract.ts
+  - [x] Verify backward compatibility: old DBs without `metadata` load gracefully
 - [ ] Task: Define route node structure and ID convention
   - [ ] ID format: `route:<file_path>:<method>:<normalized_path>`
   - [ ] Node fields: method, params (JSON array), handler_name

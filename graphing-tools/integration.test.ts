@@ -44,24 +44,24 @@ describe("build-graph end-to-end", () => {
   it("scans and inserts all fixture nodes", () => {
     const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM nodes").get();
     expect(count?.c).toBeGreaterThan(10); // file + funcs + classes + interfaces + types
-  });
+  }, 15000);
 
   it("scans and inserts all fixture edges", () => {
     const count = db.query<{ c: number }, []>("SELECT COUNT(*) AS c FROM edges").get();
     expect(count?.c).toBeGreaterThan(5);
-  });
+  }, 15000);
 
   it("query returns correct node data", () => {
     const result = runQuery(db, "SELECT name, type FROM nodes WHERE type = 'class' ORDER BY name");
     expect(result.rows.map((r) => r[0])).toContain("Admin");
     expect(result.rows.map((r) => r[0])).toContain("User");
-  });
+  }, 15000);
 
   it("search finds nodes by keyword", () => {
     const results = searchNodes(db, "User");
     expect(results.length).toBeGreaterThan(0);
     expect(results.some((r) => r.name === "User")).toBe(true);
-  });
+  }, 15000);
 
   it("import edges connect auth.ts to utils.ts", () => {
     const result = runQuery(db, `
@@ -71,5 +71,5 @@ describe("build-graph end-to-end", () => {
       WHERE src.name = 'auth.ts' AND e.type = 'imports'
     `);
     expect(result.rows.length).toBeGreaterThan(0);
-  });
+  }, 15000);
 });

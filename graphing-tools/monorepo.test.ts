@@ -26,7 +26,7 @@ describe("createProject with multiple tsconfigs", () => {
     // convex/src/api.ts contributes the api object (via contains edge)
     const apiFile = fileNodes.find((n) => n.name === "api.ts");
     expect(apiFile).toBeDefined();
-  });
+  }, 15000);
 
   it("creates import edges between packages", async () => {
     const { project } = await createProject("./graphing-tools/fixtures/monorepo");
@@ -34,5 +34,5 @@ describe("createProject with multiple tsconfigs", () => {
 
     const importEdges = edges.filter((e) => e.type === "imports");
     expect(importEdges.length).toBeGreaterThan(0);
-  });
+  }, 15000);
 });

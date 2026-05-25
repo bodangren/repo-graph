@@ -21,8 +21,8 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
   const deleteEdges = db.prepare("DELETE FROM edges WHERE source IN (SELECT id FROM nodes WHERE file_path = ?) OR target IN (SELECT id FROM nodes WHERE file_path = ?)");
   const insertNode = db.prepare(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id, package_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  const insertEdge = db.prepare(`INSERT INTO edges (source, target, type, direction, weight)
-    VALUES (?, ?, ?, ?, ?)`);
+  const insertEdge = db.prepare(`INSERT INTO edges (source, target, type, direction, weight, metadata)
+    VALUES (?, ?, ?, ?, ?, ?)`);
 
   db.transaction(() => {
     for (const filePath of filePaths) {
@@ -58,7 +58,7 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
       }
 
       for (const edge of edges) {
-        insertEdge.run(edge.source, edge.target, edge.type, edge.direction, edge.weight ?? 0.5);
+        insertEdge.run(edge.source, edge.target, edge.type, edge.direction, edge.weight ?? 0.5, edge.metadata ?? null);
         stats.edgesInserted++;
       }
 

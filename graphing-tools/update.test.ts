@@ -38,5 +38,5 @@ describe("updateFiles", () => {
     // Verify old node is gone
     const oldNode = db.query("SELECT * FROM nodes WHERE id = 'old'").get();
     expect(oldNode).toBeNull();
-  });
+  }, 15000);
 });

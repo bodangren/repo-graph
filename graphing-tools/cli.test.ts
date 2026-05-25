@@ -245,6 +245,11 @@ describe("parseArgs", () => {
       const result = parseArgs(argv(["search", "./graph.db", "auth", "--limit", "20"]));
       expect(result.args.limit).toBe(20);
     });
+
+    it("parses search with --type=route", () => {
+      const result = parseArgs(argv(["search", "./graph.db", "auth", "--type=route"]));
+      expect(result.args.type).toBe("route");
+    });
   });
 
   describe("depth flag", () => {

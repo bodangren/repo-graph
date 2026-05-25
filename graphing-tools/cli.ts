@@ -7,6 +7,7 @@ function parseFlags(args: string[]): {
   depth?: number;
   fromPackage?: string;
   toPackage?: string;
+  type?: string;
 } {
   const flags: string[] = [];
   let json = false;
@@ -14,6 +15,7 @@ function parseFlags(args: string[]): {
   let depth: number | undefined;
   let fromPackage: string | undefined;
   let toPackage: string | undefined;
+  let type: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -31,12 +33,14 @@ function parseFlags(args: string[]): {
       fromPackage = a.slice("--from-package=".length);
     } else if (a.startsWith("--to-package=")) {
       toPackage = a.slice("--to-package=".length);
+    } else if (a.startsWith("--type=")) {
+      type = a.slice("--type=".length);
     } else {
       flags.push(a);
     }
   }
 
-  return { flags, json, limit, depth, fromPackage, toPackage };
+  return { flags, json, limit, depth, fromPackage, toPackage, type };
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -77,9 +81,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { subcommand: "query", args: { dbPath: args[offset], sql: args[offset + 1], json } };
     }
     case "search": {
-      const { flags, json, limit } = parseFlags(args.slice(1));
-      if (flags.length < 2) throw new Error("Usage: build-graph search <db> <keyword> [--json] [--limit N]");
-      return { subcommand: "search", args: { dbPath: flags[0], keyword: flags[1], json, limit } };
+      const { flags, json, limit, type } = parseFlags(args.slice(1));
+      if (flags.length < 2) throw new Error("Usage: build-graph search <db> <keyword> [--json] [--limit N] [--type=T]");
+      return { subcommand: "search", args: { dbPath: flags[0], keyword: flags[1], json, limit, type } };
     }
     case "deps": {
       const downstream = args.includes("--downstream");

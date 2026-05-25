@@ -68,6 +68,7 @@ describe("createSchema", () => {
     expect(names).toContain("type");
     expect(names).toContain("direction");
     expect(names).toContain("weight");
+    expect(names).toContain("metadata");
   });
 
   it("nodes.id is a primary key", () => {

@@ -187,8 +187,8 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertEdge = db.prepare(`
-      INSERT INTO edges (source, target, type, direction, weight)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO edges (source, target, type, direction, weight, metadata)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     const seenNodes = new Set<string>();
@@ -211,7 +211,7 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
         );
       }
       for (const e of edges) {
-        insertEdge.run(e.source, e.target, e.type, e.direction, e.weight ?? 0.5);
+        insertEdge.run(e.source, e.target, e.type, e.direction, e.weight ?? 0.5, e.metadata ?? null);
       }
     })();
 
@@ -240,10 +240,10 @@ async function handleQuery(dbPath: string, sql: string, json: boolean): Promise<
   }
 }
 
-async function handleSearch(dbPath: string, keyword: string, json: boolean, limit?: number): Promise<void> {
+async function handleSearch(dbPath: string, keyword: string, json: boolean, limit?: number, typeFilter?: string): Promise<void> {
   const db = new Database(dbPath);
   try {
-    let results = searchNodes(db, keyword);
+    let results = searchNodes(db, keyword, typeFilter);
     if (limit !== undefined && limit > 0 && results.length > limit) {
       results = results.slice(0, limit);
     }
@@ -350,7 +350,7 @@ export async function main(argv: string[]): Promise<number> {
       await handleQuery(parsed.args.dbPath, parsed.args.sql, parsed.args.json ?? false);
       break;
     case "search":
-      await handleSearch(parsed.args.dbPath, parsed.args.keyword, parsed.args.json ?? false, parsed.args.limit);
+      await handleSearch(parsed.args.dbPath, parsed.args.keyword, parsed.args.json ?? false, parsed.args.limit, parsed.args.type);
       break;
     case "update":
       await handleUpdate(parsed.args.dbPath, parsed.args.filePaths);

@@ -1,18 +1,20 @@
 import { Database } from "bun:sqlite";
 import type { SearchResult } from "./contract";
 
-export function searchNodes(db: Database, keyword: string): SearchResult[] {
+export function searchNodes(db: Database, keyword: string, typeFilter?: string): SearchResult[] {
   const like = `%${keyword.toLowerCase()}%`;
-  const stmt = db.prepare(`
+  const params: (string | number)[] = [like, like, like];
+  let sql = `
     SELECT id, type, name, file_path, summary
     FROM nodes
-    WHERE LOWER(name) LIKE ?
-       OR LOWER(summary) LIKE ?
-       OR LOWER(tags) LIKE ?
-    ORDER BY type, name
-    LIMIT 20
-  `);
-  const rows = stmt.all(like, like, like) as Array<{
+    WHERE (LOWER(name) LIKE ? OR LOWER(summary) LIKE ? OR LOWER(tags) LIKE ?)`;
+  if (typeFilter) {
+    sql += ` AND type = ?`;
+    params.push(typeFilter);
+  }
+  sql += ` ORDER BY type, name LIMIT 20`;
+  const stmt = db.prepare(sql);
+  const rows = stmt.all(...params) as Array<{
     id: string;
     type: string;
     name: string;

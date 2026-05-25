@@ -76,6 +76,7 @@ export interface SearchArgs {
   keyword: string;
   json?: boolean;
   limit?: number;
+  type?: string;
 }
 
 export interface HelpArgs {
@@ -169,7 +170,8 @@ export type NodeType =
   | "import"
   | "export"
   | "schema"
-  | "field";
+  | "field"
+  | "route";
 
 export interface GraphEdge {
   source: NodeId;
@@ -177,6 +179,7 @@ export interface GraphEdge {
   type: EdgeType;
   direction: "forward" | "backward" | "bidirectional";
   weight?: number;
+  metadata?: string;
 }
 
 export type EdgeType =
@@ -193,7 +196,8 @@ export type EdgeType =
   | "renders"
   | "uses_hook"
   | "queries"
-  | "mutates";
+  | "mutates"
+  | "param_flow";
 
 // ── Query/Search output contract ───────────────────────────────────────────
 

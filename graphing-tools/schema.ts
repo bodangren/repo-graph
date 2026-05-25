@@ -22,7 +22,8 @@ export function createSchema(db: Database): void {
       target TEXT NOT NULL,
       type TEXT NOT NULL,
       direction TEXT NOT NULL,
-      weight REAL DEFAULT 0.5
+      weight REAL DEFAULT 0.5,
+      metadata TEXT
     );
     CREATE TABLE IF NOT EXISTS layers (
       id TEXT PRIMARY KEY,
@@ -41,4 +42,11 @@ export function createSchema(db: Database): void {
       value TEXT
     );
   `);
+
+  // Backward-compat: add metadata column to pre-existing edges tables
+  try {
+    db.exec(`ALTER TABLE edges ADD COLUMN metadata TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
 }

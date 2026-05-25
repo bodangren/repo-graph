@@ -94,7 +94,12 @@ describe("parseArgs", () => {
   describe("version", () => {
     it("parses --version", () => {
       const result = parseArgs(argv(["--version"]));
-      expect(result.subcommand).toBe("help");
+      expect(result.subcommand).toBe("version");
+    });
+
+    it("parses -v", () => {
+      const result = parseArgs(argv(["-v"]));
+      expect(result.subcommand).toBe("version");
     });
   });
 
@@ -114,6 +119,10 @@ describe("parseArgs", () => {
 
     it("throws on missing args", () => {
       expect(() => parseArgs(argv(["deps"]))).toThrow("Usage: build-graph deps");
+    });
+
+    it("throws when node name is missing with --downstream", () => {
+      expect(() => parseArgs(argv(["deps", "./graph.db", "--downstream"]))).toThrow("Usage: build-graph deps");
     });
   });
 

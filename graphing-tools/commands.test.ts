@@ -89,6 +89,14 @@ describe("convenience commands", () => {
       expect(exitCode).toBe(0);
       expect(output).toBe("(no matches)");
     });
+
+    it("does not list the owning file as a caller", () => {
+      const { output, exitCode } = runCallers(db, "foo");
+      expect(exitCode).toBe(0);
+      expect(output).toContain("baz");
+      expect(output).not.toContain("file");
+      expect(output).not.toContain("a.ts");
+    });
   });
 
   describe("runPath", () => {
@@ -113,6 +121,28 @@ describe("convenience commands", () => {
         ('function:/project/src/c.ts:foo', 'function', 'foo', '/project/src/c.ts')`);
       const { output, exitCode } = runPath(db, "foo", "a.ts");
       expect(exitCode).toBe(2);
+    });
+
+    it("returns ambiguous for source when target is missing", () => {
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('function:/project/src/c.ts:parse', 'function', 'parse', '/project/src/c.ts')`);
+      const { output, exitCode } = runPath(db, "parse", "missingNode");
+      expect(exitCode).toBe(2);
+      expect(output).toBe("");
+    });
+
+    it("finds path when intermediate node IDs share a prefix", () => {
+      // Seed nodes with prefix collision: get vs getter
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('function:/project/src/a.ts:get', 'function', 'get', '/project/src/a.ts'),
+        ('function:/project/src/a.ts:getter', 'function', 'getter', '/project/src/a.ts')`);
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('function:/project/src/a.ts:get', 'function:/project/src/a.ts:getter', 'calls', 'forward', 1)`);
+      const { output, exitCode } = runPath(db, "get", "getter");
+      expect(exitCode).toBe(0);
+      expect(output).not.toBe("(no path found)");
+      expect(output).toContain("get");
+      expect(output).toContain("getter");
     });
   });
 
@@ -156,6 +186,48 @@ describe("convenience commands", () => {
       const output = runFiles(db);
       // a.ts has foo, bar, Widget, IWidget = 4 entities
       expect(output).toContain("a.ts");
+    });
+
+    it("returns correct counts for multiple file types", () => {
+      // Seed additional entities in b.ts for richer assertions
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('class:/project/src/b.ts:Helper', 'class', 'Helper', '/project/src/b.ts'),
+        ('interface:/project/src/b.ts:IHelper', 'interface', 'IHelper', '/project/src/b.ts'),
+        ('type_alias:/project/src/b.ts:T', 'type_alias', 'T', '/project/src/b.ts')`);
+      const output = runFiles(db);
+      expect(output).toContain("a.ts");
+      expect(output).toContain("b.ts");
+      // b.ts now has baz, Helper, IHelper, T = 4 non-file entities
+      // a.ts has foo, bar, Widget, IWidget = 4 non-file entities
+    });
+  });
+
+  describe("no-meta DB fallback", () => {
+    it("runDeps works on DB without meta table", () => {
+      const db2 = new Database(":memory:");
+      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT);
+                  CREATE TABLE edges (id INTEGER PRIMARY KEY, source TEXT, target TEXT, type TEXT, direction TEXT, weight REAL);`);
+      db2.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:/project/src/a.ts', 'file', 'a.ts', '/project/src/a.ts'),
+        ('function:/project/src/a.ts:foo', 'function', 'foo', '/project/src/a.ts')`);
+      db2.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('function:/project/src/a.ts:foo', 'file:/project/src/a.ts', 'depends_on', 'forward', 1)`);
+      const { output, exitCode } = runDeps(db2, "foo", true);
+      expect(exitCode).toBe(0);
+      // Should use absolute paths since no project_root in meta
+      expect(output).toContain("/project/src/a.ts");
+      db2.close();
+    });
+
+    it("runStats works on DB without meta table", () => {
+      const db2 = new Database(":memory:");
+      db2.exec(`CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, name TEXT, file_path TEXT);
+                  CREATE TABLE edges (id INTEGER PRIMARY KEY, source TEXT, target TEXT, type TEXT, direction TEXT, weight REAL);`);
+      db2.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:/project/src/a.ts', 'file', 'a.ts', '/project/src/a.ts')`);
+      const output = runStats(db2);
+      expect(output).toContain("Total nodes:");
+      db2.close();
     });
   });
 });

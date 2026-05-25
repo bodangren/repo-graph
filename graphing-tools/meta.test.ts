@@ -34,4 +34,18 @@ describe("meta helpers", () => {
     setMeta(db, "project_root", "/my/project");
     expect(getProjectRoot(db)).toBe("/my/project");
   });
+
+  it("getMeta returns undefined when meta table is missing", () => {
+    const db2 = new Database(":memory:");
+    // Do NOT call createSchema — simulate a pre-meta database
+    expect(getMeta(db2, "project_root")).toBeUndefined();
+    db2.close();
+  });
+
+  it("getProjectRoot returns undefined when meta table is missing", () => {
+    const db2 = new Database(":memory:");
+    // Do NOT call createSchema — simulate a pre-meta database
+    expect(getProjectRoot(db2)).toBeUndefined();
+    db2.close();
+  });
 });

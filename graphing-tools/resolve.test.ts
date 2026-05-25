@@ -56,4 +56,24 @@ describe("resolveNode", () => {
     const result = resolveNode(db, "zzz");
     expect(result.kind).toBe("none");
   });
+
+  it("resolves single node with underscore in name via partial match", () => {
+    db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+      ('function:/src/a.ts:parse_url', 'function', 'parse_url', '/src/a.ts')`);
+    const result = resolveNode(db, "parse_url");
+    expect(result.kind).toBe("single");
+    if (result.kind === "single") {
+      expect(result.node.name).toBe("parse_url");
+    }
+  });
+
+  it("resolves single node with percent in name via partial match", () => {
+    db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+      ('function:/src/a.ts:100%handler', 'function', '100%handler', '/src/a.ts')`);
+    const result = resolveNode(db, "100%handler");
+    expect(result.kind).toBe("single");
+    if (result.kind === "single") {
+      expect(result.node.name).toBe("100%handler");
+    }
+  });
 });

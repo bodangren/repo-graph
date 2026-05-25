@@ -23,7 +23,7 @@ before writing tests.
 Write failing tests for all 9 findings before touching production code.
 Run `bun test` after each task group to confirm the new tests fail.
 
-- [ ] Task: Test F1 — `deps --downstream` no-name guard (`cli.test.ts`)
+- [~] Task: Test F1 — `deps --downstream` no-name guard (`cli.test.ts`)
     - [ ] Add: `parseArgs(["deps", "graph.db", "--downstream"])` throws a usage error
     - [ ] Run tests; confirm new test fails
 

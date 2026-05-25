@@ -1,11 +1,11 @@
 {
   "track_id": "llmux_20260525",
   "type": "feature",
-  "status": "new",
+  "status": "completed",
   "created_at": "2026-05-25T00:00:00Z",
-  "updated_at": "2026-05-25T00:00:00Z",
+  "updated_at": "2026-05-25T11:26:02Z",
   "description": "LLM user experience improvements: --json on all commands, exit code taxonomy, inspect command, --limit, --depth",
   "estimated_tasks": 30,
-  "actual_tasks": null,
-  "deviation_notes": ""
+  "actual_tasks": 28,
+  "deviation_notes": "Contract.ts already had 'version' from bugfix track. Multi-hop depth CTEs unified across deps and callers using shared boundary-safe INSTR guard from bugfix F3."
 }

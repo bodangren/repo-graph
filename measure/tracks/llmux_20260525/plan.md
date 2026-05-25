@@ -127,27 +127,27 @@ Run `bun test` after each task to confirm new tests fail.
 
 ## Phase 4 — Coverage, Generated Docs, Doctor & Install
 
-- [~] Task: Verify coverage ≥ 80%
+- [x] Task: Verify coverage ≥ 80%
     - [ ] `bun test --coverage`
     - [ ] All modified modules (`commands.ts`, `cli.ts`, `contract.ts`, `build-graph.ts`) at or above threshold
 
-- [ ] Task: Update README with new flags and exit code table
+- [x] Task: Update README with new flags and exit code table
     - [ ] Document `--json`, `--limit`, `--depth` in the Commands table
     - [ ] Add "Exit Codes" section with the five-value taxonomy
     - [ ] Add `inspect` command to the Querying table
 
-- [ ] Task: Run generate script and commit if changed
+- [x] Task: Run generate script and commit if changed
     - [ ] `./measure/generate.sh`
     - [ ] `git diff --exit-code measure/generated/` — commit any updated facts
 
-- [ ] Task: Run doctor script
+- [x] Task: Run doctor script
     - [ ] `./measure/doctor.sh`
     - [ ] Fix any architectural violations before finalising
 
-- [ ] Task: Rebuild executable and install to `~/.local/bin/`
+- [x] Task: Rebuild executable and install to `~/.local/bin/`
     - [ ] `bun run build`
     - [ ] `cp ./bin/build-graph ~/.local/bin/build-graph`
     - [ ] Smoke test: `build-graph inspect ~/.local/bin/build-graph` *(should produce an error or empty, not crash)*
     - [ ] Smoke test: `build-graph stats graph.db --json | head -5` (confirm valid JSON)
 
-- [ ] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)

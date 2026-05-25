@@ -76,4 +76,15 @@ describe("resolveNode", () => {
       expect(result.node.name).toBe("100%handler");
     }
   });
+
+  it("returns ambiguous for partial match when multiple nodes match", () => {
+    db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+      ('function:/src/a.ts:foobar', 'function', 'foobar', '/src/a.ts'),
+      ('function:/src/b.ts:foobaz', 'function', 'foobaz', '/src/b.ts')`);
+    const result = resolveNode(db, "fooba");
+    expect(result.kind).toBe("ambiguous");
+    if (result.kind === "ambiguous") {
+      expect(result.matches.length).toBe(2);
+    }
+  });
 });

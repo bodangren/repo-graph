@@ -27,3 +27,8 @@ This file tracks all major tracks for the project.
 
 - [x] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges**
   *Link: [./tracks/scanner_20260525/](./tracks/scanner_20260525/)*
+
+---
+
+- [ ] **Track: Scanner data-quality fixes — resolve dangling edges, defineTable extraction, queries/mutates, cross-package imports, inspect unresolved**
+  *Link: [./tracks/scannerfix_20260525/](./tracks/scannerfix_20260525/)*

@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -66,6 +66,8 @@ export interface HelpArgs {
   subcommand?: Subcommand;
 }
 
+export interface VersionArgs {}
+
 // ── Union of all possible parsed argument sets ─────────────────────────────
 
 export type ParsedArgs =
@@ -79,7 +81,8 @@ export type ParsedArgs =
   | { subcommand: "path"; args: PathArgs }
   | { subcommand: "stats"; args: StatsArgs }
   | { subcommand: "files"; args: FilesArgs }
-  | { subcommand: "help"; args: HelpArgs };
+  | { subcommand: "help"; args: HelpArgs }
+  | { subcommand: "version"; args: VersionArgs };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
 

@@ -42,8 +42,8 @@ build-graph stats graph.db
 |---------|-------|-------------|
 | `query` | `build-graph query [--json] <db> <sql>` | Execute raw SQL against the database |
 | `search` | `build-graph search <db> <keyword> [--json] [--limit N]` | Fuzzy search nodes by name, summary, or tags |
-| `deps` | `build-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N]` | Find who depends on a node (or who it depends on) |
-| `callers` | `build-graph callers <db> <function> [--json] [--limit N] [--depth N]` | Find functions/files that reference a function |
+| `deps` | `build-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find who depends on a node (or who it depends on) |
+| `callers` | `build-graph callers <db> <function> [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find functions/files that reference a function |
 | `path` | `build-graph path <db> <from> <to> [--json]` | Trace shortest dependency path between two nodes |
 | `stats` | `build-graph stats <db> [--json]` | Print a codebase dashboard with totals, charts, and top lists |
 | `files` | `build-graph files <db> [pattern] [--json] [--limit N]` | List files with entity counts, optionally filtered by pattern |
@@ -64,6 +64,8 @@ build-graph stats graph.db
 - `--json` / `-j` — Emit machine-readable JSON instead of ASCII tables
 - `--limit N` / `-l N` — Cap result sets (default 100; 0 = unlimited)
 - `--depth N` / `-d N` — Multi-hop traversal for `deps` and `callers` (default 1, max 10)
+- `--from-package=P` — Restrict results to nodes from package `P`
+- `--to-package=P` — Restrict results to nodes in package `P`
 
 ### Examples
 
@@ -95,8 +97,8 @@ All commands print relative paths (e.g., `./src/auth.ts`) rather than absolute p
 
 The SQLite database contains four tables:
 
-- **`nodes`** — files, functions, classes, interfaces, type aliases
-- **`edges`** — relationships: `contains`, `imports`, `extends`, `implements`
+- **`nodes`** — files, functions, classes, interfaces, type aliases, schemas, fields
+- **`edges`** — relationships: `contains`, `imports`, `extends`, `implements`, `has_field`, `references`, `renders`, `uses_hook`, `queries`, `mutates`
 - **`layers`** — logical groupings of nodes
 - **`meta`** — key/value metadata including `project_root`
 

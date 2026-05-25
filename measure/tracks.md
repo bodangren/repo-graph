@@ -25,5 +25,5 @@ This file tracks all major tracks for the project.
 
 ---
 
-- [ ] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges**
+- [x] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges**
   *Link: [./tracks/scanner_20260525/](./tracks/scanner_20260525/)*

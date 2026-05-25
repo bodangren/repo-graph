@@ -5,8 +5,15 @@ export function setMeta(db: Database, key: string, value: string): void {
 }
 
 export function getMeta(db: Database, key: string): string | undefined {
-  const row = db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as { value: string } | undefined;
-  return row?.value;
+  try {
+    const row = db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as { value: string } | undefined;
+    return row?.value;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("no such table")) {
+      return undefined;
+    }
+    throw err;
+  }
 }
 
 export function getProjectRoot(db: Database): string | undefined {

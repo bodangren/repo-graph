@@ -71,12 +71,12 @@ Run `bun test` after each task group to confirm the new tests fail.
 
 Fix each bug. Run the full test suite after each fix. Commit individually.
 
-- [~] Task: Fix F1 — `deps --downstream` no-name guard (`cli.ts`)
-    - [ ] In the `deps` branch of `parseArgs`, after filtering flag tokens, check `filtered.length < 3` and throw usage error if the name is absent
-    - [ ] Run `bun test`; confirm F1 test passes and all others still pass
-    - [ ] Commit: `fix(cli): Guard deps --downstream when node name is missing`
+- [x] Task: Fix F1 — `deps --downstream` no-name guard (`cli.ts`) [4d6068b]
+    - [x] In the `deps` branch of `parseArgs`, after filtering flag tokens, check `filtered.length < 3` and throw usage error if the name is absent
+    - [x] Run `bun test`; confirm F1 test passes and all others still pass
+    - [x] Commit: `fix(cli): Guard deps --downstream when node name is missing`
 
-- [ ] Task: Fix F2 — Graceful `meta` table fallback (`meta.ts`)
+- [~] Task: Fix F2 — Graceful `meta` table fallback (`meta.ts`)
     - [ ] Wrap the `db.prepare(…).get(key)` call in `getMeta` with try/catch; on `SqliteError` containing "no such table", return `undefined`
     - [ ] Run `bun test`; confirm F2 tests pass
     - [ ] Commit: `fix(meta): Return undefined gracefully when meta table is absent`

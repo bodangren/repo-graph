@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -40,26 +40,43 @@ export interface DepsArgs {
   dbPath: string;
   name: string;
   downstream: boolean;
+  json?: boolean;
+  limit?: number;
+  depth?: number;
 }
 
 export interface CallersArgs {
   dbPath: string;
   name: string;
+  json?: boolean;
+  limit?: number;
+  depth?: number;
 }
 
 export interface PathArgs {
   dbPath: string;
   from: string;
   to: string;
+  json?: boolean;
 }
 
 export interface StatsArgs {
   dbPath: string;
+  json?: boolean;
 }
 
 export interface FilesArgs {
   dbPath: string;
   pattern?: string;
+  json?: boolean;
+  limit?: number;
+}
+
+export interface SearchArgs {
+  dbPath: string;
+  keyword: string;
+  json?: boolean;
+  limit?: number;
 }
 
 export interface HelpArgs {
@@ -67,6 +84,12 @@ export interface HelpArgs {
 }
 
 export interface VersionArgs {}
+
+export interface InspectArgs {
+  dbPath: string;
+  name: string;
+  json?: boolean;
+}
 
 // ── Union of all possible parsed argument sets ─────────────────────────────
 
@@ -82,14 +105,17 @@ export type ParsedArgs =
   | { subcommand: "stats"; args: StatsArgs }
   | { subcommand: "files"; args: FilesArgs }
   | { subcommand: "help"; args: HelpArgs }
-  | { subcommand: "version"; args: VersionArgs };
+  | { subcommand: "version"; args: VersionArgs }
+  | { subcommand: "inspect"; args: InspectArgs };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
 
 export const ExitCode = {
   Success: 0,
-  RuntimeError: 1,
-  Misuse: 2,
+  NotFound: 1,
+  Ambiguous: 2,
+  Misuse: 3,
+  RuntimeError: 4,
 } as const;
 
 export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];

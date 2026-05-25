@@ -9,8 +9,10 @@ import {
 describe("ExitCode", () => {
   it("has correct values", () => {
     expect(ExitCode.Success).toBe(0);
-    expect(ExitCode.RuntimeError).toBe(1);
-    expect(ExitCode.Misuse).toBe(2);
+    expect(ExitCode.NotFound).toBe(1);
+    expect(ExitCode.Ambiguous).toBe(2);
+    expect(ExitCode.Misuse).toBe(3);
+    expect(ExitCode.RuntimeError).toBe(4);
   });
 });
 
@@ -51,8 +53,8 @@ describe("Subcommand union", () => {
     const cmds: Subcommand[] = [
       "init", "scan", "update", "query", "search",
       "deps", "callers", "path", "stats", "files",
-      "help",
+      "help", "version", "inspect",
     ];
-    expect(cmds.length).toBe(11);
+    expect(cmds.length).toBe(13);
   });
 });

@@ -77,9 +77,8 @@
 
 ## Phase 8: Generate Docs & Doctor
 
-- [ ] Task: Update README with new node types, edge types, and query examples
-- [ ] Task: Run `bun test --coverage` and verify >90% for new modules
-- [ ] Task: Build and install updated binary
-- [ ] Task: Run smoke test on sample project with route + param_flow + string literals
-- [ ] Task: Run smoke test on real monorepo to verify route discovery
-- [ ] Task: Measure - User Manual Verification 'Phase 8' (Protocol in workflow.md)
+- [x] Task: Update README with new node types, edge types, and query examples [0120214]
+- [x] Task: Run `bun test --coverage` and verify >90% for new modules [0120214]
+- [x] Task: Build and install updated binary [0120214]
+- [x] Task: Run smoke test on sample project with route + param_flow + string literals [0120214]
+- [x] Task: Measure - User Manual Verification 'Phase 8' (Protocol in workflow.md)

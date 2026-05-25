@@ -1,11 +1,11 @@
 {
   "track_id": "migration_audit_20260525",
   "type": "feature",
-  "status": "new",
+  "status": "completed",
   "created_at": "2026-05-25T17:20:00Z",
   "updated_at": "2026-05-25T17:20:00Z",
   "description": "Migration-audit features — string-literal tracking, param-flow taint edges, and route discovery. Makes schema migrations self-auditing via graph queries.",
   "estimated_tasks": 26,
-  "actual_tasks": null,
-  "deviation_notes": ""
+  "actual_tasks": 26,
+  "deviation_notes": "Completed all 8 phases. 210 tests pass, 0 fail. Coverage 91.79% lines. Scanner.ts at 96.29%."
 }

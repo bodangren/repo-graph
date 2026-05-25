@@ -35,5 +35,5 @@ This file tracks all major tracks for the project.
 
 ---
 
-- [ ] **Track: Migration-audit features — string-literal tracking, param-flow taint edges, route discovery**
+- [x] **Track: Migration-audit features — string-literal tracking, param-flow taint edges, route discovery**
   *Link: [./tracks/migration_audit_20260525/](./tracks/migration_audit_20260525/)*

@@ -12,3 +12,8 @@ This file tracks all major tracks for the project.
 
 - [ ] **Track: Convenience query commands — deps, callers, path, stats, files + relative paths**
   *Link: [./tracks/convenience_20260524/](./tracks/convenience_20260524/)*
+
+---
+
+- [ ] **Track: Remediate code-review findings — convenience query commands (9 bugs)**
+  *Link: [./tracks/bugfix_20260525/](./tracks/bugfix_20260525/)*

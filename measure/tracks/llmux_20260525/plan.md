@@ -80,7 +80,7 @@ Run `bun test` after each task to confirm new tests fail.
 
 ## Phase 3 — Implementation (Green Phase)
 
-- [~] Task: Implement L2 — Exit code taxonomy (`commands.ts`, `build-graph.ts`, `cli.ts`)
+- [x] Task: Implement L2 — Exit code taxonomy (`commands.ts`, `build-graph.ts`, `cli.ts`)
     - [ ] Replace all `exitCode: 0` not-found returns in `commands.ts` with `ExitCode.NotFound`
     - [ ] Replace `exitCode: 2` ambiguous returns with `ExitCode.Ambiguous`
     - [ ] Update top-level catch in `build-graph.ts`: usage errors → `ExitCode.Misuse` (3), others → `ExitCode.RuntimeError` (4)
@@ -88,7 +88,7 @@ Run `bun test` after each task to confirm new tests fail.
     - [ ] Run `bun test`; confirm L2 tests pass
     - [ ] Commit: `feat(contract): Implement five-value exit code taxonomy for LLM script branching`
 
-- [ ] Task: Implement L1 — `--json` flag on all query commands
+- [x] Task: Implement L1 — `--json` flag on all query commands
     - [ ] `cli.ts`: parse `--json` / `-j` for `deps`, `callers`, `path`, `stats`, `files`, `search`
     - [ ] `commands.ts`: add optional `opts?: { json?: boolean }` parameter to `runDeps`, `runCallers`, `runPath`, `runStats`, `runFiles`
     - [ ] For each command: when `json: true`, return `JSON.stringify(…)` with the shape specified in the spec; skip ASCII table formatting
@@ -97,7 +97,7 @@ Run `bun test` after each task to confirm new tests fail.
     - [ ] Run `bun test`; confirm all L1 tests pass
     - [ ] Commit: `feat(commands): Add --json flag to deps, callers, path, stats, files, search`
 
-- [ ] Task: Implement L3 — `inspect` command (`commands.ts`, `cli.ts`, `build-graph.ts`)
+- [x] Task: Implement L3 — `inspect` command (`commands.ts`, `cli.ts`, `build-graph.ts`)
     - [ ] `commands.ts`: implement `runInspect(db, name, opts?)` — resolve node, query all outgoing and incoming edges with joined node names, format as text table or JSON
     - [ ] `cli.ts`: add `inspect` branch to `parseArgs` — `build-graph inspect <db> <name> [--json]`
     - [ ] `build-graph.ts`: add `handleInspect` and wire into `main()` switch
@@ -105,14 +105,14 @@ Run `bun test` after each task to confirm new tests fail.
     - [ ] Run `bun test`; confirm L3 tests pass
     - [ ] Commit: `feat(commands): Add inspect command for full single-node profile`
 
-- [ ] Task: Implement L4 — `--limit N` (`commands.ts`, `cli.ts`)
+- [x] Task: Implement L4 — `--limit N` (`commands.ts`, `cli.ts`)
     - [ ] `cli.ts`: parse `--limit <N>` for `deps`, `callers`, `files`, `search`; default 100; `--limit 0` → no cap
     - [ ] `commands.ts`: apply LIMIT to SQL queries; when total > limit, compute full count and append footer
     - [ ] JSON mode: add `"truncated": true, "total": N` when results are capped
     - [ ] Run `bun test`; confirm L4 tests pass
     - [ ] Commit: `feat(commands): Add --limit flag to prevent unbounded context consumption`
 
-- [ ] Task: Implement L5 — `--depth N` on `deps` and `callers` (`commands.ts`, `cli.ts`)
+- [x] Task: Implement L5 — `--depth N` on `deps` and `callers` (`commands.ts`, `cli.ts`)
     - [ ] `cli.ts`: parse `--depth <N>` (integer 1–10) for `deps` and `callers`
     - [ ] `commands.ts` `runDeps`: when `depth > 1`, replace direct edge query with a recursive CTE using the boundary-safe INSTR guard (from bugfix_20260525 F3); annotate each result row with `depth` value
     - [ ] `commands.ts` `runCallers`: mirror the same recursive CTE for incoming edges
@@ -121,13 +121,13 @@ Run `bun test` after each task to confirm new tests fail.
     - [ ] Run `bun test`; confirm L5 tests pass
     - [ ] Commit: `feat(commands): Add --depth flag for multi-hop traversal on deps and callers`
 
-- [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ---
 
 ## Phase 4 — Coverage, Generated Docs, Doctor & Install
 
-- [ ] Task: Verify coverage ≥ 80%
+- [~] Task: Verify coverage ≥ 80%
     - [ ] `bun test --coverage`
     - [ ] All modified modules (`commands.ts`, `cli.ts`, `contract.ts`, `build-graph.ts`) at or above threshold
 

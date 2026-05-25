@@ -41,12 +41,29 @@ build-graph stats graph.db
 | Command | Usage | Description |
 |---------|-------|-------------|
 | `query` | `build-graph query [--json] <db> <sql>` | Execute raw SQL against the database |
-| `search` | `build-graph search <db> <keyword>` | Fuzzy search nodes by name, summary, or tags |
-| `deps` | `build-graph deps <db> <node> [--downstream]` | Find who depends on a node (or who it depends on) |
-| `callers` | `build-graph callers <db> <function>` | Find functions/files that reference a function |
-| `path` | `build-graph path <db> <from> <to>` | Trace shortest dependency path between two nodes |
-| `stats` | `build-graph stats <db>` | Print a codebase dashboard with totals, charts, and top lists |
-| `files` | `build-graph files <db> [pattern]` | List files with entity counts, optionally filtered by pattern |
+| `search` | `build-graph search <db> <keyword> [--json] [--limit N]` | Fuzzy search nodes by name, summary, or tags |
+| `deps` | `build-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N]` | Find who depends on a node (or who it depends on) |
+| `callers` | `build-graph callers <db> <function> [--json] [--limit N] [--depth N]` | Find functions/files that reference a function |
+| `path` | `build-graph path <db> <from> <to> [--json]` | Trace shortest dependency path between two nodes |
+| `stats` | `build-graph stats <db> [--json]` | Print a codebase dashboard with totals, charts, and top lists |
+| `files` | `build-graph files <db> [pattern] [--json] [--limit N]` | List files with entity counts, optionally filtered by pattern |
+| `inspect` | `build-graph inspect <db> <node> [--json]` | Show full profile of a node (metadata + all edges) |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — results found or operation completed |
+| `1` | Not found — query ran but matched no nodes |
+| `2` | Ambiguous — multiple nodes match; disambiguation on stderr |
+| `3` | Misuse — bad arguments or unknown subcommand |
+| `4` | Runtime error — unhandled exception or DB error |
+
+### LLM / Scripting Flags
+
+- `--json` / `-j` — Emit machine-readable JSON instead of ASCII tables
+- `--limit N` / `-l N` — Cap result sets (default 100; 0 = unlimited)
+- `--depth N` / `-d N` — Multi-hop traversal for `deps` and `callers` (default 1, max 10)
 
 ### Examples
 

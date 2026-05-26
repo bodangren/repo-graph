@@ -33,11 +33,11 @@ writing any tests or implementation code.
 Write all failing tests before touching implementation. Group by feature.
 Run `bun test` after each task to confirm new tests fail.
 
-- [~] Task: Tests L2 — Exit code taxonomy (`cli.test.ts`, `commands.test.ts`)
-    - [ ] Add: commands returning not-found produce `exitCode: ExitCode.NotFound` (1)
-    - [ ] Add: `build-graph.ts` top-level catch uses `ExitCode.RuntimeError` (4) not 1
-    - [ ] Add: usage error path uses `ExitCode.Misuse` (3) not 2
-    - [ ] Add: ambiguous path produces `exitCode: ExitCode.Ambiguous` (2) — should pass already
+- [x] Task: Tests L2 — Exit code taxonomy (`cli.test.ts`, `commands.test.ts`)
+    - [x] Add: commands returning not-found produce `exitCode: ExitCode.NotFound` (1)
+    - [x] Add: `build-graph.ts` top-level catch uses `ExitCode.RuntimeError` (4) not 1
+    - [x] Add: usage error path uses `ExitCode.Misuse` (3) not 2
+    - [x] Add: ambiguous path produces `exitCode: ExitCode.Ambiguous` (2) — should pass already
 
 - [x] Task: Tests L1a — `--json` on `deps` and `callers` (`commands.test.ts`)
     - [ ] Add: `runDeps(db, name, downstream, { json: true })` returns a valid JSON string

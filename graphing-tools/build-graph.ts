@@ -138,7 +138,10 @@ export async function createProject(projectDir: string): Promise<{ project: Proj
   try {
     if (statSync(rootConfig).isFile()) {
       const project = new Project({ tsConfigFilePath: rootConfig });
-      return { project, tsConfigPaths: [rootConfig] };
+      if (project.getSourceFiles().length > 0) {
+        return { project, tsConfigPaths: [rootConfig] };
+      }
+      // Fall through to glob fallback if tsconfig include is empty
     }
   } catch { /* no root tsconfig */ }
 
@@ -154,13 +157,26 @@ export async function createProject(projectDir: string): Promise<{ project: Proj
         console.error(`Warning: could not load ${cfg}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    return { project, tsConfigPaths: configs };
+    if (project.getSourceFiles().length > 0) {
+      return { project, tsConfigPaths: configs };
+    }
+    // Fall through to glob fallback if no tsconfig includes files
   }
 
   // Fallback: glob all .ts/.tsx files
   const project = new Project();
   project.addSourceFilesAtPaths(join(projectDir, "**/*.ts"));
   project.addSourceFilesAtPaths(join(projectDir, "**/*.tsx"));
+  // Remove files inside skipped directories that glob may have picked up
+  for (const sf of [...project.getSourceFiles()]) {
+    const fp = sf.getFilePath();
+    for (const skip of SKIP_DIRS) {
+      if (fp.includes(`/${skip}/`)) {
+        project.removeSourceFile(sf);
+        break;
+      }
+    }
+  }
   return { project, tsConfigPaths: [] };
 }
 

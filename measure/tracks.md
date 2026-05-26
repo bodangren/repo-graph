@@ -10,7 +10,7 @@ This file tracks all major tracks for the project.
 - [x] **Track: Build the `build-graph` CLI tool — ts-morph scanner → SQLite knowledge graph**
   *Link: [./tracks/buildgraph_20260524/](./tracks/buildgraph_20260524/)*
 
-- [ ] **Track: Convenience query commands — deps, callers, path, stats, files + relative paths**
+- [x] **Track: Convenience query commands — deps, callers, path, stats, files + relative paths**
   *Link: [./tracks/convenience_20260524/](./tracks/convenience_20260524/)*
 
 ---
@@ -25,7 +25,7 @@ This file tracks all major tracks for the project.
 
 ---
 
-- [x] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges**
+- [ ] **Track: Scanner enrichment — runtime schema extraction & framework-aware edges** *(superseded by scannerfix_20260525 and migration_audit_20260525)*
   *Link: [./tracks/scanner_20260525/](./tracks/scanner_20260525/)*
 
 ---

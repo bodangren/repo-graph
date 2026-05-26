@@ -37,7 +37,14 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
       stats.edgesDeleted += edgesDeleted;
 
       // Re-parse only this file
-      const sourceFile = project.getSourceFile(absPath);
+      let sourceFile = project.getSourceFile(absPath);
+      if (!sourceFile) {
+        try {
+          sourceFile = project.addSourceFileAtPath(absPath);
+        } catch {
+          continue;
+        }
+      }
       if (!sourceFile) continue;
 
       // Create a temporary project with just this file

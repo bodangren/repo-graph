@@ -282,7 +282,8 @@ async function handleSearch(dbPath: string, keyword: string, json: boolean, limi
 async function handleUpdate(dbPath: string, filePaths: string[]): Promise<void> {
   const db = new Database(dbPath);
   try {
-    const project = new Project({ tsConfigFilePath: "./tsconfig.json" });
+    const projectRoot = getProjectRoot(db) ?? ".";
+    const { project } = await createProject(projectRoot);
     const stats = updateFiles(db, project, filePaths);
     console.error(`Updated ${stats.filesUpdated} files (${stats.nodesDeleted} → ${stats.nodesInserted} nodes, ${stats.edgesDeleted} → ${stats.edgesInserted} edges)`);
   } finally {

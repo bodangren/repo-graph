@@ -1,5 +1,6 @@
 import { Database } from "bun:sqlite";
 import { Project } from "ts-morph";
+import { resolve } from "path";
 import { scanProject } from "./scanner";
 
 export function updateFiles(db: Database, project: Project, filePaths: string[]): {
@@ -26,9 +27,7 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
 
   db.transaction(() => {
     for (const filePath of filePaths) {
-      const absPath = project.getFileSystem().readDirSync(".").includes(filePath)
-        ? filePath
-        : filePath; // TODO: resolve absolute path
+      const absPath = resolve(filePath);
 
       const edgesDeleted = deleteEdges.run(absPath, absPath).changes;
       const nodesDeleted = deleteNodes.run(absPath).changes;

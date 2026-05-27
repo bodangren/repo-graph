@@ -1,0 +1,11 @@
+{
+  "track_id": "query_performance_benchmarks_20260528",
+  "type": "chore",
+  "status": "pending",
+  "created_at": "2026-05-28T00:00:00Z",
+  "updated_at": "2026-05-28T00:00:00Z",
+  "description": "Query Performance Optimization & Benchmarks — composite indexes, query caching, and benchmark suite for large codebases",
+  "estimated_tasks": 14,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

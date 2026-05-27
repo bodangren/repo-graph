@@ -1,0 +1,11 @@
+{
+  "track_id": "git_hook_incremental_updates_20260528",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-05-28T00:00:00Z",
+  "updated_at": "2026-05-28T00:00:00Z",
+  "description": "Git Hook Integration for Incremental Graph Updates — wire repo-graph update into git pre-commit and post-checkout hooks",
+  "estimated_tasks": 16,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

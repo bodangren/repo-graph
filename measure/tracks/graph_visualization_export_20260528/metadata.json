@@ -1,0 +1,11 @@
+{
+  "track_id": "graph_visualization_export_20260528",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-05-28T00:00:00Z",
+  "updated_at": "2026-05-28T00:00:00Z",
+  "description": "Graph Visualization Export (DOT & HTML) — export knowledge graph to Graphviz DOT and interactive HTML with D3.js or Cytoscape.js",
+  "estimated_tasks": 18,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

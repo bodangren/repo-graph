@@ -1,0 +1,11 @@
+{
+  "track_id": "ci_cd_integration_20260528",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-05-28T00:00:00Z",
+  "updated_at": "2026-05-28T00:00:00Z",
+  "description": "CI/CD Integration — GitHub Action that runs repo-graph scan on PRs and comments a dependency impact report",
+  "estimated_tasks": 12,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

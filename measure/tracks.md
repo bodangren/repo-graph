@@ -43,7 +43,7 @@ This file tracks all major tracks for the project.
 ---
 
 - [x] **Track: Graph Integrity Audit Command — detect stale nodes, missing files, orphan edges, and duplicate nodes via `build-graph audit`**
-  *Link: [./tracks/audit_20260529/](./tracks/audit_20260529/)*
+  *Link: [./archive/audit_20260529/](./archive/audit_20260529/)*
 
 ## Upcoming Tracks
 

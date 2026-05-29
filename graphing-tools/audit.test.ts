@@ -172,6 +172,62 @@ describe("runAudit", () => {
     });
   });
 
+  describe("full audit integration", () => {
+    it("reports all issue types in a single run", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_full_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export function foo() {}\nexport class Bar {}\n");
+      fs.writeFileSync(tmpDir + "/b.ts", "export const x = 1;\n");
+
+      // Missing file
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:${tmpDir}/missing.ts', 'file', 'missing.ts', '${tmpDir}/missing.ts')`);
+
+      // Stale symbol
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('function:${tmpDir}/a.ts:oldFunc', 'function', 'oldFunc', '${tmpDir}/a.ts', 1, 5)`);
+
+      // Orphan edge
+      db.exec(`INSERT INTO edges (source, target, type, direction, weight) VALUES
+        ('file:${tmpDir}/missing.ts', 'file:${tmpDir}/a.ts', 'imports', 'forward', 1)`);
+
+      // Duplicate node
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('function:${tmpDir}/a.ts:foo', 'function', 'foo', '${tmpDir}/a.ts'),
+        ('function:${tmpDir}/a.ts:foo2', 'function', 'foo', '${tmpDir}/a.ts')`);
+
+      const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.NotFound);
+      expect(output).toContain("missing_files");
+      expect(output).toContain("stale_symbols");
+      expect(output).toContain("orphan_edges");
+      expect(output).toContain("duplicate_nodes");
+    });
+
+    it("returns JSON with all issue types", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_json_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export function foo() {}\n");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('file:${tmpDir}/missing.ts', 'file', 'missing.ts', '${tmpDir}/missing.ts')`);
+
+      const { output, exitCode } = runAudit(db, { json: true });
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.NotFound);
+      const parsed = JSON.parse(output);
+      expect(Array.isArray(parsed.missingFiles)).toBe(true);
+      expect(Array.isArray(parsed.staleSymbols)).toBe(true);
+      expect(Array.isArray(parsed.orphanEdges)).toBe(true);
+      expect(Array.isArray(parsed.duplicateNodes)).toBe(true);
+    });
+  });
+
   describe("duplicate nodes", () => {
     it("reports nodes with same name, type, and file_path", () => {
       const fs = require("fs");

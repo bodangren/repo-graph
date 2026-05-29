@@ -33,7 +33,7 @@ function findOrphanEdges(db: Database): AuditResult["orphanEdges"] {
 }
 
 function findStaleSymbols(db: Database): AuditResult["staleSymbols"] {
-  const symbolNodes = db.prepare("SELECT id, type, name, file_path, line_start FROM nodes WHERE type != 'file'").all() as
+  const symbolNodes = db.prepare("SELECT id, type, name, file_path, line_start FROM nodes WHERE type != 'file' AND file_path != ''").all() as
     Array<{ id: string; type: string; name: string; file_path: string; line_start: number | null }>;
 
   if (symbolNodes.length === 0) return [];

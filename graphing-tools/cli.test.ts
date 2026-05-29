@@ -193,6 +193,23 @@ describe("parseArgs", () => {
     });
   });
 
+  describe("audit", () => {
+    it("parses audit <db>", () => {
+      const result = parseArgs(argv(["audit", "./graph.db"]));
+      expect(result.subcommand).toBe("audit");
+      expect(result.args.dbPath).toBe("./graph.db");
+    });
+
+    it("parses audit with --json", () => {
+      const result = parseArgs(argv(["audit", "./graph.db", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("throws on missing db", () => {
+      expect(() => parseArgs(argv(["audit"]))).toThrow("Usage: build-graph audit");
+    });
+  });
+
   describe("json flag", () => {
     it("parses deps with --json", () => {
       const result = parseArgs(argv(["deps", "./graph.db", "foo", "--json"]));

@@ -103,23 +103,106 @@ describe("runAudit", () => {
     });
   });
 
-  describe("duplicate nodes", () => {
-    it("reports nodes with same name, type, and file_path", () => {
-      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
-        ('function:/project/src/a.ts:foo', 'function', 'foo', '/project/src/a.ts'),
-        ('function:/project/src/a.ts:foo2', 'function', 'foo', '/project/src/a.ts')`);
+  describe("stale symbols", () => {
+    it("reports function nodes that no longer exist in source", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_stale_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export const x = 1;");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('function:${tmpDir}/a.ts:oldFunc', 'function', 'oldFunc', '${tmpDir}/a.ts', 1, 5)`);
 
       const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.NotFound);
+      expect(output).toContain("stale_symbols");
+      expect(output).toContain("oldFunc");
+    });
+
+    it("does not report symbols that still exist", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_fresh_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export function existingFunc() { return 1; }\n");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('function:${tmpDir}/a.ts:existingFunc', 'function', 'existingFunc', '${tmpDir}/a.ts', 1, 1)`);
+
+      const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).not.toContain("stale_symbols");
+    });
+
+    it("reports class nodes that no longer exist", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_stale_class_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export const x = 1;");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('class:${tmpDir}/a.ts:OldClass', 'class', 'OldClass', '${tmpDir}/a.ts', 1, 5)`);
+
+      const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.NotFound);
+      expect(output).toContain("OldClass");
+    });
+
+    it("returns JSON with stale symbol details", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_stale_json_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export const x = 1;");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('function:${tmpDir}/a.ts:oldFunc', 'function', 'oldFunc', '${tmpDir}/a.ts', 1, 5)`);
+
+      const { output, exitCode } = runAudit(db, { json: true });
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.NotFound);
+      const parsed = JSON.parse(output);
+      expect(parsed.staleSymbols.length).toBe(1);
+      expect(parsed.staleSymbols[0].name).toBe("oldFunc");
+    });
+  });
+
+  describe("duplicate nodes", () => {
+    it("reports nodes with same name, type, and file_path", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_dup2_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export function foo() {}\n");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
+        ('function:${tmpDir}/a.ts:foo', 'function', 'foo', '${tmpDir}/a.ts'),
+        ('function:${tmpDir}/a.ts:foo2', 'function', 'foo', '${tmpDir}/a.ts')`);
+
+      const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
       expect(exitCode).toBe(ExitCode.NotFound);
       expect(output).toContain("duplicate_nodes");
     });
 
     it("does not report unique nodes", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_dup_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export function foo() {}\nexport function bar() {}\n");
+
       db.exec(`INSERT INTO nodes (id, type, name, file_path) VALUES
-        ('function:/project/src/a.ts:foo', 'function', 'foo', '/project/src/a.ts'),
-        ('function:/project/src/a.ts:bar', 'function', 'bar', '/project/src/a.ts')`);
+        ('function:${tmpDir}/a.ts:foo', 'function', 'foo', '${tmpDir}/a.ts'),
+        ('function:${tmpDir}/a.ts:bar', 'function', 'bar', '${tmpDir}/a.ts')`);
 
       const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
       expect(exitCode).toBe(ExitCode.Success);
       expect(output).not.toContain("duplicate_nodes");
     });

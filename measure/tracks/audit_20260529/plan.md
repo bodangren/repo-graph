@@ -48,7 +48,7 @@ _Story ref: spec.md#story-s2_
   - [ ] Document ts-morph re-parsing strategy in code comments
 
 ### Test
-- [ ] Task: Write unit tests for stale-symbol detection
+- [x] Task: Write unit tests for stale-symbol detection
   - [ ] Test: function node exists in graph but source file no longer has that function → flagged stale
   - [ ] Test: class node renamed in source → old node flagged stale
   - [ ] Test: interface still exists → not flagged
@@ -56,7 +56,7 @@ _Story ref: spec.md#story-s2_
   - [ ] Run tests and confirm they fail (Red phase)
 
 ### Implement
-- [ ] Task: Implement stale-symbol audit check
+- [x] Task: Implement stale-symbol audit check
   - [ ] Extend `audit.ts` with `runAuditStaleSymbols(db, project)`
   - [ ] Group symbol nodes by `file_path`
   - [ ] Load each source file via ts-morph (reuse `createProject` from `build-graph.ts`)

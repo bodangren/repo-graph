@@ -1,0 +1,22 @@
+{
+  "track_id": "audit_20260529",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-05-29T21:27:08Z",
+  "updated_at": "2026-05-29T21:27:08Z",
+  "description": "Add an `audit` subcommand to build-graph that cross-references the SQLite graph against the actual TypeScript source to detect stale nodes, missing files, orphan edges, duplicate nodes, and unresolved symbols.",
+  "estimated_tasks": 25,
+  "actual_tasks": null,
+  "deviation_notes": "",
+  "sprint": {
+    "goal": "Add an `audit` subcommand to build-graph that cross-references the SQLite graph against the actual TypeScript source to detect stale nodes, missing files, orphan edges, duplicate nodes, and unresolved symbols.",
+    "stories": [
+      { "id": "S1", "title": "Detect Missing Files", "size": "S", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Detect Stale Symbols", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Detect Orphan Edges", "size": "S", "priority": "Must", "status": "pending" },
+      { "id": "S4", "title": "Detect Duplicate Nodes", "size": "S", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

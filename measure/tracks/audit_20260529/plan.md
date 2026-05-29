@@ -147,12 +147,12 @@ _Story ref: spec.md#story-s4_
 _Story ref: Track-level acceptance criteria_
 
 ### Contract & Schema Definition
-- [ ] Task: Finalize audit orchestrator contract
+- [x] Task: Finalize audit orchestrator contract
   - [ ] Define `AuditResult` union type encompassing all four check result types
   - [ ] Define exit-code behavior: `0` = clean, `1` = issues found
 
 ### Test
-- [ ] Task: Write integration tests for full audit command
+- [x] Task: Write integration tests for full audit command
   - [ ] Test: clean database → exit code 0 and empty report
   - [ ] Test: database with one issue of each type → exit code 1 and comprehensive report
   - [ ] Test: `--json` flag produces valid JSON
@@ -161,7 +161,7 @@ _Story ref: Track-level acceptance criteria_
   - [ ] Run tests and confirm they fail (Red phase)
 
 ### Implement
-- [ ] Task: Implement audit orchestrator and wiring
+- [x] Task: Implement audit orchestrator and wiring
   - [ ] Create `runAudit(db, opts?)` in `audit.ts` that calls all four checks
   - [ ] Aggregate results across checks
   - [ ] Format output using existing `formatTable` for human mode
@@ -172,7 +172,7 @@ _Story ref: Track-level acceptance criteria_
   - [ ] Run tests and confirm they pass (Green phase)
 
 ### Generate Docs & Doctor
-- [ ] Task: Final verification
+- [x] Task: Final verification
   - [ ] Run full test suite `CI=true bun test`
   - [ ] Verify coverage >80% for `audit.ts`
   - [ ] Run `measure/generate.sh`

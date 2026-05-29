@@ -1,22 +1,22 @@
 {
   "track_id": "audit_20260529",
   "type": "feature",
-  "status": "new",
+  "status": "done",
   "created_at": "2026-05-29T21:27:08Z",
   "updated_at": "2026-05-29T21:27:08Z",
   "description": "Add an `audit` subcommand to build-graph that cross-references the SQLite graph against the actual TypeScript source to detect stale nodes, missing files, orphan edges, duplicate nodes, and unresolved symbols.",
   "estimated_tasks": 25,
-  "actual_tasks": null,
-  "deviation_notes": "",
+  "actual_tasks": 25,
+  "deviation_notes": "Phases S3 and S4 (orphan edges, duplicate nodes) were implemented together with S1 in the first commit rather than as separate phases. Stale symbol detection (S2) was implemented in the second commit. Phase S5 (integration) was spread across all commits.",
   "sprint": {
     "goal": "Add an `audit` subcommand to build-graph that cross-references the SQLite graph against the actual TypeScript source to detect stale nodes, missing files, orphan edges, duplicate nodes, and unresolved symbols.",
     "stories": [
-      { "id": "S1", "title": "Detect Missing Files", "size": "S", "priority": "Must", "status": "pending" },
-      { "id": "S2", "title": "Detect Stale Symbols", "size": "L", "priority": "Must", "status": "pending" },
-      { "id": "S3", "title": "Detect Orphan Edges", "size": "S", "priority": "Must", "status": "pending" },
-      { "id": "S4", "title": "Detect Duplicate Nodes", "size": "S", "priority": "Should", "status": "pending" }
+      { "id": "S1", "title": "Detect Missing Files", "size": "S", "priority": "Must", "status": "done" },
+      { "id": "S2", "title": "Detect Stale Symbols", "size": "L", "priority": "Must", "status": "done" },
+      { "id": "S3", "title": "Detect Orphan Edges", "size": "S", "priority": "Must", "status": "done" },
+      { "id": "S4", "title": "Detect Duplicate Nodes", "size": "S", "priority": "Should", "status": "done" }
     ],
-    "demo_notes": null,
+    "demo_notes": "Run `build-graph audit ./graph.db` to see a full integrity report. Run with `--json` for CI integration.",
     "retro_ref": null
   }
 }

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-25T05:04:28.773Z",
+  "generated_at": "2026-05-29T14:01:34.114Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -14,7 +14,7 @@
         "type": "file",
         "path": "search.ts",
         "extension": "ts",
-        "size": 769
+        "size": 929
       },
       {
         "type": "file",
@@ -32,13 +32,13 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 1075
+        "size": 1291
       },
       {
         "type": "file",
         "path": "monorepo.test.ts",
         "extension": "ts",
-        "size": 1582
+        "size": 1596
       },
       {
         "type": "file",
@@ -139,6 +139,30 @@
                 ]
               }
             ]
+          },
+          {
+            "type": "directory",
+            "path": "fixtures/empty-include",
+            "children": [
+              {
+                "type": "file",
+                "path": "fixtures/empty-include/tsconfig.json",
+                "extension": "json",
+                "size": 205
+              },
+              {
+                "type": "directory",
+                "path": "fixtures/empty-include/src",
+                "children": [
+                  {
+                    "type": "file",
+                    "path": "fixtures/empty-include/src/app.ts",
+                    "extension": "ts",
+                    "size": 69
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -146,7 +170,7 @@
         "type": "file",
         "path": "commands.test.ts",
         "extension": "ts",
-        "size": 19253
+        "size": 21071
       },
       {
         "type": "file",
@@ -158,13 +182,13 @@
         "type": "file",
         "path": "scanner.ts",
         "extension": "ts",
-        "size": 13345
+        "size": 31562
       },
       {
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 5250
+        "size": 5382
       },
       {
         "type": "file",
@@ -176,13 +200,25 @@
         "type": "file",
         "path": "schema.test.ts",
         "extension": "ts",
-        "size": 2875
+        "size": 2916
+      },
+      {
+        "type": "file",
+        "path": "build-graph.test.ts",
+        "extension": "ts",
+        "size": 877
       },
       {
         "type": "file",
         "path": "meta.ts",
         "extension": "ts",
         "size": 669
+      },
+      {
+        "type": "file",
+        "path": "audit.ts",
+        "extension": "ts",
+        "size": 7157
       },
       {
         "type": "file",
@@ -200,7 +236,7 @@
         "type": "file",
         "path": "update.test.ts",
         "extension": "ts",
-        "size": 1367
+        "size": 3118
       },
       {
         "type": "file",
@@ -230,7 +266,7 @@
         "type": "file",
         "path": "update.ts",
         "extension": "ts",
-        "size": 2378
+        "size": 2500
       },
       {
         "type": "directory",
@@ -260,25 +296,25 @@
         "type": "file",
         "path": "integration.test.ts",
         "extension": "ts",
-        "size": 2614
+        "size": 2649
       },
       {
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 9465
+        "size": 10200
       },
       {
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 23985
+        "size": 24840
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 14204
+        "size": 15000
       },
       {
         "type": "file",
@@ -296,13 +332,13 @@
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 5217
+        "size": 5619
       },
       {
         "type": "file",
         "path": "scanner.test.ts",
         "extension": "ts",
-        "size": 12313
+        "size": 21533
       },
       {
         "type": "file",
@@ -318,6 +354,12 @@
       },
       {
         "type": "file",
+        "path": "audit.test.ts",
+        "extension": "ts",
+        "size": 10951
+      },
+      {
+        "type": "file",
         "path": "ingest.test.ts",
         "extension": "ts",
         "size": 6049
@@ -330,6 +372,222 @@
       }
     ],
     "measure": [
+      {
+        "type": "directory",
+        "path": "archive",
+        "children": [
+          {
+            "type": "directory",
+            "path": "archive/buildgraph_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/buildgraph_20260524/plan.md",
+                "extension": "md",
+                "size": 5548
+              },
+              {
+                "type": "file",
+                "path": "archive/buildgraph_20260524/metadata.json",
+                "extension": "json",
+                "size": 375
+              },
+              {
+                "type": "file",
+                "path": "archive/buildgraph_20260524/spec.md",
+                "extension": "md",
+                "size": 4418
+              },
+              {
+                "type": "file",
+                "path": "archive/buildgraph_20260524/index.md",
+                "extension": "md",
+                "size": 131
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/llmux_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/llmux_20260525/plan.md",
+                "extension": "md",
+                "size": 9138
+              },
+              {
+                "type": "file",
+                "path": "archive/llmux_20260525/metadata.json",
+                "extension": "json",
+                "size": 525
+              },
+              {
+                "type": "file",
+                "path": "archive/llmux_20260525/spec.md",
+                "extension": "md",
+                "size": 8083
+              },
+              {
+                "type": "file",
+                "path": "archive/llmux_20260525/index.md",
+                "extension": "md",
+                "size": 126
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/bugfix_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/bugfix_20260525/plan.md",
+                "extension": "md",
+                "size": 8093
+              },
+              {
+                "type": "file",
+                "path": "archive/bugfix_20260525/metadata.json",
+                "extension": "json",
+                "size": 638
+              },
+              {
+                "type": "file",
+                "path": "archive/bugfix_20260525/spec.md",
+                "extension": "md",
+                "size": 7329
+              },
+              {
+                "type": "file",
+                "path": "archive/bugfix_20260525/index.md",
+                "extension": "md",
+                "size": 127
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/scannerfix_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/scannerfix_20260525/plan.md",
+                "extension": "md",
+                "size": 2506
+              },
+              {
+                "type": "file",
+                "path": "archive/scannerfix_20260525/metadata.json",
+                "extension": "json",
+                "size": 574
+              },
+              {
+                "type": "file",
+                "path": "archive/scannerfix_20260525/spec.md",
+                "extension": "md",
+                "size": 3600
+              },
+              {
+                "type": "file",
+                "path": "archive/scannerfix_20260525/index.md",
+                "extension": "md",
+                "size": 131
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/graphdb_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/graphdb_20260524/plan.md",
+                "extension": "md",
+                "size": 2789
+              },
+              {
+                "type": "file",
+                "path": "archive/graphdb_20260524/metadata.json",
+                "extension": "json",
+                "size": 305
+              },
+              {
+                "type": "file",
+                "path": "archive/graphdb_20260524/spec.md",
+                "extension": "md",
+                "size": 2086
+              },
+              {
+                "type": "file",
+                "path": "archive/graphdb_20260524/index.md",
+                "extension": "md",
+                "size": 128
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/migration_audit_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/migration_audit_20260525/plan.md",
+                "extension": "md",
+                "size": 4435
+              },
+              {
+                "type": "file",
+                "path": "archive/migration_audit_20260525/metadata.json",
+                "extension": "json",
+                "size": 511
+              },
+              {
+                "type": "file",
+                "path": "archive/migration_audit_20260525/spec.md",
+                "extension": "md",
+                "size": 4698
+              },
+              {
+                "type": "file",
+                "path": "archive/migration_audit_20260525/index.md",
+                "extension": "md",
+                "size": 136
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/convenience_20260524",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/convenience_20260524/plan.md",
+                "extension": "md",
+                "size": 4487
+              },
+              {
+                "type": "file",
+                "path": "archive/convenience_20260524/metadata.json",
+                "extension": "json",
+                "size": 365
+              },
+              {
+                "type": "file",
+                "path": "archive/convenience_20260524/spec.md",
+                "extension": "md",
+                "size": 3668
+              },
+              {
+                "type": "file",
+                "path": "archive/convenience_20260524/index.md",
+                "extension": "md",
+                "size": 132
+              }
+            ]
+          }
+        ]
+      },
       {
         "type": "file",
         "path": "tech-stack.md",
@@ -398,7 +656,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 14819
+            "size": 15725
           },
           {
             "type": "file",
@@ -424,7 +682,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 1135
+        "size": 3060
       },
       {
         "type": "file",
@@ -438,121 +696,73 @@
         "children": [
           {
             "type": "directory",
-            "path": "tracks/buildgraph_20260524",
+            "path": "tracks/query_performance_benchmarks_20260528",
             "children": [
               {
                 "type": "file",
-                "path": "tracks/buildgraph_20260524/plan.md",
+                "path": "tracks/query_performance_benchmarks_20260528/plan.md",
                 "extension": "md",
-                "size": 5548
+                "size": 4580
               },
               {
                 "type": "file",
-                "path": "tracks/buildgraph_20260524/metadata.json",
+                "path": "tracks/query_performance_benchmarks_20260528/metadata.json",
                 "extension": "json",
-                "size": 375
+                "size": 396
               },
               {
                 "type": "file",
-                "path": "tracks/buildgraph_20260524/spec.md",
+                "path": "tracks/query_performance_benchmarks_20260528/spec.md",
                 "extension": "md",
-                "size": 4418
-              },
-              {
-                "type": "file",
-                "path": "tracks/buildgraph_20260524/index.md",
-                "extension": "md",
-                "size": 131
+                "size": 3867
               }
             ]
           },
           {
             "type": "directory",
-            "path": "tracks/llmux_20260525",
+            "path": "tracks/graph_visualization_export_20260528",
             "children": [
               {
                 "type": "file",
-                "path": "tracks/llmux_20260525/plan.md",
+                "path": "tracks/graph_visualization_export_20260528/plan.md",
                 "extension": "md",
-                "size": 9138
+                "size": 4476
               },
               {
                 "type": "file",
-                "path": "tracks/llmux_20260525/metadata.json",
+                "path": "tracks/graph_visualization_export_20260528/metadata.json",
                 "extension": "json",
-                "size": 525
+                "size": 405
               },
               {
                 "type": "file",
-                "path": "tracks/llmux_20260525/spec.md",
+                "path": "tracks/graph_visualization_export_20260528/spec.md",
                 "extension": "md",
-                "size": 8083
-              },
-              {
-                "type": "file",
-                "path": "tracks/llmux_20260525/index.md",
-                "extension": "md",
-                "size": 126
+                "size": 4000
               }
             ]
           },
           {
             "type": "directory",
-            "path": "tracks/bugfix_20260525",
+            "path": "tracks/git_hook_incremental_updates_20260528",
             "children": [
               {
                 "type": "file",
-                "path": "tracks/bugfix_20260525/plan.md",
+                "path": "tracks/git_hook_incremental_updates_20260528/plan.md",
                 "extension": "md",
-                "size": 8093
+                "size": 4539
               },
               {
                 "type": "file",
-                "path": "tracks/bugfix_20260525/metadata.json",
+                "path": "tracks/git_hook_incremental_updates_20260528/metadata.json",
                 "extension": "json",
-                "size": 638
+                "size": 398
               },
               {
                 "type": "file",
-                "path": "tracks/bugfix_20260525/spec.md",
+                "path": "tracks/git_hook_incremental_updates_20260528/spec.md",
                 "extension": "md",
-                "size": 7329
-              },
-              {
-                "type": "file",
-                "path": "tracks/bugfix_20260525/index.md",
-                "extension": "md",
-                "size": 127
-              }
-            ]
-          },
-          {
-            "type": "directory",
-            "path": "tracks/graphdb_20260524",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/graphdb_20260524/plan.md",
-                "extension": "md",
-                "size": 2789
-              },
-              {
-                "type": "file",
-                "path": "tracks/graphdb_20260524/metadata.json",
-                "extension": "json",
-                "size": 305
-              },
-              {
-                "type": "file",
-                "path": "tracks/graphdb_20260524/spec.md",
-                "extension": "md",
-                "size": 2086
-              },
-              {
-                "type": "file",
-                "path": "tracks/graphdb_20260524/index.md",
-                "extension": "md",
-                "size": 128
+                "size": 4138
               }
             ]
           },
@@ -582,37 +792,61 @@
                 "type": "file",
                 "path": "tracks/scanner_20260525/index.md",
                 "extension": "md",
-                "size": 122
+                "size": 1284
               }
             ]
           },
           {
             "type": "directory",
-            "path": "tracks/convenience_20260524",
+            "path": "tracks/ci_cd_integration_20260528",
             "children": [
               {
                 "type": "file",
-                "path": "tracks/convenience_20260524/plan.md",
+                "path": "tracks/ci_cd_integration_20260528/plan.md",
                 "extension": "md",
-                "size": 4487
+                "size": 4952
               },
               {
                 "type": "file",
-                "path": "tracks/convenience_20260524/metadata.json",
+                "path": "tracks/ci_cd_integration_20260528/metadata.json",
                 "extension": "json",
-                "size": 365
+                "size": 374
               },
               {
                 "type": "file",
-                "path": "tracks/convenience_20260524/spec.md",
+                "path": "tracks/ci_cd_integration_20260528/spec.md",
                 "extension": "md",
-                "size": 3668
+                "size": 4124
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/audit_20260529",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/audit_20260529/plan.md",
+                "extension": "md",
+                "size": 7883
               },
               {
                 "type": "file",
-                "path": "tracks/convenience_20260524/index.md",
+                "path": "tracks/audit_20260529/metadata.json",
+                "extension": "json",
+                "size": 1554
+              },
+              {
+                "type": "file",
+                "path": "tracks/audit_20260529/spec.md",
                 "extension": "md",
-                "size": 132
+                "size": 4647
+              },
+              {
+                "type": "file",
+                "path": "tracks/audit_20260529/index.md",
+                "extension": "md",
+                "size": 126
               }
             ]
           }

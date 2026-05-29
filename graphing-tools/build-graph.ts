@@ -12,7 +12,8 @@ import { runQuery, formatTable, formatJson } from "./query";
 import { searchNodes } from "./search";
 import { updateFiles } from "./update";
 import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
-import { setMeta } from "./meta";
+import { runAudit } from "./audit";
+import { setMeta, getProjectRoot } from "./meta";
 import { ExitCode } from "./contract";
 
 const VERSION = "0.1.0";
@@ -353,6 +354,17 @@ async function handleInspect(dbPath: string, name: string, json: boolean): Promi
   }
 }
 
+async function handleAudit(dbPath: string, json: boolean): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const { output, exitCode } = runAudit(db, { json });
+    if (output) console.log(output);
+    return exitCode;
+  } finally {
+    db.close();
+  }
+}
+
 export async function main(argv: string[]): Promise<number> {
   const parsed = parseArgs(argv);
 
@@ -386,7 +398,8 @@ export async function main(argv: string[]): Promise<number> {
       break;
     case "inspect":
       return await handleInspect(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false);
-      break;
+    case "audit":
+      return await handleAudit(parsed.args.dbPath, parsed.args.json ?? false);
     case "help":
       printHelp(parsed.args.subcommand);
       break;

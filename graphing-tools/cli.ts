@@ -117,6 +117,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
       if (flags.length < 2) throw new Error("Usage: build-graph inspect <db> <node-id-or-name> [--json]");
       return { subcommand: "inspect", args: { dbPath: flags[0], name: flags[1], json } };
     }
+    case "audit": {
+      const { flags, json } = parseFlags(args.slice(1));
+      if (flags.length < 1) throw new Error("Usage: build-graph audit <db> [--json]");
+      return { subcommand: "audit", args: { dbPath: flags[0], json } };
+    }
     case "help": {
       return { subcommand: "help", args: { subcommand: args[1] as Subcommand | undefined } };
     }

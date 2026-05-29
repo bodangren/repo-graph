@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -91,6 +91,11 @@ export interface InspectArgs {
   json?: boolean;
 }
 
+export interface AuditArgs {
+  dbPath: string;
+  json?: boolean;
+}
+
 // ── Union of all possible parsed argument sets ─────────────────────────────
 
 export type ParsedArgs =
@@ -106,7 +111,8 @@ export type ParsedArgs =
   | { subcommand: "files"; args: FilesArgs }
   | { subcommand: "help"; args: HelpArgs }
   | { subcommand: "version"; args: VersionArgs }
-  | { subcommand: "inspect"; args: InspectArgs };
+  | { subcommand: "inspect"; args: InspectArgs }
+  | { subcommand: "audit"; args: AuditArgs };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
 

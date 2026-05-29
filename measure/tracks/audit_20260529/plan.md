@@ -4,14 +4,14 @@
 _Story ref: spec.md#story-s1_
 
 ### Contract & Schema Definition
-- [ ] Task: Extend CLI contract for audit command
+- [x] Task: Extend CLI contract for audit command
   - [ ] Add `"audit"` to `Subcommand` union type in `contract.ts`
   - [ ] Define `AuditArgs` interface (`dbPath: string`, `json?: boolean`)
   - [ ] Update `ParsedArgs` union with `{ subcommand: "audit"; args: AuditArgs }`
   - [ ] Add `"audit"` to `ExitCode` usage docs if needed
 
 ### Test
-- [ ] Task: Write unit tests for missing-file detection
+- [x] Task: Write unit tests for missing-file detection
   - [ ] Create `audit.test.ts` with test fixtures
   - [ ] Test: database with a file node pointing to a deleted file → reports missing file
   - [ ] Test: database with all files present → reports clean
@@ -19,7 +19,7 @@ _Story ref: spec.md#story-s1_
   - [ ] Run tests and confirm they fail (Red phase)
 
 ### Implement
-- [ ] Task: Implement missing-file audit check
+- [x] Task: Implement missing-file audit check
   - [ ] Add `"audit"` parsing to `cli.ts` `parseArgs`
   - [ ] Create `audit.ts` module with `runAuditMissingFiles(db, opts?)` function
   - [ ] Query all `file` nodes from database

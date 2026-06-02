@@ -14,14 +14,18 @@ import { updateFiles } from "./update";
 import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
 import { runAudit } from "./audit";
 import { setMeta, getProjectRoot } from "./meta";
-import { ExitCode } from "./contract";
+import { ExitCode, type BuildGraphConfig, type CustomEdgeDef } from "./contract";
+import { loadConfig, applyCustomEdges } from "./config";
+import { discoverIncludeFiles } from "./include";
 
 const VERSION = "0.1.0";
 
 function printHelp(subcommand?: string): void {
   if (subcommand === "scan") {
-    console.log("Usage: build-graph scan <project-dir> <output.db>");
+    console.log("Usage: build-graph scan <project-dir> <output.db> [--config <path>] [--include <glob>]");
     console.log("  Scan a TypeScript project and build a knowledge graph database.");
+    console.log("  --config <path>     Path to build-graph.config.json (default: auto-discover in project root)");
+    console.log("  --include <glob>    Additional glob pattern for non-TS files (repeatable)");
   } else if (subcommand === "update") {
     console.log("Usage: build-graph update <db> <file> [<file> ...]");
     console.log("  Incrementally update the graph for changed files.");
@@ -49,6 +53,13 @@ function printHelp(subcommand?: string): void {
   } else if (subcommand === "init") {
     console.log("Usage: build-graph init <db>");
     console.log("  Create a new graph database with schema and indexes.");
+  } else if (subcommand === "inspect") {
+    console.log("Usage: build-graph inspect <db> <node-id-or-name> [--json]");
+    console.log("  Show detailed information about a node and its relationships.");
+  } else if (subcommand === "audit") {
+    console.log("Usage: build-graph audit <db> [--json]");
+    console.log("  Cross-reference the graph against source files to detect stale nodes,");
+    console.log("  missing files, orphan edges, and duplicate nodes.");
   } else {
     console.log("build-graph — Knowledge graph builder for TypeScript codebases");
     console.log("");
@@ -65,6 +76,8 @@ function printHelp(subcommand?: string): void {
     console.log("  path     <db> <from> <to>             Trace dependency path");
     console.log("  stats    <db>                         Print codebase dashboard");
     console.log("  files    <db> [pattern]               List files with counts");
+    console.log("  inspect  <db> <name> [--json]         Inspect a node and its relationships");
+    console.log("  audit    <db> [--json]                Audit graph integrity against source");
     console.log("  help     [command]                    Show help for a command");
     console.log("");
     console.log("Options:");
@@ -181,7 +194,7 @@ export async function createProject(projectDir: string): Promise<{ project: Proj
   return { project, tsConfigPaths: [] };
 }
 
-async function handleScan(projectDir: string, dbPath: string): Promise<void> {
+async function handleScan(projectDir: string, dbPath: string, configPath?: string, includePatterns?: string[]): Promise<void> {
   const start = performance.now();
   const db = new Database(dbPath);
   const absProjectDir = resolve(projectDir);
@@ -198,6 +211,37 @@ async function handleScan(projectDir: string, dbPath: string): Promise<void> {
       packageMap.set(fp, getPackageIdForFile(fp, tsConfigPaths));
     }
     const { nodes, edges } = scanProject(project, packageMap);
+
+    // Load config and apply custom edges
+    const config = loadConfig(absProjectDir, configPath);
+    if (config?.customEdges) {
+      const customEdges = applyCustomEdges(nodes, config.customEdges);
+      edges.push(...customEdges);
+      console.error(`Applied ${customEdges.length} custom edge(s) from config`);
+    }
+
+    // Discover include pattern files (non-TS)
+    if (includePatterns && includePatterns.length > 0) {
+      const includeFiles = discoverIncludeFiles(absProjectDir, includePatterns);
+      const existingIds = new Set(nodes.map((n) => n.id));
+      let added = 0;
+      for (const filePath of includeFiles) {
+        const nodeId = `file:${filePath}`;
+        if (!existingIds.has(nodeId)) {
+          nodes.push({
+            id: nodeId,
+            type: "file",
+            name: filePath.split("/").pop()!,
+            filePath,
+            lineStart: 1,
+            lineEnd: 1,
+          });
+          existingIds.add(nodeId);
+          added++;
+        }
+      }
+      console.error(`Included ${added} file(s) from --include patterns`);
+    }
 
     const insertNode = db.prepare(`
       INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id, package_id)
@@ -373,7 +417,7 @@ export async function main(argv: string[]): Promise<number> {
       await handleInit(parsed.args.dbPath);
       break;
     case "scan":
-      await handleScan(parsed.args.projectDir, parsed.args.dbPath);
+      await handleScan(parsed.args.projectDir, parsed.args.dbPath, parsed.args.configPath, parsed.args.includePatterns);
       break;
     case "query":
       await handleQuery(parsed.args.dbPath, parsed.args.sql, parsed.args.json ?? false);

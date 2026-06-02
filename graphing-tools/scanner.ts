@@ -749,6 +749,21 @@ export function scanRoutes(
     return params;
   }
 
+  function extractRouteMode(sourceFile: import("ts-morph").SourceFile): string | undefined {
+    for (const stmt of sourceFile.getVariableStatements()) {
+      if (!stmt.isExported()) continue;
+      for (const decl of stmt.getDeclarations()) {
+        if (decl.getName() === "mode") {
+          const init = decl.getInitializer();
+          if (init?.getKind() === SyntaxKind.StringLiteral) {
+            return init.asKind(SyntaxKind.StringLiteral)!.getLiteralValue();
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
   for (const sourceFile of project.getSourceFiles()) {
     const filePath = sourceFile.getFilePath();
     const fileNodeId = `file:${filePath}`;
@@ -760,6 +775,7 @@ export function scanRoutes(
                      filePath.endsWith("/page.ts") || filePath.endsWith("\\page.ts");
 
       if (isRoute) {
+        const routeMode = extractRouteMode(sourceFile);
         // Extract HTTP methods from exports
         for (const func of sourceFile.getFunctions()) {
           const name = func.getName();
@@ -774,6 +790,10 @@ export function scanRoutes(
             const normalizedPath = routePath.replace(/\[(?:\.{3})?([^\]]+)\]/g, ":$1");
             const params = extractPathParams(routePath);
 
+            const tags: string[] = [];
+            for (const p of params) tags.push(`param:${p}`);
+            if (routeMode) tags.push(`mode:${routeMode}`);
+
             const routeId = `route:${filePath}:${method}:${normalizedPath}`;
             addNode({
               id: routeId,
@@ -782,7 +802,7 @@ export function scanRoutes(
               filePath,
               lineStart: func.getStartLineNumber(),
               lineEnd: func.getEndLineNumber(),
-              tags: params.length > 0 ? params.map((p) => `param:${p}`) : undefined,
+              tags: tags.length > 0 ? tags : undefined,
             });
             addEdge(fileNodeId, routeId, "contains");
           }
@@ -790,6 +810,7 @@ export function scanRoutes(
       }
 
       if (isPage) {
+        const routeMode = extractRouteMode(sourceFile);
         const appIndex = filePath.indexOf("/app/");
         const routePath = appIndex >= 0
           ? filePath.slice(appIndex + 4, filePath.lastIndexOf("/page."))
@@ -797,13 +818,17 @@ export function scanRoutes(
         const normalizedPath = routePath.replace(/\[(?:\.{3})?([^\]]+)\]/g, ":$1");
         const params = extractPathParams(routePath);
 
+        const tags: string[] = [];
+        for (const p of params) tags.push(`param:${p}`);
+        if (routeMode) tags.push(`mode:${routeMode}`);
+
         const routeId = `route:${filePath}:GET:${normalizedPath}`;
         addNode({
           id: routeId,
           type: "route",
           name: `GET ${normalizedPath}`,
           filePath,
-          tags: params.length > 0 ? params.map((p) => `param:${p}`) : undefined,
+          tags: tags.length > 0 ? tags : undefined,
         });
         addEdge(fileNodeId, routeId, "contains");
       }

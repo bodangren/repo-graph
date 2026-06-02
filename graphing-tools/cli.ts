@@ -8,6 +8,8 @@ function parseFlags(args: string[]): {
   fromPackage?: string;
   toPackage?: string;
   type?: string;
+  configPath?: string;
+  includePatterns?: string[];
 } {
   const flags: string[] = [];
   let json = false;
@@ -16,6 +18,8 @@ function parseFlags(args: string[]): {
   let fromPackage: string | undefined;
   let toPackage: string | undefined;
   let type: string | undefined;
+  let configPath: string | undefined;
+  const includePatterns: string[] = [];
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -35,12 +39,24 @@ function parseFlags(args: string[]): {
       toPackage = a.slice("--to-package=".length);
     } else if (a.startsWith("--type=")) {
       type = a.slice("--type=".length);
+    } else if (a === "--config") {
+      const next = args[++i];
+      if (next === undefined) throw new Error("Usage: --config requires a path");
+      configPath = next;
+    } else if (a.startsWith("--config=")) {
+      configPath = a.slice("--config=".length);
+    } else if (a === "--include") {
+      const next = args[++i];
+      if (next === undefined) throw new Error("Usage: --include requires a glob pattern");
+      includePatterns.push(next);
+    } else if (a.startsWith("--include=")) {
+      includePatterns.push(a.slice("--include=".length));
     } else {
       flags.push(a);
     }
   }
 
-  return { flags, json, limit, depth, fromPackage, toPackage, type };
+  return { flags, json, limit, depth, fromPackage, toPackage, type, configPath, includePatterns: includePatterns.length > 0 ? includePatterns : undefined };
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
@@ -66,8 +82,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { subcommand: "init", args: { dbPath: args[1] } };
     }
     case "scan": {
-      if (args.length < 3) throw new Error("Usage: build-graph scan <project-dir> <db>");
-      return { subcommand: "scan", args: { projectDir: args[1], dbPath: args[2] } };
+      if (args.length < 3) throw new Error("Usage: build-graph scan <project-dir> <db> [--config <path>] [--include <glob>]");
+      const { configPath, includePatterns } = parseFlags(args.slice(3));
+      return { subcommand: "scan", args: { projectDir: args[1], dbPath: args[2], configPath, includePatterns } };
     }
     case "update": {
       if (args.length < 3) throw new Error("Usage: build-graph update <db> <file> [<file> ...]");

@@ -577,4 +577,74 @@ describe("scanRoutes (FR3)", () => {
     expect(routeNodes.some((r) => r.name === "QUERY lessons.getById")).toBe(true);
     expect(routeNodes.some((r) => r.name === "MUTATION lessons.create")).toBe(true);
   });
+
+  it("extracts route mode export as tag", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/practice/[lessonId]/route.ts", `
+      export const mode = 'practice';
+      export async function GET(request: Request) {
+        return Response.json({ lesson: {} });
+      }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNode = nodes.find((n) => n.type === "route");
+    expect(routeNode).toBeDefined();
+    expect(routeNode!.tags).toContain("mode:practice");
+  });
+
+  it("handles recognized mode values (teaching, guided, explore)", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/teaching/[id]/route.ts", `
+      export const mode = 'teaching';
+      export async function GET() { return Response.json({}); }
+    `);
+    p.createSourceFile("/app/guided/[id]/route.ts", `
+      export const mode = 'guided';
+      export async function GET() { return Response.json({}); }
+    `);
+    const { nodes } = scanProject(p);
+
+    const teaching = nodes.find((n) => n.type === "route" && n.filePath.includes("teaching"));
+    const guided = nodes.find((n) => n.type === "route" && n.filePath.includes("guided"));
+    expect(teaching!.tags).toContain("mode:teaching");
+    expect(guided!.tags).toContain("mode:guided");
+  });
+
+  it("handles unrecognized mode values", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/custom/[id]/route.ts", `
+      export const mode = 'custom_value';
+      export async function GET() { return Response.json({}); }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNode = nodes.find((n) => n.type === "route");
+    expect(routeNode!.tags).toContain("mode:custom_value");
+  });
+
+  it("does not add mode tag when no mode export exists", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/api/route.ts", `
+      export async function GET() { return Response.json({}); }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNode = nodes.find((n) => n.type === "route");
+    expect(routeNode).toBeDefined();
+    expect(routeNode!.tags?.some((t) => t.startsWith("mode:"))).toBeFalsy();
+  });
+
+  it("preserves param tags alongside mode tags", () => {
+    const p = new Project({ useInMemoryFileSystem: true });
+    p.createSourceFile("/app/practice/[lessonId]/route.ts", `
+      export const mode = 'practice';
+      export async function GET() { return Response.json({}); }
+    `);
+    const { nodes } = scanProject(p);
+
+    const routeNode = nodes.find((n) => n.type === "route");
+    expect(routeNode!.tags).toContain("param:lessonId");
+    expect(routeNode!.tags).toContain("mode:practice");
+  });
 });

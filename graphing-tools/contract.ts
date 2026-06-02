@@ -18,6 +18,8 @@ export interface InitArgs {
 export interface ScanArgs {
   projectDir: string;
   dbPath: string;
+  configPath?: string;
+  includePatterns?: string[];
 }
 
 export interface UpdateArgs {
@@ -205,6 +207,23 @@ export type EdgeType =
   | "queries"
   | "mutates"
   | "param_flow";
+
+// ── Config types ──────────────────────────────────────────────────────────
+
+export interface CustomEdgeDef {
+  type: string;
+  description?: string;
+  sourceType: NodeType;
+  targetType: NodeType;
+  pattern: {
+    sourceImport?: string;
+    targetName?: string;
+  };
+}
+
+export interface BuildGraphConfig {
+  customEdges?: CustomEdgeDef[];
+}
 
 // ── Query/Search output contract ───────────────────────────────────────────
 

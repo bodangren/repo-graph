@@ -29,6 +29,36 @@ describe("parseArgs", () => {
       expect(() => parseArgs(argv(["scan"]))).toThrow("Usage: build-graph scan <project-dir> <db>");
       expect(() => parseArgs(argv(["scan", "./"]))).toThrow("Usage: build-graph scan <project-dir> <db>");
     });
+
+    it("parses scan with --config flag", () => {
+      const result = parseArgs(argv(["scan", "./", "./graph.db", "--config", "./my-config.json"]));
+      expect(result.subcommand).toBe("scan");
+      expect(result.args.configPath).toBe("./my-config.json");
+    });
+
+    it("parses scan with --config= syntax", () => {
+      const result = parseArgs(argv(["scan", "./", "./graph.db", "--config=./my-config.json"]));
+      expect(result.subcommand).toBe("scan");
+      expect(result.args.configPath).toBe("./my-config.json");
+    });
+
+    it("parses scan with single --include flag", () => {
+      const result = parseArgs(argv(["scan", "./", "./graph.db", "--include", "data/**/*.json"]));
+      expect(result.subcommand).toBe("scan");
+      expect(result.args.includePatterns).toEqual(["data/**/*.json"]);
+    });
+
+    it("parses scan with multiple --include flags", () => {
+      const result = parseArgs(argv(["scan", "./", "./graph.db", "--include", "data/**/*.json", "--include", "migrations/**/*.sql"]));
+      expect(result.subcommand).toBe("scan");
+      expect(result.args.includePatterns).toEqual(["data/**/*.json", "migrations/**/*.sql"]);
+    });
+
+    it("parses scan with --include= syntax", () => {
+      const result = parseArgs(argv(["scan", "./", "./graph.db", "--include=data/**/*.json"]));
+      expect(result.subcommand).toBe("scan");
+      expect(result.args.includePatterns).toEqual(["data/**/*.json"]);
+    });
   });
 
   describe("update", () => {

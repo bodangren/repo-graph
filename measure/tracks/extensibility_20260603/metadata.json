@@ -1,0 +1,11 @@
+{
+  "track_id": "extensibility_20260603",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-06-03T00:00:00Z",
+  "updated_at": "2026-06-03T00:00:00Z",
+  "description": "Config-driven extensibility: custom edge types via config file, route mode tag extraction, and custom glob patterns for non-TS files",
+  "estimated_tasks": 13,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

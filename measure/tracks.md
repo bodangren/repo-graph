@@ -58,3 +58,8 @@ This file tracks all major tracks for the project.
 
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
+
+---
+
+- [ ] **Track: Scanner Extensibility — Config-Driven Edge Types, Route Mode Tags, and Custom File Patterns**
+  *Link: [./tracks/extensibility_20260603/](./tracks/extensibility_20260603/)* — Add custom edge types via `build-graph.config.json`, extract `export const mode = '...'` from route files as node tags, and support `--include` globs for non-TS files.

@@ -26,6 +26,37 @@ function printHelp(subcommand?: string): void {
     console.log("  Scan a TypeScript project and build a knowledge graph database.");
     console.log("  --config <path>     Path to build-graph.config.json (default: auto-discover in project root)");
     console.log("  --include <glob>    Additional glob pattern for non-TS files (repeatable)");
+  } else if (subcommand === "config") {
+    console.log("Config file: build-graph.config.json");
+    console.log("");
+    console.log("Schema:");
+    console.log("  {");
+    console.log("    \"customEdges\": [");
+    console.log("      {");
+    console.log("        \"type\": \"validates_with\",        // edge type name (snake_case)");
+    console.log("        \"description\": \"Route validates...\", // optional");
+    console.log("        \"sourceType\": \"route\",             // node type: file|function|class|interface|type_alias|schema|field|route|param");
+    console.log("        \"targetType\": \"schema\",             // same list as sourceType");
+    console.log("        \"pattern\": {");
+    console.log("          \"targetName\": \"*Schema\"           // optional glob filter on target node name");
+    console.log("        },");
+    console.log("        \"scope\": \"same-file\"                // optional: same-file (default) | imported | all");
+    console.log("      }");
+    console.log("    ]");
+    console.log("  }");
+    console.log("");
+    console.log("Scope modes:");
+    console.log("  same-file  Only connect source/target nodes in the same file (default, safest)");
+    console.log("  imported   Also connect to targets in files the source file imports");
+    console.log("  all        Connect every matching pair (cartesian product, use with targetName filter)");
+    console.log("");
+    console.log("Route mode tags:");
+    console.log("  export const mode = 'practice'  ->  route node gets tag 'mode:practice'");
+    console.log("  Detected automatically during scan. No config needed.");
+    console.log("");
+    console.log("Example:");
+    console.log("  build-graph scan ./ ./graph.db --config ./build-graph.config.json");
+    console.log("  build-graph scan ./ ./graph.db --include 'supabase/seed/**/*.json'");
   } else if (subcommand === "update") {
     console.log("Usage: build-graph update <db> <file> [<file> ...]");
     console.log("  Incrementally update the graph for changed files.");
@@ -68,6 +99,7 @@ function printHelp(subcommand?: string): void {
     console.log("Commands:");
     console.log("  init     <db>                         Create a new graph database");
     console.log("  scan     <project-dir> <db>           Scan a TypeScript project");
+    console.log("  config                                 Show config file schema and examples");
     console.log("  update   <db> <file...>               Incrementally update changed files");
     console.log("  query    [--json] <db> <sql>          Run a SQL query");
     console.log("  search   <db> <keyword>               Search nodes by keyword");
@@ -215,7 +247,8 @@ async function handleScan(projectDir: string, dbPath: string, configPath?: strin
     // Load config and apply custom edges
     const config = loadConfig(absProjectDir, configPath);
     if (config?.customEdges) {
-      const customEdges = applyCustomEdges(nodes, config.customEdges);
+      const importEdges = edges.filter((e) => e.type === "imports");
+      const customEdges = applyCustomEdges(nodes, config.customEdges, importEdges);
       edges.push(...customEdges);
       console.error(`Applied ${customEdges.length} custom edge(s) from config`);
     }
@@ -244,8 +277,8 @@ async function handleScan(projectDir: string, dbPath: string, configPath?: strin
     }
 
     const insertNode = db.prepare(`
-      INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, layer_id, package_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, complexity, layer_id, package_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertEdge = db.prepare(`
       INSERT INTO edges (source, target, type, direction, weight, metadata)
@@ -267,6 +300,7 @@ async function handleScan(projectDir: string, dbPath: string, configPath?: strin
           n.lineStart ?? null, n.lineEnd ?? null,
           n.summary ?? null,
           n.tags ? JSON.stringify(n.tags) : null,
+          n.complexity ?? null,
           n.layerId ?? null,
           n.packageId ?? null
         );
@@ -446,6 +480,9 @@ export async function main(argv: string[]): Promise<number> {
       return await handleAudit(parsed.args.dbPath, parsed.args.json ?? false);
     case "help":
       printHelp(parsed.args.subcommand);
+      break;
+    case "config":
+      printHelp("config");
       break;
     case "version":
       console.log(VERSION);

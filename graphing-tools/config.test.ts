@@ -102,12 +102,13 @@ describe("loadConfig", () => {
 describe("applyCustomEdges", () => {
   const makeNodes = (): GraphNode[] => [
     { id: "route:/app/api/r.ts:GET:/api/test", type: "route", name: "GET /api/test", filePath: "/app/api/r.ts" },
+    { id: "schema:/app/api/r.ts:bodySchema", type: "schema", name: "bodySchema", filePath: "/app/api/r.ts" },
     { id: "schema:/app/schema.ts:users", type: "schema", name: "users", filePath: "/app/schema.ts" },
     { id: "function:/app/utils.ts:helper", type: "function", name: "helper", filePath: "/app/utils.ts" },
-    { id: "class:/app/models.ts:User", type: "class", name: "User", filePath: "/app/models.ts" },
+    { id: "class:/app/utils.ts:Helper", type: "class", name: "Helper", filePath: "/app/utils.ts" },
   ];
 
-  it("creates edges matching sourceType and targetType", () => {
+  it("creates same-file edges by default (scope: same-file)", () => {
     const nodes = makeNodes();
     const defs: CustomEdgeDef[] = [
       { type: "validates_with", sourceType: "route", targetType: "schema", pattern: {} },
@@ -117,18 +118,44 @@ describe("applyCustomEdges", () => {
     expect(edges).toHaveLength(1);
     expect(edges[0].type).toBe("validates_with");
     expect(edges[0].source).toBe("route:/app/api/r.ts:GET:/api/test");
-    expect(edges[0].target).toBe("schema:/app/schema.ts:users");
+    expect(edges[0].target).toBe("schema:/app/api/r.ts:bodySchema");
+  });
+
+  it("creates all edges when scope is 'all'", () => {
+    const nodes = makeNodes();
+    const defs: CustomEdgeDef[] = [
+      { type: "validates_with", sourceType: "route", targetType: "schema", pattern: {}, scope: "all" },
+    ];
+
+    const edges = applyCustomEdges(nodes, defs);
+    expect(edges).toHaveLength(2); // route × both schemas
+  });
+
+  it("creates imported edges when scope is 'imported'", () => {
+    const nodes = makeNodes();
+    const importEdges: GraphEdge[] = [
+      { source: "file:/app/api/r.ts", target: "file:/app/schema.ts", type: "imports", direction: "forward" },
+    ];
+    const defs: CustomEdgeDef[] = [
+      { type: "validates_with", sourceType: "route", targetType: "schema", pattern: {}, scope: "imported" },
+    ];
+
+    const edges = applyCustomEdges(nodes, defs, importEdges);
+    // same-file schema + imported schema = 2
+    expect(edges).toHaveLength(2);
+    expect(edges.some((e) => e.target === "schema:/app/api/r.ts:bodySchema")).toBe(true);
+    expect(edges.some((e) => e.target === "schema:/app/schema.ts:users")).toBe(true);
   });
 
   it("filters targets by targetName pattern", () => {
     const nodes = makeNodes();
     const defs: CustomEdgeDef[] = [
-      { type: "uses_model", sourceType: "function", targetType: "class", pattern: { targetName: "User" } },
+      { type: "uses_model", sourceType: "function", targetType: "class", pattern: { targetName: "Helper" } },
     ];
 
     const edges = applyCustomEdges(nodes, defs);
     expect(edges).toHaveLength(1);
-    expect(edges[0].target).toBe("class:/app/models.ts:User");
+    expect(edges[0].target).toBe("class:/app/utils.ts:Helper");
   });
 
   it("produces no edges when no nodes match", () => {
@@ -139,19 +166,5 @@ describe("applyCustomEdges", () => {
 
     const edges = applyCustomEdges(nodes, defs);
     expect(edges).toHaveLength(0);
-  });
-
-  it("creates multiple edges for multiple matching pairs", () => {
-    const nodes: GraphNode[] = [
-      { id: "route:/a.ts:GET:/a", type: "route", name: "GET /a", filePath: "/a.ts" },
-      { id: "route:/b.ts:GET:/b", type: "route", name: "GET /b", filePath: "/b.ts" },
-      { id: "schema:/s.ts:x", type: "schema", name: "x", filePath: "/s.ts" },
-    ];
-    const defs: CustomEdgeDef[] = [
-      { type: "validates_with", sourceType: "route", targetType: "schema", pattern: {} },
-    ];
-
-    const edges = applyCustomEdges(nodes, defs);
-    expect(edges).toHaveLength(2);
   });
 });

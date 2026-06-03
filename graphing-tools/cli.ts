@@ -142,6 +142,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
     case "help": {
       return { subcommand: "help", args: { subcommand: args[1] as Subcommand | undefined } };
     }
+    case "config": {
+      return { subcommand: "config", args: {} };
+    }
     default:
       throw new Error(`Unknown subcommand: ${subcommand}\nUsage: build-graph <command> [options]`);
   }

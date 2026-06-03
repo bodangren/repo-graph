@@ -45,6 +45,38 @@ describe("scanProject", () => {
       expect(formatName?.lineStart).toBeGreaterThan(0);
       expect(formatName?.lineEnd).toBeGreaterThan(formatName!.lineStart!);
     });
+
+    it("computes complexity for functions", () => {
+      const formatName = result.nodes.find((n) => n.name === "formatName");
+      expect(formatName?.complexity).toBeDefined();
+      expect(["simple", "moderate", "complex"]).toContain(formatName?.complexity);
+    });
+
+    it("marks a simple function as 'simple'", () => {
+      const p = new Project({ useInMemoryFileSystem: true });
+      p.createSourceFile("/a.ts", `export function add(a: number, b: number) { return a + b; }`);
+      const { nodes } = scanProject(p);
+      const fn = nodes.find((n) => n.type === "function");
+      expect(fn?.complexity).toBe("simple");
+    });
+
+    it("marks a function with branches as 'moderate'", () => {
+      const p = new Project({ useInMemoryFileSystem: true });
+      p.createSourceFile("/a.ts", `
+        export function classify(x: number) {
+          if (x > 10) return "high";
+          if (x > 5) return "mid";
+          if (x > 3) return "low";
+          if (x > 1) return "tiny";
+          if (x > 0) return "zero";
+          if (x === 0) return "nothing";
+          return "negative";
+        }
+      `);
+      const { nodes } = scanProject(p);
+      const fn = nodes.find((n) => n.type === "function");
+      expect(fn?.complexity).toBe("moderate");
+    });
   });
 
   describe("class nodes", () => {

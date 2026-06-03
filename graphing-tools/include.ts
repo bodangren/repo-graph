@@ -2,6 +2,7 @@ import { readdirSync, statSync } from "fs";
 import { join, resolve } from "path";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".turbo", "out", "coverage"]);
+const MAX_DEPTH = 20;
 
 /**
  * Discover files matching custom glob patterns relative to the project root.
@@ -33,21 +34,21 @@ function resolveGlob(root: string, pattern: string): string[] {
   const results: string[] = [];
   const parts = pattern.split("/");
 
-  function walk(dir: string, partIndex: number): void {
-    if (partIndex >= parts.length) return;
+  function walk(dir: string, partIndex: number, depth: number): void {
+    if (partIndex >= parts.length || depth > MAX_DEPTH) return;
 
     const part = parts[partIndex];
     const isLast = partIndex === parts.length - 1;
 
     if (part === "**") {
-      // Match zero or more directories
-      walk(dir, partIndex + 1);
+      // Match zero or more directories — try the rest of the pattern at this level
+      walk(dir, partIndex + 1, depth);
       let entries;
       try { entries = readdirSync(dir, { withFileTypes: true }); }
       catch { return; }
       for (const entry of entries) {
         if (entry.isDirectory() && !SKIP_DIRS.has(entry.name)) {
-          walk(join(dir, entry.name), partIndex);
+          walk(join(dir, entry.name), partIndex, depth + 1);
         }
       }
       return;
@@ -70,13 +71,13 @@ function resolveGlob(root: string, pattern: string): string[] {
             results.push(resolve(fullPath));
           }
         } else if (entry.isDirectory()) {
-          walk(fullPath, partIndex + 1);
+          walk(fullPath, partIndex + 1, depth + 1);
         }
       }
     }
   }
 
-  walk(root, 0);
+  walk(root, 0, 0);
   return results;
 }
 

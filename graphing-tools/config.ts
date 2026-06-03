@@ -66,20 +66,66 @@ export function loadConfig(projectDir: string, configPath?: string): BuildGraphC
 
 /**
  * Apply custom edge definitions to the scanned nodes.
- * For each custom edge def, find matching source/target nodes and emit edges.
+ * Scopes edges by file co-occurrence (same-file) or import relationships,
+ * not a cartesian product.
+ *
+ * scope modes:
+ *   "same-file" (default) — only connect source/target in the same file
+ *   "imported"            — connect if source file imports target file
+ *   "all"                 — connect every matching pair (cartesian product)
  */
-export function applyCustomEdges(nodes: GraphNode[], customEdges: CustomEdgeDef[]): GraphEdge[] {
+export function applyCustomEdges(
+  nodes: GraphNode[],
+  customEdges: CustomEdgeDef[],
+  importEdges?: GraphEdge[]
+): GraphEdge[] {
   const edges: GraphEdge[] = [];
 
+  // Build a set of (sourceFile → targetFile) import pairs for fast lookup
+  const importPairs = new Set<string>();
+  if (importEdges) {
+    for (const e of importEdges) {
+      if (e.type === "imports") {
+        const srcFile = e.source.replace(/^file:/, "");
+        const tgtFile = e.target.replace(/^file:/, "");
+        importPairs.add(`${srcFile}\0${tgtFile}`);
+      }
+    }
+  }
+
   for (const def of customEdges) {
+    const scope = def.scope ?? "same-file";
     const sources = nodes.filter((n) => n.type === def.sourceType);
     const targets = nodes.filter((n) => n.type === def.targetType);
 
+    // Index targets by file path for fast same-file lookup
+    const targetsByFile = new Map<string, GraphNode[]>();
+    for (const t of targets) {
+      const arr = targetsByFile.get(t.filePath) ?? [];
+      arr.push(t);
+      targetsByFile.set(t.filePath, arr);
+    }
+
     for (const source of sources) {
-      // If sourceImport is specified, check if the source's file imports that module
-      // (This is a simplified check — we rely on the file node's existence)
-      for (const target of targets) {
-        // If targetName pattern is specified, check if target name matches
+      let candidates: GraphNode[];
+
+      if (scope === "same-file") {
+        candidates = targetsByFile.get(source.filePath) ?? [];
+      } else       if (scope === "imported") {
+        // Targets in same file + targets in files this source's file imports
+        candidates = [...(targetsByFile.get(source.filePath) ?? [])];
+        for (const pairKey of importPairs) {
+          const [src, tgt] = pairKey.split("\0");
+          if (src === source.filePath) {
+            candidates.push(...(targetsByFile.get(tgt) ?? []));
+          }
+        }
+      } else {
+        // "all" — cartesian product
+        candidates = targets;
+      }
+
+      for (const target of candidates) {
         if (def.pattern.targetName) {
           const pattern = def.pattern.targetName;
           const regex = new RegExp("^" + pattern.replace(/\*/g, ".*").replace(/\?/g, ".") + "$");

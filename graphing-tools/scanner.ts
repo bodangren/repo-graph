@@ -1,6 +1,37 @@
 import { Project, SyntaxKind, type SourceFile } from "ts-morph";
 import type { GraphNode, GraphEdge, EdgeType } from "./contract";
 
+const BRANCH_KINDS = new Set([
+  SyntaxKind.IfStatement,
+  SyntaxKind.SwitchStatement,
+  SyntaxKind.ForStatement,
+  SyntaxKind.ForInStatement,
+  SyntaxKind.ForOfStatement,
+  SyntaxKind.WhileStatement,
+  SyntaxKind.DoStatement,
+  SyntaxKind.CatchClause,
+  SyntaxKind.ConditionalExpression,
+  SyntaxKind.BinaryExpression, // && and || counted below
+]);
+
+function computeComplexity(body: import("ts-morph").Node | undefined): "simple" | "moderate" | "complex" {
+  if (!body) return "simple";
+  let count = 0;
+  for (const desc of body.getDescendants()) {
+    const kind = desc.getKind();
+    if (BRANCH_KINDS.has(kind)) {
+      if (kind === SyntaxKind.BinaryExpression) {
+        const op = desc.asKind(SyntaxKind.BinaryExpression)!.getOperatorToken().getKind();
+        if (op !== SyntaxKind.AmpersandAmpersandToken && op !== SyntaxKind.BarBarToken) continue;
+      }
+      count++;
+    }
+  }
+  if (count >= 16) return "complex";
+  if (count >= 6) return "moderate";
+  return "simple";
+}
+
 export function scanProject(
   project: Project,
   packageMap?: Map<string, string>
@@ -51,6 +82,7 @@ export function scanProject(
         lineEnd: func.getEndLineNumber(),
         summary,
         tags: func.isExported() ? ["exported"] : undefined,
+        complexity: computeComplexity(func.getBody()),
         packageId,
       });
       addEdge(fileNodeId, id, "contains");
@@ -61,6 +93,7 @@ export function scanProject(
       for (const decl of stmt.getDeclarations()) {
         const init = decl.getInitializer();
         if (init?.getKind() === SyntaxKind.ArrowFunction) {
+          const arrow = init.asKind(SyntaxKind.ArrowFunction)!;
           const name = decl.getName();
           const id = `function:${filePath}:${name}`;
           addNode({
@@ -71,6 +104,7 @@ export function scanProject(
             lineStart: decl.getStartLineNumber(),
             lineEnd: decl.getEndLineNumber(),
             tags: stmt.isExported() ? ["exported"] : undefined,
+            complexity: computeComplexity(arrow.getBody()),
             packageId,
           });
           addEdge(fileNodeId, id, "contains");

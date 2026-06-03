@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit" | "config";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -114,7 +114,8 @@ export type ParsedArgs =
   | { subcommand: "help"; args: HelpArgs }
   | { subcommand: "version"; args: VersionArgs }
   | { subcommand: "inspect"; args: InspectArgs }
-  | { subcommand: "audit"; args: AuditArgs };
+  | { subcommand: "audit"; args: AuditArgs }
+  | { subcommand: "config"; args: {} };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ export interface CustomEdgeDef {
     sourceImport?: string;
     targetName?: string;
   };
+  scope?: "same-file" | "imported" | "all";
 }
 
 export interface BuildGraphConfig {

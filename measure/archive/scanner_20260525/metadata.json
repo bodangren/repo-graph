@@ -1,0 +1,11 @@
+{
+  "track_id": "scanner_20260525",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-05-25T11:26:02Z",
+  "updated_at": "2026-05-25T11:26:02Z",
+  "description": "Scanner enrichment: runtime schema extraction (Convex, Zod) and framework-aware edges (React, Convex queries/mutations)",
+  "estimated_tasks": 24,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

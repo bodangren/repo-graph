@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T14:01:34.114Z",
+  "generated_at": "2026-05-29T14:36:54.485Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -218,7 +218,7 @@
         "type": "file",
         "path": "audit.ts",
         "extension": "ts",
-        "size": 7157
+        "size": 11261
       },
       {
         "type": "file",
@@ -314,7 +314,7 @@
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 15000
+        "size": 15660
       },
       {
         "type": "file",
@@ -356,7 +356,7 @@
         "type": "file",
         "path": "audit.test.ts",
         "extension": "ts",
-        "size": 10951
+        "size": 19603
       },
       {
         "type": "file",
@@ -585,6 +585,36 @@
                 "size": 132
               }
             ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/audit_20260529",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/audit_20260529/plan.md",
+                "extension": "md",
+                "size": 7883
+              },
+              {
+                "type": "file",
+                "path": "archive/audit_20260529/metadata.json",
+                "extension": "json",
+                "size": 1554
+              },
+              {
+                "type": "file",
+                "path": "archive/audit_20260529/spec.md",
+                "extension": "md",
+                "size": 4647
+              },
+              {
+                "type": "file",
+                "path": "archive/audit_20260529/index.md",
+                "extension": "md",
+                "size": 126
+              }
+            ]
           }
         ]
       },
@@ -656,7 +686,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 15725
+            "size": 22852
           },
           {
             "type": "file",
@@ -682,7 +712,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 3060
+        "size": 3062
       },
       {
         "type": "file",
@@ -817,36 +847,6 @@
                 "path": "tracks/ci_cd_integration_20260528/spec.md",
                 "extension": "md",
                 "size": 4124
-              }
-            ]
-          },
-          {
-            "type": "directory",
-            "path": "tracks/audit_20260529",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/audit_20260529/plan.md",
-                "extension": "md",
-                "size": 7883
-              },
-              {
-                "type": "file",
-                "path": "tracks/audit_20260529/metadata.json",
-                "extension": "json",
-                "size": 1554
-              },
-              {
-                "type": "file",
-                "path": "tracks/audit_20260529/spec.md",
-                "extension": "md",
-                "size": 4647
-              },
-              {
-                "type": "file",
-                "path": "tracks/audit_20260529/index.md",
-                "extension": "md",
-                "size": 126
               }
             ]
           }

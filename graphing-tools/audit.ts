@@ -3,13 +3,13 @@ import { existsSync } from "fs";
 import { Project, SyntaxKind } from "ts-morph";
 import { formatTable } from "./query";
 import { ExitCode } from "./contract";
-import { getProjectRoot } from "./meta";
 
 export interface AuditResult {
   missingFiles: Array<{ id: string; type: string; name: string; file_path: string }>;
   staleSymbols: Array<{ id: string; type: string; name: string; file_path: string; line_start: number | null }>;
   orphanEdges: Array<{ source: string; target: string; type: string; missingSide: "source" | "target" | "both" }>;
   duplicateNodes: Array<{ name: string; type: string; file_path: string; ids: string[]; count: number }>;
+  unauditedSymbols: Array<{ id: string; type: string; name: string; file_path: string; reason: string }>;
 }
 
 function findMissingFiles(db: Database): AuditResult["missingFiles"] {
@@ -32,11 +32,11 @@ function findOrphanEdges(db: Database): AuditResult["orphanEdges"] {
   return rows;
 }
 
-function findStaleSymbols(db: Database): AuditResult["staleSymbols"] {
+function findStaleSymbols(db: Database): Pick<AuditResult, "staleSymbols" | "unauditedSymbols"> {
   const symbolNodes = db.prepare("SELECT id, type, name, file_path, line_start FROM nodes WHERE type != 'file' AND file_path != ''").all() as
     Array<{ id: string; type: string; name: string; file_path: string; line_start: number | null }>;
 
-  if (symbolNodes.length === 0) return [];
+  if (symbolNodes.length === 0) return { staleSymbols: [], unauditedSymbols: [] };
 
   // Group nodes by file_path
   const byFile = new Map<string, typeof symbolNodes>();
@@ -46,6 +46,7 @@ function findStaleSymbols(db: Database): AuditResult["staleSymbols"] {
   }
 
   const stale: AuditResult["staleSymbols"] = [];
+  const unaudited: AuditResult["unauditedSymbols"] = [];
 
   for (const [filePath, nodes] of byFile) {
     if (!existsSync(filePath)) {
@@ -101,8 +102,86 @@ function findStaleSymbols(db: Database): AuditResult["staleSymbols"] {
       }
       existing.set("type_alias", typeAliasNames);
 
+      // Schemas: defineTable(schemaName), z.object(...), or exported const object literals
+      const schemaNames = new Set<string>();
+      for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
+        const exprText = call.getExpression().getText();
+        if (exprText === "defineTable" || exprText === "z.object") {
+          const parent = call.getParent();
+          if (parent) {
+            if (parent.getKind() === SyntaxKind.PropertyAssignment) {
+              schemaNames.add(parent.asKind(SyntaxKind.PropertyAssignment)!.getName());
+            } else if (parent.getKind() === SyntaxKind.VariableDeclaration) {
+              schemaNames.add(parent.asKind(SyntaxKind.VariableDeclaration)!.getName());
+            }
+          }
+        }
+      }
+      for (const stmt of sourceFile.getVariableStatements()) {
+        if (stmt.isExported()) {
+          for (const decl of stmt.getDeclarations()) {
+            const init = decl.getInitializer();
+            if (init?.getKind() === SyntaxKind.ObjectLiteralExpression) {
+              schemaNames.add(decl.getName());
+            }
+          }
+        }
+      }
+      existing.set("schema", schemaNames);
+
+      // Params: collect param names per function
+      const paramsByFunction = new Map<string, Set<string>>();
+      function collectParams(func: import("ts-morph").FunctionDeclaration | import("ts-morph").ArrowFunction, funcName: string): void {
+        const paramSet = new Set<string>();
+        for (const param of func.getParameters()) {
+          const nameNode = param.getNameNode();
+          if (nameNode.getKind() === SyntaxKind.ObjectBindingPattern) {
+            for (const element of nameNode.asKind(SyntaxKind.ObjectBindingPattern)!.getElements()) {
+              paramSet.add(element.getName());
+            }
+          } else if (nameNode.getKind() === SyntaxKind.Identifier) {
+            paramSet.add(nameNode.asKind(SyntaxKind.Identifier)!.getText());
+          }
+        }
+        paramsByFunction.set(funcName, paramSet);
+      }
+      for (const func of sourceFile.getFunctions()) {
+        const name = func.getName();
+        if (name) collectParams(func, name);
+      }
+      for (const stmt of sourceFile.getVariableStatements()) {
+        for (const decl of stmt.getDeclarations()) {
+          const init = decl.getInitializer();
+          if (init?.getKind() === SyntaxKind.ArrowFunction) {
+            collectParams(init.asKind(SyntaxKind.ArrowFunction)!, decl.getName());
+          }
+        }
+      }
+
       // Check each stored node
       for (const node of nodes) {
+        if (node.type === "field" || node.type === "route") {
+          unaudited.push({
+            id: node.id,
+            type: node.type,
+            name: node.name,
+            file_path: node.file_path,
+            reason: `Stale-symbol detection for ${node.type} nodes requires full scanner re-run`,
+          });
+          continue;
+        }
+
+        if (node.type === "param") {
+          // id format: param:filePath:funcName:paramName
+          const parts = node.id.split(":");
+          const funcName = parts.length >= 3 ? parts[parts.length - 2] : undefined;
+          const paramName = parts.length >= 3 ? parts[parts.length - 1] : node.name;
+          if (!funcName || !paramsByFunction.has(funcName) || !paramsByFunction.get(funcName)!.has(paramName)) {
+            stale.push(node);
+          }
+          continue;
+        }
+
         const names = existing.get(node.type);
         if (names && !names.has(node.name)) {
           stale.push(node);
@@ -113,7 +192,7 @@ function findStaleSymbols(db: Database): AuditResult["staleSymbols"] {
     }
   }
 
-  return stale;
+  return { staleSymbols: stale, unauditedSymbols: unaudited };
 }
 
 function findDuplicateNodes(db: Database): AuditResult["duplicateNodes"] {
@@ -136,18 +215,21 @@ export function runAudit(
   db: Database,
   opts?: { json?: boolean }
 ): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound } {
+  const { staleSymbols, unauditedSymbols } = findStaleSymbols(db);
   const result: AuditResult = {
     missingFiles: findMissingFiles(db),
-    staleSymbols: findStaleSymbols(db),
+    staleSymbols,
     orphanEdges: findOrphanEdges(db),
     duplicateNodes: findDuplicateNodes(db),
+    unauditedSymbols,
   };
 
   const hasIssues =
     result.missingFiles.length > 0 ||
     result.staleSymbols.length > 0 ||
     result.orphanEdges.length > 0 ||
-    result.duplicateNodes.length > 0;
+    result.duplicateNodes.length > 0 ||
+    result.unauditedSymbols.length > 0;
 
   if (opts?.json) {
     return {
@@ -156,7 +238,7 @@ export function runAudit(
     };
   }
 
-  if (!hasIssues) {
+  if (!hasIssues && result.unauditedSymbols.length === 0) {
     return {
       output: "Audit complete. No issues found.",
       exitCode: ExitCode.Success,
@@ -207,6 +289,14 @@ export function runAudit(
       String(r.count),
       r.ids.join(", "),
     ]);
+    lines.push(formatTable(columns, rows));
+    lines.push("");
+  }
+
+  if (result.unauditedSymbols.length > 0) {
+    lines.push(`unaudited_symbols (${result.unauditedSymbols.length}):`);
+    const columns = ["type", "name", "file_path", "reason"];
+    const rows = result.unauditedSymbols.map((r) => [r.type, r.name, r.file_path, r.reason]);
     lines.push(formatTable(columns, rows));
     lines.push("");
   }

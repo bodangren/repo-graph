@@ -1,6 +1,14 @@
 # Agent Guidelines for repo-graph
 
+## Measure Workflow
+
+Load the `measure` skill and read `measure/index.md` before starting work.
+
 This project includes `build-graph` — a CLI tool that builds a SQLite knowledge graph of the TypeScript codebase. **Use it.** It is much faster and more accurate than grepping for structural questions.
+
+## Documentation Standards
+
+Use JSDoc for all exported functions. Describe params and returns without repeating TypeScript types.
 
 ## Workflow Rules
 
@@ -9,6 +17,7 @@ This project includes `build-graph` — a CLI tool that builds a SQLite knowledg
 When you start working on this project, check if `graph.db` exists and is fresh (modified within the last 24 hours). If not, build it:
 
 ```bash
+
 # If graph.db is missing or stale
 build-graph scan . ./graph.db
 
@@ -32,6 +41,7 @@ For structural questions, **always query the graph first** instead of grepping:
 Before modifying any **exported** function, class, interface, or schema, check its relationships to understand blast radius:
 
 ```bash
+
 # See all callers and dependencies
 build-graph inspect ./graph.db SymbolName
 
@@ -49,6 +59,7 @@ build-graph deps ./graph.db SymbolName
 This repo may contain multiple packages (e.g. `frontend/`, `convex/`). When querying, narrow scope with package filters:
 
 ```bash
+
 # Only show frontend callers
 build-graph callers ./graph.db myHook --from-package=frontend
 
@@ -70,6 +81,7 @@ After you finish a batch of edits that change:
 Update the graph so the next agent (or your next session) has accurate context:
 
 ```bash
+
 # After editing files
 build-graph update ./graph.db src/auth.ts src/schema.ts
 
@@ -115,3 +127,7 @@ FROM edges e
 JOIN nodes n ON n.id = e.source
 WHERE e.type IN ('queries', 'mutates') AND n.package_id = 'frontend';
 ```
+
+## Automation Supervisor
+
+Do NOT modify measure/automation-supervisor.py. This file is centrally managed and hardlinked across all projects.

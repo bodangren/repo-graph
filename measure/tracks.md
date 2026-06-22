@@ -63,3 +63,8 @@ This file tracks all major tracks for the project.
 
 - [x] **Track: Scanner Extensibility — Config-Driven Edge Types, Route Mode Tags, and Custom File Patterns**
   *Link: [./archive/extensibility_20260603/](./archive/extensibility_20260603/)* — Add custom edge types via `build-graph.config.json`, extract `export const mode = '...'` from route files as node tags, and support `--include` globs for non-TS files.
+
+---
+
+- [ ] **Track: Agent Explore, Freshness, and Changed-File Impact**
+  *Link: [./tracks/agent_explore_freshness_impact_20260622/](./tracks/agent_explore_freshness_impact_20260622/)* — Add FTS-backed search, file freshness metadata, a Measure-friendly `explore` command, and changed-file `affected`/`impact` analysis inspired by CodeGraph's low-hanging product patterns.

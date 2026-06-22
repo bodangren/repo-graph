@@ -45,7 +45,14 @@ This file tracks all major tracks for the project.
 - [x] **Track: Graph Integrity Audit Command — detect stale nodes, missing files, orphan edges, and duplicate nodes via `build-graph audit`**
   *Link: [./archive/audit_20260529/](./archive/audit_20260529/)*
 
+---
+
+- [x] **Track: Scanner Extensibility — Config-Driven Edge Types, Route Mode Tags, and Custom File Patterns**
+  *Link: [./archive/extensibility_20260603/](./archive/extensibility_20260603/)* — Add custom edge types via `build-graph.config.json`, extract `export const mode = '...'` from route files as node tags, and support `--include` globs for non-TS files.
+
 ## Upcoming Tracks
+
+_Status (verified 2026-06-21): all four below are genuinely not started — 0 plan tasks each, metadata `pending`, no implementation in `graphing-tools/`, and no `.github/workflows`. Registry is accurate._
 
 - [ ] **Track: Git Hook Integration for Incremental Graph Updates**
   *Link: [./tracks/git_hook_incremental_updates_20260528/](./tracks/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes.
@@ -58,11 +65,6 @@ This file tracks all major tracks for the project.
 
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
-
----
-
-- [x] **Track: Scanner Extensibility — Config-Driven Edge Types, Route Mode Tags, and Custom File Patterns**
-  *Link: [./archive/extensibility_20260603/](./archive/extensibility_20260603/)* — Add custom edge types via `build-graph.config.json`, extract `export const mode = '...'` from route files as node tags, and support `--include` globs for non-TS files.
 
 ---
 

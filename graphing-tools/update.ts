@@ -1,9 +1,38 @@
 import { Database } from "bun:sqlite";
 import { Project } from "ts-morph";
 import { resolve } from "path";
-import { existsSync, statSync } from "fs";
+import { existsSync, statSync, unlinkSync } from "fs";
 import { scanProject } from "./scanner";
 import { recordFileMetadata, deleteFileData } from "./files";
+import { getMetadata, setMetadata } from "./meta";
+import { createSchema } from "./schema";
+import { SCHEMA_VERSION } from "./schema";
+
+export interface RunUpdateOptions {
+  /** Treat the input list as authoritative: include a remove-only pass for files no longer present in `project`. */
+  detectDeletions?: boolean;
+  /** Force a full scan regardless of file list. */
+  fullScan?: boolean;
+  /** When true, on schema mismatch the existing DB is deleted and rebuilt from scratch. */
+  resetOnConflict?: boolean;
+  /** Optional commit SHA recorded in the graph metadata after success. */
+  commitSha?: string | null;
+  /** Schema version the caller expects. Defaults to SCHEMA_VERSION. */
+  currentVersion?: string;
+}
+
+export interface RunUpdateResult {
+  mode: "incremental" | "full-rescan";
+  conflict: boolean;
+  fallbackToFullScan: boolean;
+  metadataWritten: boolean;
+  filesUpdated: number;
+  filesDeleted: number;
+  nodesDeleted: number;
+  nodesInserted: number;
+  edgesDeleted: number;
+  edgesInserted: number;
+}
 
 export function updateFiles(db: Database, project: Project, filePaths: string[]): {
   filesUpdated: number;
@@ -101,4 +130,203 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
   })();
 
   return stats;
+}
+
+// ── runUpdate — incremental update entry point with conflict resolution ──────
+
+/**
+ * Run an incremental or full-rescan update, depending on input and
+ * existing graph state. Accepts either an open `Database` handle or a
+ * filesystem path. When a path is provided, this function manages the
+ * DB lifecycle (open, close) and may unlink + recreate the file on
+ * schema-version conflict.
+ *
+ * Returns a `RunUpdateResult` describing what was done.
+ */
+export function runUpdate(
+  dbOrPath: Database | string,
+  project: Project,
+  files: string[],
+  options: RunUpdateOptions = {}
+): RunUpdateResult {
+  const currentVersion = options.currentVersion ?? SCHEMA_VERSION;
+  const isPath = typeof dbOrPath === "string";
+  const dbPath = isPath ? (dbOrPath as string) : null;
+  const ownedDb: Database | null = isPath ? new Database(dbOrPath as string) : null;
+  const db: Database = ownedDb ?? (dbOrPath as Database);
+
+  try {
+    // 1. Inspect existing metadata for conflict.
+    const detection = detectMetadataState(db);
+    let conflict = false;
+    let fallbackToFullScan = false;
+    if (!detection.metaTableExists) {
+      // meta table missing — schema is broken; full rebuild required
+      conflict = true;
+      fallbackToFullScan = true;
+    } else if (detection.metadata === undefined) {
+      // table exists, no row yet — treat as fresh; only fall back if no files provided
+      if (files.length === 0) {
+        conflict = false;
+        fallbackToFullScan = true;
+      }
+    } else if (detection.metadata.schemaVersion !== currentVersion) {
+      // schema-version mismatch
+      conflict = true;
+      fallbackToFullScan = true;
+    }
+
+    if (conflict) {
+      console.warn("Graph state diverged — falling back to full scan");
+    }
+
+    // 2. On-disk reset when fallback is triggered.
+    if (fallbackToFullScan && isPath && dbPath && options.resetOnConflict !== false) {
+      try {
+        db.close();
+      } catch {
+        // best-effort
+      }
+      try {
+        unlinkSync(dbPath);
+      } catch {
+        // file may not exist yet — ignore
+      }
+      // Re-open the now-fresh DB and run the actual update on it.
+      const reopened = new Database(dbPath);
+      try {
+        createSchema(reopened);
+        return runUpdateBody(reopened, project, files, options, fallbackToFullScan, currentVersion, conflict);
+      } finally {
+        reopened.close();
+      }
+    }
+
+    // In-memory or resetOnConflict=false path.
+    if (fallbackToFullScan) {
+      // Apply createSchema (idempotent) and clear data so the rebuild is clean.
+      try {
+        createSchema(db);
+      } catch {
+        // already exists
+      }
+      db.exec("DELETE FROM edges");
+      db.exec("DELETE FROM nodes");
+    }
+
+    return runUpdateBody(db, project, files, options, fallbackToFullScan, currentVersion, conflict);
+  } finally {
+    if (ownedDb) {
+      try {
+        ownedDb.close();
+      } catch {
+        // ignore double-close
+      }
+    }
+  }
+}
+
+/** Read metadata defensively — returns undefined if the meta table is missing. */
+function safeGetMetadata(db: Database): ReturnType<typeof getMetadata> {
+  try {
+    return getMetadata(db);
+  } catch {
+    return undefined;
+  }
+}
+
+interface MetadataState {
+  /** Whether the `meta` table itself exists. */
+  metaTableExists: boolean;
+  /** Decoded metadata row, or `undefined` if no row exists. */
+  metadata: ReturnType<typeof getMetadata>;
+}
+
+/**
+ * Inspect the DB for metadata. Distinguishes three states:
+ *  - meta table does not exist (broken schema)
+ *  - meta table exists but no graph metadata row (fresh DB)
+ *  - graph metadata row present (with possible schema-version mismatch)
+ */
+function detectMetadataState(db: Database): MetadataState {
+  let metaTableExists = true;
+  try {
+    db.prepare("SELECT 1 FROM meta LIMIT 1").get();
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("no such table")) {
+      metaTableExists = false;
+    } else {
+      throw err;
+    }
+  }
+  if (!metaTableExists) {
+    return { metaTableExists: false, metadata: undefined };
+  }
+  const metadata = safeGetMetadata(db);
+  return { metaTableExists: true, metadata };
+}
+
+/**
+ * Internal worker: performs either a full scan or an incremental update
+ * and writes metadata. Assumes the caller has already determined whether
+ * fallback is required and has prepared the DB (cleared data or unlinked file).
+ */
+function runUpdateBody(
+  db: Database,
+  project: Project,
+  files: string[],
+  options: RunUpdateOptions,
+  fallbackToFullScan: boolean,
+  currentVersion: string,
+  conflict: boolean
+): RunUpdateResult {
+  let stats: ReturnType<typeof updateFiles>;
+
+  if (fallbackToFullScan || options.fullScan || files.length === 0) {
+    // Full scan: clear all nodes/edges, then re-scan every source file in the project.
+    db.exec("DELETE FROM edges");
+    db.exec("DELETE FROM nodes");
+    const allPaths = project.getSourceFiles().map((sf) => sf.getFilePath());
+    stats = updateFiles(db, project, allPaths);
+  } else {
+    stats = updateFiles(db, project, files);
+  }
+
+  // Write metadata with current schema version + commit SHA.
+  const metaSha = options.commitSha !== undefined ? options.commitSha : readCurrentCommitSha();
+  setMetadata(db, {
+    schemaVersion: currentVersion,
+    commitSha: metaSha ?? null,
+    lastIndexedAt: Date.now(),
+  });
+
+  return {
+    mode: fallbackToFullScan ? "full-rescan" : "incremental",
+    conflict,
+    fallbackToFullScan,
+    metadataWritten: true,
+    filesUpdated: stats.filesUpdated,
+    filesDeleted: stats.filesDeleted,
+    nodesDeleted: stats.nodesDeleted,
+    nodesInserted: stats.nodesInserted,
+    edgesDeleted: stats.edgesDeleted,
+    edgesInserted: stats.edgesInserted,
+  };
+}
+
+/**
+ * Best-effort read of the current git HEAD commit SHA. Returns `null`
+ * if the command fails (e.g. not in a git repository).
+ */
+function readCurrentCommitSha(): string | null {
+  try {
+    const proc = Bun.spawnSync(["git", "rev-parse", "HEAD"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    if (proc.exitCode !== 0) return null;
+    return proc.stdout.toString("utf8").trim() || null;
+  } catch {
+    return null;
+  }
 }

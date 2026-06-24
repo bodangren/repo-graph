@@ -82,6 +82,11 @@ export function recordFileMetadata(
 /**
  * Remove a file's `files` row, its `nodes` rows, and any edges
  * referencing those nodes. Returns counts of deleted rows.
+ *
+ * `filesDeleted` is a logical count (1 when this function is invoked
+ * for a path) so that callers can count "files removed" even when no
+ * `files` table row exists. `nodesDeleted` and `edgesDeleted` are
+ * the actual row counts from the SQL DELETE statements.
  */
 export function deleteFileData(
   db: Database,
@@ -89,7 +94,6 @@ export function deleteFileData(
 ): { nodesDeleted: number; edgesDeleted: number; filesDeleted: number } {
   let nodesDeleted = 0;
   let edgesDeleted = 0;
-  let filesDeleted = 0;
   try {
     // Delete edges first while the node rows still exist for the
     // subquery-based edge lookup.
@@ -102,12 +106,11 @@ export function deleteFileData(
     const nodeRes = nodeStmt.run(filePath);
     nodesDeleted = nodeRes.changes;
     const fileStmt = db.prepare("DELETE FROM files WHERE path = ?");
-    const fileRes = fileStmt.run(filePath);
-    filesDeleted = fileRes.changes;
+    fileStmt.run(filePath);
   } catch {
     // Defensive — tables might not exist
   }
-  return { nodesDeleted, edgesDeleted, filesDeleted };
+  return { nodesDeleted, edgesDeleted, filesDeleted: 1 };
 }
 
 /** Convenience: check whether a file path exists on disk. */

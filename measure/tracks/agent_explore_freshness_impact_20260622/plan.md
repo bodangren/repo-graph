@@ -188,29 +188,29 @@ Per the Green-Phase contract ("necessary test adjustments only when the Red test
 Regenerate derived facts, run project health checks, and prove the track is ready for implementation closeout.
 
 - [x] Task: Regenerate Measure facts
-    - [x] Run `./measure/generate.sh`. (commit <pending>)
+    - [x] Run `./measure/generate.sh`. (commit ee2f4a5)
     - [x] Inspect generated architecture and routes changes. (architecture.json shows new modules `explore`, `affected`, `impact`, `files`, `meta`; routes.md unchanged — same shape as last regen)
-    - [x] Commit generated updates if changed. (commit <pending>)
+    - [x] Commit generated updates if changed. (commit ee2f4a5)
 
 - [x] Task: Run project quality gates
-    - [x] Run `CI=true bun test`. → 415 pass, 0 fail, 914 expect() calls across 25 files. (commit <pending>)
-    - [x] Run `bun run lint`. → no findings. (commit <pending>)
-    - [x] Run `./measure/doctor.sh`. → passed. (commit <pending>)
-    - [x] Confirm `git diff --exit-code measure/generated/` returns 0 after commit. (commit <pending>)
-    - [x] Coverage on new modules. — affected.ts 90.64%, explore.ts 90.05%, impact.ts 87.05%, files.ts 94.37%, meta.ts 89.36%, search.ts 80.00% (all ≥80%). (commit <pending>)
+    - [x] Run `CI=true bun test`. → 415 pass, 0 fail, 914 expect() calls across 25 files. (commit 789a1cf)
+    - [x] Run `bun run lint`. → no findings. (commit 789a1cf)
+    - [x] Run `./measure/doctor.sh`. → passed. (commit 789a1cf)
+    - [x] Confirm `git diff --exit-code measure/generated/` returns 0 after commit. (commit ee2f4a5)
+    - [x] Coverage on new modules. — affected.ts 90.64%, explore.ts 90.05%, impact.ts 87.05%, files.ts 94.37%, meta.ts 89.36%, search.ts 80.00% (all ≥80%). (commit 789a1cf)
 
 - [x] Task: Rebuild and smoke test executable
-    - [x] Run `bun run build`. → bun build --compile OK; binary at `./bin/build-graph` (106 MB). (commit <pending>)
-    - [x] Smoke test `./bin/build-graph help explore`. → returns full help text. (commit <pending>)
-    - [x] Smoke test `./bin/build-graph help affected`. → returns full help text. (commit <pending>)
-    - [x] Smoke test `./bin/build-graph help impact`. → returns full help text. (commit <pending>)
-    - [x] Run a small fixture scan and prove `explore`, `affected`, and `impact` return bounded output. — Scanned `fixtures/sample-project/` (19 nodes, 17 edges); `explore "formatName" --json --include-source` returned matches + relationships + source snippets + freshness block; `affected src/auth.ts` returned text+JSON output; `impact auth.ts` returned ambiguity output (multiple matches with empty filePath). (commit <pending>)
+    - [x] Run `bun run build`. → bun build --compile OK; binary at `./bin/build-graph` (106 MB). (commit 789a1cf)
+    - [x] Smoke test `./bin/build-graph help explore`. → returns full help text. (commit 789a1cf)
+    - [x] Smoke test `./bin/build-graph help affected`. → returns full help text. (commit 789a1cf)
+    - [x] Smoke test `./bin/build-graph help impact`. → returns full help text. (commit 789a1cf)
+    - [x] Run a small fixture scan and prove `explore`, `affected`, and `impact` return bounded output. — Scanned `fixtures/sample-project/` (19 nodes, 17 edges); `explore "formatName" --json --include-source` returned matches + relationships + source snippets + freshness block; `affected src/auth.ts` returned text+JSON output; `impact auth.ts` returned ambiguity output (multiple matches with empty filePath). (commit 789a1cf)
 
 - [x] Task: Final track audit
-    - [x] Verify acceptance criteria in `spec.md`. — All 10 criteria backed by passing tests (see Phase 4 audit below). (commit <pending>)
-    - [x] Record deviations in `metadata.json` if implementation scope changed. — Updated `deviation_notes` to capture scan-time FTS/files wiring deferral. (commit <pending>)
-    - [x] Update `measure/lessons-learned.md` if the CodeGraph comparison reveals durable planning guidance. — Added 2 entries: defer-scan-time-wiring, path-anchored-globs. (commit <pending>)
-    - [x] Update `measure/tech-debt.md` for any intentional shortcuts. — Added 1 row: scan-time FTS/files sync deferred. (commit <pending>)
+    - [x] Verify acceptance criteria in `spec.md`. — All 10 criteria backed by passing tests (see Phase 4 audit below). (commit 789a1cf)
+    - [x] Record deviations in `metadata.json` if implementation scope changed. — Updated `deviation_notes` to capture scan-time FTS/files wiring deferral. (commit 789a1cf)
+    - [x] Update `measure/lessons-learned.md` if the CodeGraph comparison reveals durable planning guidance. — Added 2 entries: defer-scan-time-wiring, path-anchored-globs. (commit 789a1cf)
+    - [x] Update `measure/tech-debt.md` for any intentional shortcuts. — Added 1 row: scan-time FTS/files sync deferred. (commit 789a1cf)
 
 - [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)
 

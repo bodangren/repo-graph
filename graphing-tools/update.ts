@@ -316,13 +316,16 @@ function runUpdateBody(
 
 /**
  * Best-effort read of the current git HEAD commit SHA. Returns `null`
- * if the command fails (e.g. not in a git repository).
+ * if the command fails (e.g. not in a git repository) or times out.
+ * The 5-second timeout prevents hanging on broken git installations
+ * or network-mounted filesystems.
  */
 function readCurrentCommitSha(): string | null {
   try {
     const proc = Bun.spawnSync(["git", "rev-parse", "HEAD"], {
       stdout: "pipe",
       stderr: "pipe",
+      timeout: 5_000,
     });
     if (proc.exitCode !== 0) return null;
     return proc.stdout.toString("utf8").trim() || null;

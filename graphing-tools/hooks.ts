@@ -70,6 +70,17 @@ export async function installHooks(
   }
   const force = options.force ?? false;
 
+  // Path-traversal guard: reject gitDir containing `..` segments that would
+  // cause path.join(gitDir, "hooks") to escape the intended git directory.
+  // path.join normalizes `..` segments away (e.g. "foo/../../etc" becomes "/etc"),
+  // so we check the raw string for `..` components before normalization.
+  if (gitDir.split(path.sep).includes("..")) {
+    throw new Error(
+      `Path traversal rejected: gitDir must not contain ".." segments. ` +
+      `Got "${gitDir}".`
+    );
+  }
+
   const hooksDir = path.join(gitDir, "hooks");
   fs.mkdirSync(hooksDir, { recursive: true });
 
@@ -98,6 +109,11 @@ export async function installHooks(
  *   - silently overwrites a repo-graph hook (idempotent re-run)
  *   - warns and backs up non-repo-graph content (unless force=true)
  *   - creates a new file when none existed before
+ *
+ * Uses a temp-file + rename pattern for atomic writes: the hook script
+ * is first written to a `.tmp` file, then atomically renamed over the
+ * target. This prevents partial-write corruption if the process is
+ * interrupted mid-write.
  */
 function writeHook(
   hookPath: string,
@@ -127,13 +143,31 @@ function writeHook(
       }
     }
 
-    fs.writeFileSync(hookPath, content);
+    // Atomic write: temp file + rename
+    const tmpPath = hookPath + ".tmp." + process.pid;
+    try {
+      fs.writeFileSync(tmpPath, content);
+      fs.renameSync(tmpPath, hookPath);
+    } catch {
+      // Fallback: direct write if rename fails (e.g. cross-device)
+      fs.writeFileSync(hookPath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* best-effort cleanup */ }
+    }
     fs.chmodSync(hookPath, 0o755);
     if (hookName === "pre-commit") result.preCommitOverwritten = true;
     if (hookName === "post-checkout") result.postCheckoutOverwritten = true;
     result.overwritten.push(hookName);
   } else {
-    fs.writeFileSync(hookPath, content);
+    // Atomic write: temp file + rename
+    const tmpPath = hookPath + ".tmp." + process.pid;
+    try {
+      fs.writeFileSync(tmpPath, content);
+      fs.renameSync(tmpPath, hookPath);
+    } catch {
+      // Fallback: direct write if rename fails (e.g. cross-device)
+      fs.writeFileSync(hookPath, content);
+      try { fs.unlinkSync(tmpPath); } catch { /* best-effort cleanup */ }
+    }
     fs.chmodSync(hookPath, 0o755);
     result.created.push(hookName);
   }

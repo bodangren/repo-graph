@@ -177,7 +177,7 @@ describe("runImpact (A5)", () => {
     const parsed = JSON.parse(result.output);
     expect(Array.isArray(parsed.affectedTests)).toBe(true);
     expect(parsed.affectedTests).toContain(
-      `${ROOT}/app/lessons/__tests__/LessonView.test.tsx`
+      `./app/lessons/__tests__/LessonView.test.tsx`
     );
   });
 

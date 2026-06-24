@@ -74,7 +74,7 @@ export function runExplore(
 
   // Build freshness block. Always included (even when no project root)
   // so the JSON shape is stable.
-  const freshness = buildFreshnessBlock(db);
+  const freshness = buildFreshnessBlock(db, projectRoot);
 
   const output: ExploreOutput = {
     query,
@@ -286,11 +286,12 @@ function toAbsolute(path: string, root: string): string {
   return `${root}/${rel}`;
 }
 
-function buildFreshnessBlock(db: Database): FreshnessBlock {
+function buildFreshnessBlock(db: Database, projectRoot?: string): FreshnessBlock {
   const stale = getStaleFiles(db);
+  const rel = (p: string) => (projectRoot ? toRelativePath(p, projectRoot) : p);
   return {
-    stale: stale.map((s) => s.path).sort(),
-    missing: stale.filter((s) => s.reason === "deleted").map((s) => s.path).sort(),
+    stale: stale.map((s) => rel(s.path)).sort(),
+    missing: stale.filter((s) => s.reason === "deleted").map((s) => rel(s.path)).sort(),
     checkedAt: 0,
   };
 }

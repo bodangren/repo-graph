@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { join } from "path";
 import { getStaleFiles, getProjectRoot } from "./meta";
 import { toRelativePath } from "./paths";
 import { resolveNode, type ResolvedNode } from "./resolve";
@@ -53,7 +54,7 @@ export function runImpact(
 
   // Resolution: try (1) exact file path, (2) exact node id, (3) name
   // (case-insensitive), (4) partial name.
-  const resolution = resolveRoot(db, target);
+  const resolution = resolveRoot(db, target, projectRoot);
   if (resolution.kind === "none") {
     if (options.json) {
       return {
@@ -78,25 +79,37 @@ export function runImpact(
   }
 
   const node = resolution.node;
-  const { relationships, fields, components, hooks, schemas, routes } = walkImpact(
+  const walk = walkImpact(
     db,
     node.id,
     depth,
     onlyEdgeType,
     limit
   );
+  const {
+    relationships,
+    fields,
+    components,
+    hooks,
+    schemas,
+    routes,
+    paramFlow,
+  } = walk;
 
-  // Make text output use relative paths. JSON output keeps absolute
-  // paths for the relationship targetFilePath field (the spec is
-  // explicit: "All file paths in output are relative to projectRoot"
-  // applies to text output; JSON preserves raw values for downstream
-  // tooling).
+  // All output paths are relative to projectRoot when available,
+  // including JSON, per the spec output-contract.
   const rel = (p: string) =>
     projectRoot ? toRelativePath(p, projectRoot) : p;
   const displayRelationships = relationships.map((r) => ({
     ...r,
     targetFilePath: rel(r.targetFilePath),
   }));
+
+  // Split relationships by direction for JSON: downstream = forward
+  // edges FROM the root (what the root depends on), upstream = backward
+  // edges (what depends on the root).
+  const upstream = displayRelationships.filter((r) => r.direction === "backward");
+  const downstream = displayRelationships.filter((r) => r.direction === "forward");
 
   // Affected tests: collect all `tested_by` reverse edges plus any
   // file in the same path that matches a test-file pattern.
@@ -110,8 +123,16 @@ export function runImpact(
     root: node.type === "file"
       ? (projectRoot ? toRelativePath(node.filePath, projectRoot) : node.filePath)
       : `${node.type}:${node.name}`,
-    relationships,
-    affectedTests,
+    relationships: displayRelationships,
+    upstream,
+    downstream,
+    routes: routes.map((s) => relBucket(s, projectRoot)),
+    components: components.map((s) => relBucket(s, projectRoot)),
+    hooks: hooks.map((s) => relBucket(s, projectRoot)),
+    schemas: schemas.map((s) => relBucket(s, projectRoot)),
+    fields: fields.map((s) => relBucket(s, projectRoot)),
+    paramFlow,
+    affectedTests: affectedTests.map(rel),
     freshness,
     truncated: relationships.length >= limit,
   };
@@ -127,13 +148,7 @@ export function runImpact(
     output: formatImpactText({
       ...output,
       relationships: displayRelationships,
-      routes: routes.map((s) => relBucket(s, projectRoot)),
-      components: components.map((s) => relBucket(s, projectRoot)),
-      hooks: hooks.map((s) => relBucket(s, projectRoot)),
-      schemas: schemas.map((s) => relBucket(s, projectRoot)),
-      fields: fields.map((s) => relBucket(s, projectRoot)),
-      affectedTests: affectedTests.map(rel),
-    }),
+    }, projectRoot),
     exitCode: ExitCode.Success,
   };
 }
@@ -152,15 +167,7 @@ function relBucket(label: string, projectRoot: string | undefined): string {
 }
 
 /** Format the impact output as human-readable text. */
-export function formatImpactText(
-  result: ImpactOutput & {
-    routes: string[];
-    components: string[];
-    hooks: string[];
-    schemas: string[];
-    fields: string[];
-  }
-): string {
+export function formatImpactText(result: ImpactOutput, projectRoot?: string): string {
   const lines: string[] = [];
   lines.push(`Impact: ${result.root}`);
   lines.push("");
@@ -197,6 +204,13 @@ export function formatImpactText(
     lines.push("Fields:");
     for (const f of result.fields) lines.push(`  ${f}`);
   }
+  if (result.paramFlow.length > 0) {
+    lines.push("");
+    lines.push("Param flow:");
+    for (const p of result.paramFlow) {
+      lines.push(`  ${relParamFlowId(p.source, projectRoot)} → ${relParamFlowId(p.target, projectRoot)}`);
+    }
+  }
   if (result.affectedTests.length > 0) {
     lines.push("");
     lines.push("Affected tests:");
@@ -219,13 +233,16 @@ type RootResolution =
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
-function resolveRoot(db: Database, target: string): RootResolution {
+function resolveRoot(db: Database, target: string, projectRoot?: string): RootResolution {
+  const toAbs = (p: string) =>
+    projectRoot && !p.startsWith("/") ? join(projectRoot, p) : p;
+
   // 1a) File node id (e.g. `file:/path/to/file.ts`). Prefer a
   //     non-file child so the impact walk surfaces the symbol's
   //     edges, not the (often empty) edges of the file node.
   const fileNode = db
     .prepare("SELECT id, type, name, file_path FROM nodes WHERE id = ? AND type = 'file'")
-    .get(`file:${target}`) as { id: string; type: string; name: string; file_path: string } | undefined;
+    .get(`file:${toAbs(target)}`) as { id: string; type: string; name: string; file_path: string } | undefined;
   if (fileNode) {
     const child = db
       .prepare(
@@ -244,18 +261,19 @@ function resolveRoot(db: Database, target: string): RootResolution {
     };
   }
   // 1b) Exact file_path
+  const absTarget = toAbs(target);
   const byFilePath = db
     .prepare("SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type = 'file'")
-    .get(target) as { id: string; type: string; name: string; file_path: string } | undefined;
+    .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
   if (byFilePath) {
     // Prefer a non-file symbol inside the file (schema, function, etc.)
     // so the impact walk surfaces the symbol's incoming and outgoing
-    // edges, not just the (often empty) edges of the file node.
+    // edges, not only the (often empty) edges of the file node.
     const child = db
       .prepare(
         "SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type LIMIT 1"
       )
-      .get(target) as { id: string; type: string; name: string; file_path: string } | undefined;
+      .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
     if (child) {
       return {
         kind: "single",
@@ -274,13 +292,13 @@ function resolveRoot(db: Database, target: string): RootResolution {
   //    this branch for fully-qualified node ids (which contain
   //    `<type>:<file_path>:<name>` and end in a symbol name, not an
   //    extension) — those are handled by the next branch.
-  const looksLikeFilePath = /\/[^/]+\.(?:ts|tsx|js|jsx|json|sql)$/.test(target);
+  const looksLikeFilePath = /\/[^/]+\.(?:ts|tsx|js|jsx|json|sql)$/.test(absTarget);
   if (looksLikeFilePath) {
     const symbolInFile = db
       .prepare(
         "SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type LIMIT 1"
       )
-      .get(target) as { id: string; type: string; name: string; file_path: string } | undefined;
+      .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
     if (symbolInFile) {
       return {
         kind: "single",
@@ -292,7 +310,7 @@ function resolveRoot(db: Database, target: string): RootResolution {
     // output.
     return {
       kind: "single",
-      node: { id: `file:${target}`, type: "file", name: target.split("/").pop() ?? target, filePath: target },
+      node: { id: `file:${absTarget}`, type: "file", name: absTarget.split("/").pop() ?? absTarget, filePath: absTarget },
     };
   }
   // 3) `<type>:<name>` short form (e.g. `schema:scienceLessons`)
@@ -335,6 +353,7 @@ interface WalkResult {
   hooks: string[];
   schemas: string[];
   routes: string[];
+  paramFlow: Array<{ source: string; target: string; tainted: boolean }>;
 }
 
 function walkImpact(
@@ -365,6 +384,8 @@ function walkImpact(
   const hooks = new Set<string>();
   const schemas = new Set<string>();
   const routes = new Set<string>();
+  const paramFlow: Array<{ source: string; target: string; tainted: boolean }> = [];
+  const seenParamFlow = new Set<string>();
 
   function pushRel(
     sourceId: string,
@@ -392,6 +413,13 @@ function walkImpact(
       schemas,
       routes,
     });
+    if (edgeType === "param_flow") {
+      const key = `${sourceId}->${targetId}`;
+      if (!seenParamFlow.has(key)) {
+        seenParamFlow.add(key);
+        paramFlow.push({ source: sourceId, target: targetId, tainted: true });
+      }
+    }
   }
 
   if (depth <= 1) {
@@ -444,21 +472,21 @@ function walkImpact(
     // to its parent in the walk; the direction reflects whether the
     // source or target of the underlying edge is closer to the root.
     const sql = `
-      WITH RECURSIVE walk(id, parent_id, parent_dir, depth, edge_type) AS (
-        SELECT ?, NULL, NULL, 0, NULL
+      WITH RECURSIVE walk(id, parent_id, parent_dir, depth, edge_type, path) AS (
+        SELECT ?, NULL, NULL, 0, NULL, ' → ' || ? || ' → '
         UNION ALL
         SELECT
           CASE WHEN e.source = w.id THEN e.target ELSE e.source END,
           w.id,
           CASE WHEN e.source = w.id THEN 'forward' ELSE 'backward' END,
           w.depth + 1,
-          e.type
+          e.type,
+          w.path || CASE WHEN e.source = w.id THEN e.target ELSE e.source END || ' → '
         FROM walk w
         JOIN edges e ON (e.source = w.id OR e.target = w.id)
                        AND e.type IN (${placeholders})
         WHERE w.depth < ?
-          AND (w.parent_id IS NULL
-               OR CASE WHEN e.source = w.id THEN e.target ELSE e.source END != w.parent_id)
+          AND INSTR(w.path, ' → ' || CASE WHEN e.source = w.id THEN e.target ELSE e.source END || ' → ') = 0
       )
       SELECT DISTINCT w.id, w.parent_id, w.parent_dir, w.edge_type,
              n.name AS node_name, n.type AS node_type, n.file_path AS node_file_path
@@ -467,7 +495,7 @@ function walkImpact(
       WHERE w.depth > 0
       LIMIT ?
     `;
-    const rows = db.prepare(sql).all(rootId, ...edgeFilter, depth, limit) as Array<{
+    const rows = db.prepare(sql).all(rootId, rootId, ...edgeFilter, depth, limit) as Array<{
       id: string;
       parent_id: string;
       parent_dir: "forward" | "backward" | null;
@@ -498,6 +526,9 @@ function walkImpact(
     hooks: Array.from(hooks).sort(),
     schemas: Array.from(schemas).sort(),
     routes: Array.from(routes).sort(),
+    paramFlow: paramFlow.sort((a, b) =>
+      a.source === b.source ? a.target.localeCompare(b.target) : a.source.localeCompare(b.source)
+    ),
   };
 }
 
@@ -589,11 +620,31 @@ function patternToRegex(pat: string): RegExp {
   return new RegExp(escaped);
 }
 
-function buildFreshnessBlock(db: Database, _projectRoot?: string): FreshnessBlock {
+function buildFreshnessBlock(db: Database, projectRoot?: string): FreshnessBlock {
   const stale = getStaleFiles(db);
+  const rel = (p: string) => (projectRoot ? toRelativePath(p, projectRoot) : p);
   return {
-    stale: stale.map((s) => s.path).sort(),
-    missing: stale.filter((s) => s.reason === "deleted").map((s) => s.path).sort(),
+    stale: stale.map((s) => rel(s.path)).sort(),
+    missing: stale.filter((s) => s.reason === "deleted").map((s) => rel(s.path)).sort(),
     checkedAt: 0,
   };
+}
+
+/**
+ * Render a node id (e.g. `schema:/project/src/db/schema.ts:scienceLessons`)
+ * as a human label with the file path relativized when projectRoot is set.
+ */
+function relParamFlowId(id: string, projectRoot?: string): string {
+  const colon = id.indexOf(":");
+  if (colon < 0) return id;
+  const type = id.slice(0, colon);
+  const rest = id.slice(colon + 1);
+  const lastColon = rest.lastIndexOf(":");
+  if (lastColon < 0) {
+    return `${type}:${rest}`;
+  }
+  const filePath = rest.slice(0, lastColon);
+  const name = rest.slice(lastColon + 1);
+  const relPath = projectRoot ? toRelativePath(filePath, projectRoot) : filePath;
+  return `${type}:${name}  ${relPath}`;
 }

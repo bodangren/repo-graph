@@ -101,6 +101,9 @@ export function runAffected(
   }
 
   const changedFiles = inputFiles.slice().sort();
+  const displayChangedFiles = projectRoot
+    ? changedFiles.map((p) => toRelativePath(p, projectRoot)).sort()
+    : changedFiles.slice().sort();
 
   const affected = computeAffected(db, changedFiles, {
     depth,
@@ -110,7 +113,7 @@ export function runAffected(
   });
 
   const output: AffectedOutput = {
-    changedFiles,
+    changedFiles: displayChangedFiles,
     affected,
     truncated: false,
     testsOnly,

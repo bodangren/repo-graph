@@ -15,32 +15,32 @@ describe("createSchema", () => {
 
   it("creates the nodes table", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='nodes'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='nodes'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("nodes");
   });
 
   it("creates the edges table", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='edges'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='edges'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("edges");
   });
 
   it("creates the layers table", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='layers'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='layers'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("layers");
   });
 
   it("creates the tour_steps table", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='tour_steps'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='tour_steps'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("tour_steps");
   });
 
   it("creates the meta table", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='meta'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("meta");
   });
 
   it("nodes table has correct columns", () => {
@@ -101,8 +101,8 @@ describe("files table", () => {
   });
 
   it("is created by createSchema", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='files'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='files'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("files");
   });
 
   it("has the expected columns", () => {
@@ -157,13 +157,13 @@ describe("files indexes", () => {
   });
 
   it("creates idx_files_path index", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_files_path'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_files_path'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("idx_files_path");
   });
 
   it("creates idx_files_modified_at index", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_files_modified_at'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_files_modified_at'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("idx_files_modified_at");
   });
 });
 
@@ -182,18 +182,18 @@ describe("edge traversal indexes", () => {
   });
 
   it("creates idx_edges_source_type index", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_source_type'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_source_type'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("idx_edges_source_type");
   });
 
   it("creates idx_edges_target_type index", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_target_type'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_target_type'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("idx_edges_target_type");
   });
 
   it("creates idx_edges_type index", () => {
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_type'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_edges_type'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("idx_edges_type");
   });
 });
 
@@ -269,8 +269,8 @@ describe("FTS5 defensive creation", () => {
 
   it("nodes_fts virtual table is created when FTS5 is available", () => {
     createSchema(db);
-    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='nodes_fts'").get();
-    expect(result).toBeDefined();
+    const result = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='nodes_fts'").get() as { name: string } | undefined;
+    expect(result?.name).toBe("nodes_fts");
   });
 
   it("FTS5 triggers are intentionally NOT created at schema time (Phase 3 application-level sync)", () => {

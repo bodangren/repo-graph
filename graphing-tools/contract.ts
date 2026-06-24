@@ -350,7 +350,18 @@ export interface AffectedOutput {
 /** Top-level JSON output for `build-graph impact`. */
 export interface ImpactOutput {
   root: string;
+  /** Combined incoming + outgoing relationships (alias for upstream + downstream). */
   relationships: RelationshipEntry[];
+  /** Edges that point AT the root (what depends on the root). */
+  upstream: RelationshipEntry[];
+  /** Edges that point AWAY FROM the root (what the root depends on). */
+  downstream: RelationshipEntry[];
+  routes: string[];
+  components: string[];
+  hooks: string[];
+  schemas: string[];
+  fields: string[];
+  paramFlow: Array<{ source: string; target: string; tainted: boolean }>;
   affectedTests: string[];
   freshness: FreshnessBlock;
   truncated: boolean;

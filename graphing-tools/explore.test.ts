@@ -4,6 +4,9 @@ import { createSchema } from "./schema";
 import { createIndexes } from "./indexes";
 import { setMeta } from "./meta";
 import { ExitCode } from "./contract";
+import { mkdtempSync, writeFileSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 
 /**
  * A3 — Explore command tests (Red Phase)
@@ -252,5 +255,58 @@ describe("runExplore (A3)", () => {
     const parsed1 = JSON.parse(result1.output);
     const parsed2 = JSON.parse(result2.output);
     expect(parsed2.relationships.length).toBeGreaterThanOrEqual(parsed1.relationships.length);
+  });
+
+  it("text output includes stale-file warning and uses relative paths", async () => {
+    const { runExplore } = await import("./explore");
+    const stalePath = `${ROOT}/hooks/useLesson.ts`;
+    insertFileRow(db, stalePath, {
+      modifiedAt: Date.now(),
+      indexedAt: Date.now() - 100_000_000,
+      nodeCount: 1,
+    });
+    const result = runExplore(db, "useLesson");
+    expect(result.output).toContain("Stale files");
+    expect(result.output).toContain("./hooks/useLesson.ts");
+    expect(result.output).not.toContain(`${ROOT}/hooks/useLesson.ts`);
+  });
+
+  it("freshness block is deterministic for the same input", async () => {
+    const { runExplore } = await import("./explore");
+    const result1 = runExplore(db, "useLesson", { json: true });
+    const result2 = runExplore(db, "useLesson", { json: true });
+    expect(JSON.parse(result1.output).freshness).toEqual(JSON.parse(result2.output).freshness);
+  });
+
+  it("--include-source returns a source snippet for a real file", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "repo-graph-explore-"));
+    try {
+      const filePath = join(tempDir, "target.ts");
+      writeFileSync(
+        filePath,
+        "export function useLesson() {\n  return 1;\n}\n",
+        "utf-8"
+      );
+      const nodeId = `function:${filePath}:useLesson`;
+      db.exec(
+        `INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags) VALUES (?, 'function', 'useLesson', ?, 1, 3, 'Hook', '[]')`,
+        [nodeId, filePath]
+      );
+      setMeta(db, "project_root", tempDir);
+
+      const { syncNodeFts } = await import("./search");
+      const row = db.prepare("SELECT rowid FROM nodes WHERE id = ?").get(nodeId) as { rowid: number };
+      syncNodeFts(db, { rowid: row.rowid, id: nodeId, name: "useLesson", filePath });
+
+      const { runExplore } = await import("./explore");
+      const result = runExplore(db, "useLesson", { includeSource: true, json: true });
+      const parsed = JSON.parse(result.output);
+      expect(parsed.sourceSnippets.length).toBeGreaterThanOrEqual(1);
+      const snippet = parsed.sourceSnippets[0];
+      expect(snippet.filePath).toBe("./target.ts");
+      expect(snippet.content).toContain("useLesson");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

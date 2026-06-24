@@ -7,7 +7,7 @@ describe("toRelativePath", () => {
     expect(result).toBe("./src/a.ts");
   });
 
-  it("returns just ./ for root-level file", () => {
+  it("returns ./ for root-level file", () => {
     const result = toRelativePath("/home/user/project/index.ts", "/home/user/project");
     expect(result).toBe("./index.ts");
   });

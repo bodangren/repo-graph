@@ -62,13 +62,54 @@ Fuzzy search across names and summaries:
 bun run graphing-tools/build-graph-db.ts search <db> <keyword>
 ```
 
+### Explore (agent graph query)
+
+Single high-signal graph query for Measure agents. Returns matches, relationships, source snippets, and freshness metadata in one call:
+
+```bash
+bun run graphing-tools/build-graph-db.ts explore <db> "lesson route progress"
+bun run graphing-tools/build-graph-db.ts explore <db> "useLesson" --json --include-source
+```
+
+Flags: `--json`, `--limit N`, `--depth N`, `--include-source`.
+
+### Affected (changed-file impact)
+
+Walk reverse dependency edges from changed files to surface downstream tests, routes, components, data-access, and other affected files:
+
+```bash
+# From arguments
+bun run graphing-tools/build-graph-db.ts affected <db> src/auth.ts src/db/schema.ts
+
+# From stdin (pipe-friendly)
+git diff --name-only HEAD~1 HEAD | bun run graphing-tools/build-graph-db.ts affected <db> --stdin
+
+# Tests only
+bun run graphing-tools/build-graph-db.ts affected <db> src/auth.ts --tests-only --json
+```
+
+Flags: `--stdin`, `--json`, `--depth N`, `--tests-only`, `--filter <glob>`.
+
+### Impact (symbol/file blast radius)
+
+Show the bidirectional blast radius of a single node or file, surfacing routes, components, hooks, schemas, fields, and affected tests:
+
+```bash
+bun run graphing-tools/build-graph-db.ts impact <db> "schema:scienceLessons" --json
+bun run graphing-tools/build-graph-db.ts impact <db> src/db/schema.ts --depth 3
+```
+
+Flags: `--json`, `--depth N`, `--edge-type T`, `--include-source`.
+
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
-| 1 | Runtime error (file not found, parse error, SQLite failure) |
-| 2 | Misuse (missing arguments, unknown command) |
+| 1 | Not found (no matching nodes) |
+| 2 | Ambiguous (multiple matches) |
+| 3 | Misuse (missing arguments, unknown command) |
+| 4 | Runtime error (file not found, parse error, SQLite failure) |
 
 ## Schema
 

@@ -47,7 +47,16 @@ export function recordFileMetadata(
   }
   const contentHash = hashFile(filePath) ?? "sha256:unreadable";
   const indexedAt = Date.now();
-  const nodeCount = sourceFile?.getLineCount ? sourceFile.getLineCount() : 0;
+  const nodeCount = (() => {
+    try {
+      const row = db
+        .prepare("SELECT COUNT(*) AS c FROM nodes WHERE file_path = ?")
+        .get(filePath) as { c: number } | undefined;
+      return row?.c ?? 0;
+    } catch {
+      return 0;
+    }
+  })();
 
   try {
     db.prepare(
@@ -82,14 +91,16 @@ export function deleteFileData(
   let edgesDeleted = 0;
   let filesDeleted = 0;
   try {
-    const nodeStmt = db.prepare("DELETE FROM nodes WHERE file_path = ?");
-    const nodeRes = nodeStmt.run(filePath);
-    nodesDeleted = nodeRes.changes;
+    // Delete edges first while the node rows still exist for the
+    // subquery-based edge lookup.
     const edgeStmt = db.prepare(
       "DELETE FROM edges WHERE source IN (SELECT id FROM nodes WHERE file_path = ?) OR target IN (SELECT id FROM nodes WHERE file_path = ?)"
     );
     const edgeRes = edgeStmt.run(filePath, filePath);
     edgesDeleted = edgeRes.changes;
+    const nodeStmt = db.prepare("DELETE FROM nodes WHERE file_path = ?");
+    const nodeRes = nodeStmt.run(filePath);
+    nodesDeleted = nodeRes.changes;
     const fileStmt = db.prepare("DELETE FROM files WHERE path = ?");
     const fileRes = fileStmt.run(filePath);
     filesDeleted = fileRes.changes;

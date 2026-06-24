@@ -88,8 +88,12 @@ describe("runAffected (A4)", () => {
     const parsed = JSON.parse(result.output);
     expect(Array.isArray(parsed.affected)).toBe(true);
     const affectedPaths = parsed.affected.map((f: { path: string }) => f.path);
-    expect(affectedPaths).toContain(`${ROOT}/src/userService.ts`);
-    expect(affectedPaths).toContain(`${ROOT}/src/UserProfile.tsx`);
+    // Per the spec ("All file paths in output are relative to
+    // projectRoot"), affected paths are returned relative to the
+    // project root. The companion test "uses relative paths in JSON
+    // output" pins this behaviour.
+    expect(affectedPaths).toContain(`./src/userService.ts`);
+    expect(affectedPaths).toContain(`./src/UserProfile.tsx`);
   });
 
   it("groups affected files into tests, routes, components, dataAccess, other", async () => {
@@ -112,7 +116,8 @@ describe("runAffected (A4)", () => {
       expect(entry.group).toBe("tests");
     }
     const affectedPaths = parsed.affected.map((f: { path: string }) => f.path);
-    expect(affectedPaths).toContain(`${ROOT}/src/__tests__/auth.test.ts`);
+    // Output is relative to project root (per the spec).
+    expect(affectedPaths).toContain(`./src/__tests__/auth.test.ts`);
   });
 
   it("accepts multiple changed files as arguments", async () => {

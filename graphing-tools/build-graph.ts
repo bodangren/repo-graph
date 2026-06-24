@@ -13,6 +13,9 @@ import { searchNodes } from "./search";
 import { updateFiles } from "./update";
 import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
 import { runAudit } from "./audit";
+import { runExplore } from "./explore";
+import { runAffected } from "./affected";
+import { runImpact } from "./impact";
 import { setMeta, getProjectRoot } from "./meta";
 import { ExitCode, type BuildGraphConfig, type CustomEdgeDef } from "./contract";
 import { loadConfig, applyCustomEdges } from "./config";
@@ -91,6 +94,17 @@ function printHelp(subcommand?: string): void {
     console.log("Usage: build-graph audit <db> [--json]");
     console.log("  Cross-reference the graph against source files to detect stale nodes,");
     console.log("  missing files, orphan edges, and duplicate nodes.");
+  } else if (subcommand === "explore") {
+    console.log("Usage: build-graph explore <db> <query> [--json] [--limit N] [--depth N] [--include-source]");
+    console.log("  Single high-signal graph query for Measure agents.");
+    console.log("  --include-source  Include bounded source snippets with stable line numbers.");
+  } else if (subcommand === "affected") {
+    console.log("Usage: build-graph affected <db> [file ...] [--stdin] [--json] [--depth N] [--tests-only] [--filter <glob>]");
+    console.log("  Walk reverse dependency edges from changed files to surface downstream");
+    console.log("  tests, routes, components, data-access, and other affected files.");
+  } else if (subcommand === "impact") {
+    console.log("Usage: build-graph impact <db> <node-or-file> [--json] [--depth N] [--edge-type T] [--include-source]");
+    console.log("  Show the bidirectional blast radius of a single node or file.");
   } else {
     console.log("build-graph — Knowledge graph builder for TypeScript codebases");
     console.log("");
@@ -443,6 +457,61 @@ async function handleAudit(dbPath: string, json: boolean): Promise<number> {
   }
 }
 
+async function handleExplore(
+  dbPath: string,
+  query: string,
+  json: boolean,
+  limit?: number,
+  depth?: number,
+  includeSource?: boolean
+): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const result = runExplore(db, query, { json, limit, depth, includeSource });
+    if (result.output) console.log(result.output);
+    return result.exitCode;
+  } finally {
+    db.close();
+  }
+}
+
+async function handleAffected(
+  dbPath: string,
+  files: string[],
+  json: boolean,
+  depth?: number,
+  testsOnly?: boolean,
+  filter?: string,
+  stdin?: boolean
+): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const result = runAffected(db, files, { json, depth, testsOnly, filter, stdin });
+    if (result.output) console.log(result.output);
+    return result.exitCode;
+  } finally {
+    db.close();
+  }
+}
+
+async function handleImpact(
+  dbPath: string,
+  nodeOrFile: string,
+  json: boolean,
+  depth?: number,
+  edgeType?: string,
+  includeSource?: boolean
+): Promise<number> {
+  const db = new Database(dbPath);
+  try {
+    const result = runImpact(db, nodeOrFile, { json, depth, edgeType, includeSource });
+    if (result.output) console.log(result.output);
+    return result.exitCode;
+  } finally {
+    db.close();
+  }
+}
+
 export async function main(argv: string[]): Promise<number> {
   const parsed = parseArgs(argv);
 
@@ -478,6 +547,12 @@ export async function main(argv: string[]): Promise<number> {
       return await handleInspect(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false);
     case "audit":
       return await handleAudit(parsed.args.dbPath, parsed.args.json ?? false);
+    case "explore":
+      return await handleExplore(parsed.args.dbPath, parsed.args.query, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth, parsed.args.includeSource);
+    case "affected":
+      return await handleAffected(parsed.args.dbPath, parsed.args.files, parsed.args.json ?? false, parsed.args.depth, parsed.args.testsOnly, parsed.args.filter, parsed.args.stdin);
+    case "impact":
+      return await handleImpact(parsed.args.dbPath, parsed.args.nodeOrFile, parsed.args.json ?? false, parsed.args.depth, parsed.args.edgeType, parsed.args.includeSource);
     case "help":
       printHelp(parsed.args.subcommand);
       break;

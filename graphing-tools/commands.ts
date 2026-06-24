@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
 import { formatTable } from "./query";
 import { toRelativePath } from "./paths";
-import { getProjectRoot } from "./meta";
+import { getProjectRoot, getStaleFiles } from "./meta";
 import { resolveNode, type ResolvedNode } from "./resolve";
-import { ExitCode, type SearchResult } from "./contract";
+import { ExitCode, type SearchResult, type FreshnessBlock } from "./contract";
 
 // ── Shared formatting ──────────────────────────────────────────────────────
 
@@ -16,6 +16,27 @@ function printDisambiguation(matches: SearchResult[], root: string | undefined):
   const columns = ["type", "name", "file_path"];
   const rows = matches.map((m) => [m.type, m.name, rel(m.filePath, root)]);
   console.error(formatTable(columns, rows));
+}
+
+/**
+ * Build a `FreshnessBlock` for JSON output, scoped to a set of
+ * optional `watchPaths`. When `watchPaths` is provided, only files
+ * matching those paths are surfaced (others are ignored).
+ */
+function buildFreshnessBlock(db: Database, watchPaths?: string[]): FreshnessBlock {
+  const stale = getStaleFiles(db);
+  const watchSet = watchPaths && watchPaths.length > 0 ? new Set(watchPaths) : null;
+  const stalePaths = stale
+    .filter((s) => !watchSet || watchSet.has(s.path))
+    .map((s) => s.path);
+  const missingPaths = stale
+    .filter((s) => s.reason === "deleted" && (!watchSet || watchSet.has(s.path)))
+    .map((s) => s.path);
+  return {
+    stale: stalePaths,
+    missing: missingPaths,
+    checkedAt: Date.now(),
+  };
 }
 
 // ── deps ───────────────────────────────────────────────────────────────────
@@ -427,13 +448,17 @@ export function runStats(db: Database, opts?: { json?: boolean }): string {
   }
 
   if (opts?.json) {
-    return JSON.stringify({
+    const payload: Record<string, unknown> = {
       totals: { nodes: totalNodes, edges: totalEdges, files: totalFiles },
       by_type: byType,
       top_imported: topImported,
       largest_files: largestFiles.map((r) => ({ file_path: rel(r.file_path, root), entities: r.c })),
       packages: Object.fromEntries(pkgCounts),
-    });
+    };
+    if (root) {
+      payload.freshness = buildFreshnessBlock(db);
+    }
+    return JSON.stringify(payload);
   }
 
   const lines: string[] = [];
@@ -530,37 +555,41 @@ export function runInspect(
   const resolvedOutgoing = outgoing.filter((e) => !unresolvedOutgoing.includes(e));
 
   if (opts?.json) {
+    const payload: Record<string, unknown> = {
+      node: {
+        id: node.id,
+        type: node.type,
+        name: node.name,
+        file_path: rel(node.filePath, root),
+        line_start: meta?.line_start ?? undefined,
+        line_end: meta?.line_end ?? undefined,
+        summary: meta?.summary ?? undefined,
+        tags: meta?.tags ? JSON.parse(meta.tags) : undefined,
+      },
+      outgoing: resolvedOutgoing.map((r) => ({
+        type: r.type,
+        target_id: r.target,
+        target_name: r.target_name,
+        target_type: r.target_type,
+      })),
+      incoming: incoming.map((r) => ({
+        type: r.type,
+        source_id: r.source,
+        source_name: r.source_name,
+        source_type: r.source_type,
+      })),
+      unresolved: unresolvedOutgoing.map((r) => ({
+        type: r.type,
+        target_id: r.target,
+        target_name: r.target_name,
+        target_type: r.target_type,
+      })),
+    };
+    if (root) {
+      payload.freshness = buildFreshnessBlock(db, [node.filePath]);
+    }
     return {
-      output: JSON.stringify({
-        node: {
-          id: node.id,
-          type: node.type,
-          name: node.name,
-          file_path: rel(node.filePath, root),
-          line_start: meta?.line_start ?? undefined,
-          line_end: meta?.line_end ?? undefined,
-          summary: meta?.summary ?? undefined,
-          tags: meta?.tags ? JSON.parse(meta.tags) : undefined,
-        },
-        outgoing: resolvedOutgoing.map((r) => ({
-          type: r.type,
-          target_id: r.target,
-          target_name: r.target_name,
-          target_type: r.target_type,
-        })),
-        incoming: incoming.map((r) => ({
-          type: r.type,
-          source_id: r.source,
-          source_name: r.source_name,
-          source_type: r.source_type,
-        })),
-        unresolved: unresolvedOutgoing.map((r) => ({
-          type: r.type,
-          target_id: r.target,
-          target_name: r.target_name,
-          target_type: r.target_type,
-        })),
-      }),
+      output: JSON.stringify(payload),
       exitCode: ExitCode.Success,
     };
   }

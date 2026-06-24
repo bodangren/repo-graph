@@ -1,7 +1,9 @@
 import { Database } from "bun:sqlite";
 import { Project } from "ts-morph";
 import { resolve } from "path";
+import { existsSync, statSync } from "fs";
 import { scanProject } from "./scanner";
+import { recordFileMetadata, deleteFileData } from "./files";
 
 export function updateFiles(db: Database, project: Project, filePaths: string[]): {
   filesUpdated: number;
@@ -9,6 +11,7 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
   nodesInserted: number;
   edgesDeleted: number;
   edgesInserted: number;
+  filesDeleted: number;
 } {
   const stats = {
     filesUpdated: 0,
@@ -16,6 +19,7 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
     nodesInserted: 0,
     edgesDeleted: 0,
     edgesInserted: 0,
+    filesDeleted: 0,
   };
 
   const deleteNodes = db.prepare("DELETE FROM nodes WHERE file_path = ?");
@@ -28,6 +32,16 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
   db.transaction(() => {
     for (const filePath of filePaths) {
       const absPath = resolve(filePath);
+
+      // If the file no longer exists on disk, drop its graph data
+      // entirely and record a `files` removal.
+      if (!existsSync(absPath)) {
+        const removed = deleteFileData(db, absPath);
+        stats.nodesDeleted += removed.nodesDeleted;
+        stats.edgesDeleted += removed.edgesDeleted;
+        stats.filesDeleted += removed.filesDeleted;
+        continue;
+      }
 
       const edgesDeleted = deleteEdges.run(absPath, absPath).changes;
       const nodesDeleted = deleteNodes.run(absPath).changes;
@@ -69,6 +83,19 @@ export function updateFiles(db: Database, project: Project, filePaths: string[])
         stats.edgesInserted++;
       }
 
+      // Record file metadata for freshness tracking.
+      let stat;
+      try {
+        stat = statSync(absPath);
+      } catch {
+        stat = null;
+      }
+      const meta = recordFileMetadata(db, undefined, absPath, sourceFile);
+      if (!meta && stat) {
+        // Fallback: record minimal metadata if recordFileMetadata failed
+        // (e.g. files table missing). No-op here; the schema.ts
+        // additive migration will create it on next createSchema.
+      }
       stats.filesUpdated++;
     }
   })();

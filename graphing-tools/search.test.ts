@@ -129,7 +129,7 @@ describe("FTS-backed search (A1)", () => {
   });
 
   it("syncNodeFts removes deleted nodes from FTS index", async () => {
-    const { syncNodeFts } = await import("./search");
+    const { syncNodeFts, syncNodeFtsDelete } = await import("./search");
     // Insert and sync
     db.exec(`INSERT INTO nodes (id, type, name, file_path, summary, tags)
       VALUES ('n1', 'function', 'tempFunc', '/src/temp.ts', 'Temporary', '[]')`);
@@ -145,21 +145,28 @@ describe("FTS-backed search (A1)", () => {
       tags: row.tags,
     });
 
-    // Verify it's in FTS
-    let ftsCount = (db.prepare("SELECT COUNT(*) AS c FROM nodes_fts").get() as { c: number }).c;
-    expect(ftsCount).toBe(1);
+    // Verify it's in FTS via MATCH (contentless FTS5's COUNT(*) reports
+    // segment state, not actual index size, so MATCH is the meaningful
+    // check for content visibility).
+    let ftsHits = db.prepare("SELECT * FROM nodes_fts WHERE nodes_fts MATCH ?").all("tempFunc");
+    expect(ftsHits.length).toBe(1);
 
-    // Delete from FTS (simulating node deletion)
-    // syncNodeFts with a delete operation — Phase 3 will implement the overload
-    // For now, use the FTS5_DELETE_NODE_SQL contract directly
-    db.prepare(`INSERT INTO nodes_fts('delete', rowid, id, name, file_path, summary, tags)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`).run(
-      row.rowid, row.id, row.name, row.file_path, row.summary, row.tags
-    );
+    // Delete from FTS (simulating node deletion) — use the Phase 3 helper
+    // which wraps the FTS5_DELETE_NODE_SQL contract. bun:sqlite does not
+    // support the FTS5 'delete' special command, so the helper falls back
+    // to rebuilding the index from `nodes` minus the deleted row.
+    syncNodeFtsDelete(db, {
+      rowid: row.rowid,
+      id: row.id,
+      name: row.name,
+      filePath: row.file_path,
+      summary: row.summary,
+      tags: row.tags,
+    });
 
-    // Verify FTS index is now empty
-    ftsCount = (db.prepare("SELECT COUNT(*) AS c FROM nodes_fts").get() as { c: number }).c;
-    expect(ftsCount).toBe(0);
+    // Verify FTS index no longer matches the deleted node
+    ftsHits = db.prepare("SELECT * FROM nodes_fts WHERE nodes_fts MATCH ?").all("tempFunc");
+    expect(ftsHits.length).toBe(0);
   });
 
   it("searchNodes falls back to LIKE when FTS5 is unavailable", () => {

@@ -139,6 +139,35 @@ export function parseArgs(argv: string[]): ParsedArgs {
       if (flags.length < 1) throw new Error("Usage: build-graph audit <db> [--json]");
       return { subcommand: "audit", args: { dbPath: flags[0], json } };
     }
+    case "explore": {
+      const { flags, json, limit, depth } = parseFlags(args.slice(1));
+      const includeSource = args.slice(1).includes("--include-source");
+      if (flags.length < 2) throw new Error("Usage: build-graph explore <db> <query> [--json] [--limit N] [--depth N] [--include-source]");
+      return { subcommand: "explore", args: { dbPath: flags[0], query: flags[1], json, limit, depth, includeSource } };
+    }
+    case "affected": {
+      const stdin = args.includes("--stdin");
+      const testsOnly = args.includes("--tests-only");
+      const filterIdx = args.indexOf("--filter");
+      let filter: string | undefined;
+      if (filterIdx >= 0 && filterIdx + 1 < args.length) filter = args[filterIdx + 1];
+      const { flags, json, depth } = parseFlags(args.slice(1).filter((a, i, arr) => {
+        if (a === "--stdin" || a === "--tests-only") return false;
+        if (a === "--filter" || (i > 0 && arr[i - 1] === "--filter")) return false;
+        return true;
+      }));
+      if (flags.length < 1) throw new Error("Usage: build-graph affected <db> [file ...] [--stdin] [--json] [--depth N] [--tests-only] [--filter <glob>]");
+      return { subcommand: "affected", args: { dbPath: flags[0], files: flags.slice(1), stdin, json, depth, testsOnly, filter } };
+    }
+    case "impact": {
+      const { flags, json, depth } = parseFlags(args.slice(1));
+      const includeSource = args.slice(1).includes("--include-source");
+      const edgeTypeIdx = args.indexOf("--edge-type");
+      let edgeType: string | undefined;
+      if (edgeTypeIdx >= 0 && edgeTypeIdx + 1 < args.length) edgeType = args[edgeTypeIdx + 1];
+      if (flags.length < 2) throw new Error("Usage: build-graph impact <db> <node-or-file> [--json] [--depth N] [--edge-type T] [--include-source]");
+      return { subcommand: "impact", args: { dbPath: flags[0], nodeOrFile: flags[1], json, depth, edgeType, includeSource } };
+    }
     case "help": {
       return { subcommand: "help", args: { subcommand: args[1] as Subcommand | undefined } };
     }

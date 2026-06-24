@@ -2,7 +2,7 @@
 
 This file tracks all major tracks for the project.
 
----
+## Archived Tracks
 
 - [x] **Track: Build graph.db builder with Bun and native SQLite** *(based on incorrect product spec — built JSON-to-SQLite converter instead of TS scanner)*
   *Link: [./archive/graphdb_20260524/](./archive/graphdb_20260524/)*
@@ -50,6 +50,9 @@ This file tracks all major tracks for the project.
 - [x] **Track: Scanner Extensibility — Config-Driven Edge Types, Route Mode Tags, and Custom File Patterns**
   *Link: [./archive/extensibility_20260603/](./archive/extensibility_20260603/)* — Add custom edge types via `build-graph.config.json`, extract `export const mode = '...'` from route files as node tags, and support `--include` globs for non-TS files.
 
+- [x] **Track: Agent Explore, Freshness, and Changed-File Impact**
+  *Link: [./archive/agent_explore_freshness_impact_20260622/](./archive/agent_explore_freshness_impact_20260622/)* — Add FTS-backed search, file freshness metadata, a Measure-friendly `explore` command, and changed-file `affected`/`impact` analysis inspired by CodeGraph's low-hanging product patterns.
+
 ## Upcoming Tracks
 
 _Status (verified 2026-06-21): all four below are genuinely not started — 0 plan tasks each, metadata `pending`, no implementation in `graphing-tools/`, and no `.github/workflows`. Registry is accurate._
@@ -66,7 +69,4 @@ _Status (verified 2026-06-21): all four below are genuinely not started — 0 pl
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
 
----
 
-- [ ] **Track: Agent Explore, Freshness, and Changed-File Impact**
-  *Link: [./tracks/agent_explore_freshness_impact_20260622/](./tracks/agent_explore_freshness_impact_20260622/)* — Add FTS-backed search, file freshness metadata, a Measure-friendly `explore` command, and changed-file `affected`/`impact` analysis inspired by CodeGraph's low-hanging product patterns.

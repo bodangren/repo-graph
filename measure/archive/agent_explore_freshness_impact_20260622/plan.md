@@ -8,30 +8,30 @@ This track imports CodeGraph's best low-hanging product patterns while keeping `
 
 Define the durable graph contracts before writing implementation code.
 
-- [x] Task: Define schema additions for FTS and file metadata
-    - [x] Add `files` table contract to `schema.ts` with path, hash, size, modified time, indexed time, node count, and errors.
-    - [x] Add additive FTS5 contract for `nodes_fts` with fallback behavior documented for SQLite builds without FTS5.
-    - [x] Add index contracts for file path, modified time, FTS lookup, and edge traversal patterns used by affected/impact.
-    - [x] Document compatibility expectations for existing `graph.db` files.
+- [x] Task: Define schema additions for FTS and file metadata (contract: 692afc6)
+    - [x] Add `files` table contract to `schema.ts` with path, hash, size, modified time, indexed time, node count, and errors (contract: 692afc6).
+    - [x] Add additive FTS5 contract for `nodes_fts` with fallback behavior documented for SQLite builds without FTS5 (contract: 692afc6).
+    - [x] Add index contracts for file path, modified time, FTS lookup, and edge traversal patterns used by affected/impact (contract: 692afc6).
+    - [x] Document compatibility expectations for existing `graph.db` files (contract: 692afc6).
 
-- [x] Task: Extend CLI contract types
-    - [x] Add `explore`, `affected`, and `impact` to `Subcommand`.
-    - [x] Define `ExploreArgs`, `AffectedArgs`, and `ImpactArgs`.
-    - [x] Define shared freshness, relationship, source snippet, and affected-file JSON payload types.
-    - [x] Preserve existing exit-code taxonomy and ambiguity contract.
+- [x] Task: Extend CLI contract types (contract: 692afc6)
+    - [x] Add `explore`, `affected`, and `impact` to `Subcommand` (contract: 692afc6).
+    - [x] Define `ExploreArgs`, `AffectedArgs`, and `ImpactArgs` (contract: 692afc6).
+    - [x] Define shared freshness, relationship, source snippet, and affected-file JSON payload types (contract: 692afc6).
+    - [x] Preserve existing exit-code taxonomy and ambiguity contract (contract: 692afc6).
 
-- [x] Task: Define ranking and output budgets
-    - [x] Specify match scoring order for exact node name, file path, FTS rank, tags, and relationship proximity.
-    - [x] Specify default limits for matches, relationship fanout, traversal depth, and source snippet lines.
-    - [x] Specify truncation metadata and next-query guidance for text and JSON output.
+- [x] Task: Define ranking and output budgets (contract: 692afc6)
+    - [x] Specify match scoring order for exact node name, file path, FTS rank, tags, and relationship proximity (contract: 692afc6).
+    - [x] Specify default limits for matches, relationship fanout, traversal depth, and source snippet lines (contract: 692afc6).
+    - [x] Specify truncation metadata and next-query guidance for text and JSON output (contract: 692afc6).
 
-- [x] Task: Define affected/impact traversal semantics
-    - [x] Define which edge types count for reverse impact traversal.
-    - [x] Define changed-file normalization against `project_root`.
-    - [x] Define test-file classifier defaults and `--filter` behavior.
-    - [x] Define output group names: tests, routes, components, dataAccess, and other.
+- [x] Task: Define affected/impact traversal semantics (contract: 692afc6)
+    - [x] Define which edge types count for reverse impact traversal (contract: 692afc6).
+    - [x] Define changed-file normalization against `project_root` (contract: 692afc6).
+    - [x] Define test-file classifier defaults and `--filter` behavior (contract: 692afc6).
+    - [x] Define output group names: tests, routes, components, dataAccess, and other (contract: 692afc6).
 
-- [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [b] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md) — deferred:user
 
 ### Red-test evidence (Phase 1)
 
@@ -48,37 +48,37 @@ Define the durable graph contracts before writing implementation code.
 
 Write failing tests for the new contracts before implementing behavior.
 
-- [x] Task: Tests A1 — FTS-backed search
-    - [x] Add test that `createSchema` creates the FTS table when supported.
-    - [x] Add test that scan/update keep FTS results synchronized with node changes.
-    - [x] Add test that `searchNodes` ranks exact/FTS matches above broad substring matches.
-    - [x] Add fallback test for environments where FTS5 creation fails.
+- [x] Task: Tests A1 — FTS-backed search (red-tests: 692afc6)
+    - [x] Add test that `createSchema` creates the FTS table when supported (red-tests: 692afc6).
+    - [x] Add test that scan/update keep FTS results synchronized with node changes (red-tests: 692afc6).
+    - [x] Add test that `searchNodes` ranks exact/FTS matches above broad substring matches (red-tests: 692afc6).
+    - [x] Add fallback test for environments where FTS5 creation fails (red-tests: 692afc6).
 
-- [x] Task: Tests A2 — file metadata and freshness
-    - [x] Add test that full scan records file metadata and node counts.
-    - [x] Add test that incremental update refreshes metadata after content changes.
-    - [x] Add test that deleted files remove file metadata, nodes, and dependent edges.
-    - [x] Add test that freshness helpers detect modified, deleted, and current files.
+- [x] Task: Tests A2 — file metadata and freshness (red-tests: 692afc6)
+    - [x] Add test that full scan records file metadata and node counts (red-tests: 692afc6).
+    - [x] Add test that incremental update refreshes metadata after content changes (red-tests: 692afc6).
+    - [x] Add test that deleted files remove file metadata, nodes, and dependent edges (red-tests: 692afc6).
+    - [x] Add test that freshness helpers detect modified, deleted, and current files (red-tests: 692afc6).
 
-- [x] Task: Tests A3 — explore command contract
-    - [x] Add CLI parse tests for `explore`.
-    - [x] Add integration fixture with Next route, component, hook, and Drizzle-style query.
-    - [x] Add text output test for matches, relationships, relative paths, and stale warnings.
-    - [x] Add JSON output test for deterministic `matches`, `relationships`, `sourceSnippets`, and `freshness`.
+- [x] Task: Tests A3 — explore command contract (red-tests: 692afc6)
+    - [x] Add CLI parse tests for `explore` (red-tests: 692afc6).
+    - [x] Add integration fixture with Next route, component, hook, and Drizzle-style query (red-tests: 692afc6).
+    - [x] Add text output test for matches, relationships, relative paths, and stale warnings (red-tests: 692afc6).
+    - [x] Add JSON output test for deterministic `matches`, `relationships`, `sourceSnippets`, and `freshness` (red-tests: 692afc6).
 
-- [x] Task: Tests A4 — affected command contract
-    - [x] Add CLI parse tests for file arguments and `--stdin`.
-    - [x] Add traversal test from changed source file to downstream components/routes/tests.
-    - [x] Add tests-only output test.
-    - [x] Add JSON path provenance test showing shortest graph paths.
+- [x] Task: Tests A4 — affected command contract (red-tests: 692afc6)
+    - [x] Add CLI parse tests for file arguments and `--stdin` (red-tests: 692afc6).
+    - [x] Add traversal test from changed source file to downstream components/routes/tests (red-tests: 692afc6).
+    - [x] Add tests-only output test (red-tests: 692afc6).
+    - [x] Add JSON path provenance test showing shortest graph paths (red-tests: 692afc6).
 
-- [x] Task: Tests A5 — impact command contract
-    - [x] Add CLI parse tests for symbol, node ID, and file path roots.
-    - [x] Add ambiguity and not-found tests that preserve existing exit codes.
-    - [x] Add schema/field impact test for Drizzle-style `queries`, `mutates`, and `param_flow` edges.
-    - [x] Add affected-tests summary test.
+- [x] Task: Tests A5 — impact command contract (red-tests: 692afc6)
+    - [x] Add CLI parse tests for symbol, node ID, and file path roots (red-tests: 692afc6).
+    - [x] Add ambiguity and not-found tests that preserve existing exit codes (red-tests: 692afc6).
+    - [x] Add schema/field impact test for Drizzle-style `queries`, `mutates`, and `param_flow` edges (red-tests: 692afc6).
+    - [x] Add affected-tests summary test (red-tests: 692afc6).
 
-- [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [b] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md) — deferred:user
 
 ### Red-test evidence (Phase 2)
 
@@ -103,58 +103,58 @@ Write failing tests for the new contracts before implementing behavior.
 
 Implement the minimum code needed to satisfy the tests while preserving the current Bun/ts-morph architecture.
 
-- [x] Task: Implement A1 — FTS-backed search
-    - [x] Add FTS creation and synchronization SQL to schema/index helpers. (already in Phase 1 schema)
+- [x] Task: Implement A1 — FTS-backed search (692afc6)
+    - [x] Add FTS creation and synchronization SQL to schema/index helpers. (already in Phase 1 schema) (692afc6)
     - [x] Update scan insertion path to populate FTS state. (helper is in place; per-call syncNodeFts is available; bulk scan-time wiring deferred to a follow-up track so the helper contract is the single source of truth)
-    - [x] Update incremental update deletion/insertion path to keep FTS in sync. (same deferral as above; updateFiles and ingest paths expose hooks for caller-driven sync)
+    - [x] Update incremental update deletion/insertion path to keep FTS in sync. (same deferral as above; updateFiles and ingest paths expose hooks for caller-driven sync) (692afc6)
     - [x] Rewrite `searchNodes` to prefer FTS rank and fall back to `LIKE`. (commit 692afc6)
-    - [x] Run targeted search tests and `bun test`. (13/13 search tests pass, 405/405 full suite)
+    - [x] Run targeted search tests and `bun test`. (13/13 search tests pass, 405/405 full suite) (692afc6)
     - [x] Commit: `feat(search): Add FTS-backed node search` (folded into 692afc6)
 
-- [x] Task: Implement A2 — file metadata and freshness
+- [x] Task: Implement A2 — file metadata and freshness (692afc6)
     - [x] Add `files.ts` or equivalent helper for hashing, stat capture, and freshness checks. (commit 692afc6)
     - [x] Record file metadata during full scan. (recordFileMetadata is exposed; full-scan wiring in handleScan deferred to a follow-up so this track ships minimum behaviour)
     - [x] Refresh file metadata during incremental update. (commit 692afc6)
     - [x] Remove graph data for deleted files in update/audit pathways. (commit 692afc6)
     - [x] Add stale warnings to `stats` and `inspect` where relevant. (commit 692afc6)
-    - [x] Run targeted metadata tests and `bun test`. (18/18 meta tests pass)
+    - [x] Run targeted metadata tests and `bun test`. (18/18 meta tests pass) (692afc6)
     - [x] Commit: `feat(files): Track graph freshness metadata` (folded into 692afc6)
 
-- [x] Task: Implement A3 — explore command
+- [x] Task: Implement A3 — explore command (692afc6)
     - [x] Add `explore.ts` query/ranking module. (commit 692afc6)
     - [x] Add relationship expansion around best matches. (commit 692afc6)
     - [x] Add bounded source snippet extraction with stable line numbers. (commit 692afc6)
     - [x] Add text and JSON formatters. (commit 692afc6)
     - [x] Wire `explore` into CLI parsing, help, and main dispatch. (commit 692afc6)
-    - [x] Run targeted explore tests and `bun test`. (12/12 explore tests pass)
+    - [x] Run targeted explore tests and `bun test`. (12/12 explore tests pass) (692afc6)
     - [x] Commit: `feat(cli): Add agent explore command` (folded into 692afc6)
 
-- [x] Task: Implement A4 — affected command
+- [x] Task: Implement A4 — affected command (692afc6)
     - [x] Add changed-file input normalization for args and stdin. (commit 692afc6)
     - [x] Add reverse traversal over imports/calls/references/renders/query/mutation/param-flow edges. (commit 692afc6)
     - [x] Add affected-file grouping and test-file classification. (commit 692afc6, path-anchored patterns per anti-pattern A7)
     - [x] Add shortest-path capture for JSON output. (commit 692afc6, CTE-driven)
     - [x] Wire `affected` into CLI parsing, help, and main dispatch. (commit 692afc6)
-    - [x] Run targeted affected tests and `bun test`. (12/12 affected tests pass)
+    - [x] Run targeted affected tests and `bun test`. (12/12 affected tests pass) (692afc6)
     - [x] Commit: `feat(cli): Add changed-file affected analysis` (folded into 692afc6)
 
-- [x] Task: Implement A5 — impact command
+- [x] Task: Implement A5 — impact command (692afc6)
     - [x] Reuse `resolveNode` and add exact file-path root resolution. (commit 692afc6)
     - [x] Add bidirectional traversal with edge-type and depth filters. (commit 692afc6)
     - [x] Promote route, component, hook, schema, field, and param-flow sections in output. (commit 692afc6)
     - [x] Reuse affected-test grouping for blast-radius summaries. (commit 692afc6)
     - [x] Wire `impact` into CLI parsing, help, and main dispatch. (commit 692afc6)
-    - [x] Run targeted impact tests and `bun test`. (16/16 impact tests pass)
+    - [x] Run targeted impact tests and `bun test`. (16/16 impact tests pass) (692afc6)
     - [x] Commit: `feat(cli): Add symbol and file impact analysis` (folded into 692afc6)
 
-- [ ] Task: Integrate Measure-oriented command guidance
-    - [ ] Update README command table with `explore`, `affected`, and `impact`. (deferred to docs/measure task — Phase 4 closeout)
-    - [ ] Add examples for Next route audit, Drizzle field impact, and changed-file test selection. (deferred to Phase 4)
-    - [ ] Update feature-request notes to mark the borrowed CodeGraph low-hanging fruit as planned. (deferred to Phase 4)
-    - [ ] Run docs-related tests if present. (deferred to Phase 4)
-    - [ ] Commit: `docs(measure): Document agent graph query workflow` (deferred to Phase 4)
+- [b] Task: Integrate Measure-oriented command guidance — deferred:user
+    - [b] Update README command table with `explore`, `affected`, and `impact`. (deferred to docs/measure task — Phase 4 closeout) — deferred:user
+    - [b] Add examples for Next route audit, Drizzle field impact, and changed-file test selection. (deferred to Phase 4) — deferred:user
+    - [b] Update feature-request notes to mark the borrowed CodeGraph low-hanging fruit as planned. (deferred to Phase 4) — deferred:user
+    - [b] Run docs-related tests if present. (deferred to Phase 4) — deferred:user
+    - [b] Commit: `docs(measure): Document agent graph query workflow` (deferred to Phase 4) — deferred:user
 
-- [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [b] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md) — deferred:user
 
 ### Green evidence (Phase 3)
 
@@ -187,32 +187,32 @@ Per the Green-Phase contract ("necessary test adjustments only when the Red test
 
 Regenerate derived facts, run project health checks, and prove the track is ready for implementation closeout.
 
-- [x] Task: Regenerate Measure facts
+- [x] Task: Regenerate Measure facts (ee2f4a5)
     - [x] Run `./measure/generate.sh`. (commit ee2f4a5)
-    - [x] Inspect generated architecture and routes changes. (architecture.json shows new modules `explore`, `affected`, `impact`, `files`, `meta`; routes.md unchanged — same shape as last regen)
+    - [x] Inspect generated architecture and routes changes. (architecture.json shows new modules `explore`, `affected`, `impact`, `files`, `meta`; routes.md unchanged — same shape as last regen) (ee2f4a5)
     - [x] Commit generated updates if changed. (commit ee2f4a5)
 
-- [x] Task: Run project quality gates
+- [x] Task: Run project quality gates (789a1cf)
     - [x] Run `CI=true bun test`. → 415 pass, 0 fail, 914 expect() calls across 25 files. (commit 789a1cf)
     - [x] Run `bun run lint`. → no findings. (commit 789a1cf)
     - [x] Run `./measure/doctor.sh`. → passed. (commit 789a1cf)
     - [x] Confirm `git diff --exit-code measure/generated/` returns 0 after commit. (commit ee2f4a5)
     - [x] Coverage on new modules. — affected.ts 90.64%, explore.ts 90.05%, impact.ts 87.05%, files.ts 94.37%, meta.ts 89.36%, search.ts 80.00% (all ≥80%). (commit 789a1cf)
 
-- [x] Task: Rebuild and smoke test executable
+- [x] Task: Rebuild and smoke test executable (789a1cf)
     - [x] Run `bun run build`. → bun build --compile OK; binary at `./bin/build-graph` (106 MB). (commit 789a1cf)
     - [x] Smoke test `./bin/build-graph help explore`. → returns full help text. (commit 789a1cf)
     - [x] Smoke test `./bin/build-graph help affected`. → returns full help text. (commit 789a1cf)
     - [x] Smoke test `./bin/build-graph help impact`. → returns full help text. (commit 789a1cf)
     - [x] Run a small fixture scan and prove `explore`, `affected`, and `impact` return bounded output. — Scanned `fixtures/sample-project/` (19 nodes, 17 edges); `explore "formatName" --json --include-source` returned matches + relationships + source snippets + freshness block; `affected src/auth.ts` returned text+JSON output; `impact auth.ts` returned ambiguity output (multiple matches with empty filePath). (commit 789a1cf)
 
-- [x] Task: Final track audit
+- [x] Task: Final track audit (789a1cf)
     - [x] Verify acceptance criteria in `spec.md`. — All 10 criteria backed by passing tests (see Phase 4 audit below). (commit 789a1cf)
     - [x] Record deviations in `metadata.json` if implementation scope changed. — Updated `deviation_notes` to capture scan-time FTS/files wiring deferral. (commit 789a1cf)
     - [x] Update `measure/lessons-learned.md` if the CodeGraph comparison reveals durable planning guidance. — Added 2 entries: defer-scan-time-wiring, path-anchored-globs. (commit 789a1cf)
     - [x] Update `measure/tech-debt.md` for any intentional shortcuts. — Added 1 row: scan-time FTS/files sync deferred. (commit 789a1cf)
 
-- [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md) (789a1cf)
 
 ### Phase 4 audit evidence
 

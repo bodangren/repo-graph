@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "track_id": "agent_explore_freshness_impact_20260622",
+  "closeout_date": "2026-06-24T22:55:00Z",
+  "baseline_sha": "789a1cf",
+  "closeout_sha": "25053c1",
+  "preconditions": {
+    "CI_true_bun_test": "415 pass, 0 fail, 914 expect() calls across 25 files",
+    "bun_run_lint": "no findings",
+    "measure_doctor_sh": "passed",
+    "git_status_short": "clean"
+  },
+  "phase_acceptance": {
+    "file": "/tmp/measure-phase-accept-track1.json",
+    "status": "pass"
+  },
+  "final_acceptance": {
+    "file": "/tmp/measure-final-accept-track1.json",
+    "status": "pass"
+  },
+  "interphase_checks": {
+    "closeout_pre": "expected failures (pre-archive state)",
+    "closeout_post": "pending"
+  },
+  "commits": [
+    "692afc6 — feat(agent-explore): Green Phase A1–A5",
+    "ee2f4a5 — Regenerate measure/generated/architecture.json",
+    "3062fc4 — Backfill Phase 4 commit SHAs in plan.md",
+    "789a1cf — Phase 4 closeout: quality gates, rebuild, final audit"
+  ],
+  "retained_evidence": [
+    "/tmp/measure-final-accept-track1.json",
+    "/tmp/measure-phase-accept-track1.json",
+    "measure/archive/agent_explore_freshness_impact_20260622/automation-supervisor-closeout-manifest.json",
+    "measure/archive/agent_explore_freshness_impact_20260622/plan.md",
+    "measure/archive/agent_explore_freshness_impact_20260622/metadata.json"
+  ],
+  "artifact_cleanup": "None — all bulky run artifacts from track execution were ephemeral (test fixtures /tmp/*.db); final acceptance and closeout evidence retained.",
+  "anti_pattern_checks": {
+    "A5_false_claim_text": "clean — plan claims 415/0/914 match measured 415/0/914",
+    "A6_registry_overstatement": "clean — tracks.md entry flipped to [x] after archive move",
+    "A8_supervisor_regex": "not modified — centrally managed file",
+    "A9_archived_track_refs": "clean — no tests/*.sh or scripts referencing old path",
+    "A10_generated_facts_drift": "clean — doctor.sh passed after commit"
+  },
+  "notes": "README docs gap captured as nonblocking finding in final acceptance. Scan-time FTS/files wiring deferral noted in tech-debt.md. Run `CI=true bun test` to verify no regressions post-move."
+}

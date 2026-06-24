@@ -1,4 +1,5 @@
 import { Database } from "bun:sqlite";
+import { resolve, isAbsolute, relative } from "path";
 import { getProjectRoot } from "./meta";
 import { toRelativePath } from "./paths";
 import {
@@ -36,6 +37,25 @@ interface AffectedOptions {
 }
 
 /**
+ * Normalize a user-supplied file path against `projectRoot`. Returns
+ * the absolute form when the path resolves inside the tree; returns
+ * `null` when the path escapes `projectRoot` or cannot be resolved.
+ *
+ * This is a path-traversal guard: a path like `../../../etc/passwd`
+ * must not slip through unchecked.
+ */
+function normalizeInputPath(raw: string, projectRoot: string): string | null {
+  if (!isAbsolute(raw)) {
+    raw = resolve(projectRoot, raw);
+  }
+  const resolved = resolve(raw);
+  const rel = relative(projectRoot, resolved);
+  // A path that escapes starts with ".." or is exactly ""
+  if (rel.startsWith("..") || rel === "") return null;
+  return resolved;
+}
+
+/**
  * Run the `affected` command over the given changed files. Returns a
  * structured `AffectedResult` containing either text or JSON output.
  */
@@ -50,13 +70,34 @@ export function runAffected(
   const filter = options.filter;
 
   // Resolve stdin input if requested
-  let inputFiles = files;
+  let rawInputFiles = files;
   if (options.stdin) {
     const data = options.stdinData ?? "";
-    inputFiles = data
+    rawInputFiles = data
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
+  }
+
+  // Path-traversal guard: normalize every path against projectRoot.
+  // Paths that escape the project tree are silently dropped so they
+  // never reach the SQL layer or the output payload.
+  const skipped: string[] = [];
+  const inputFiles: string[] = [];
+  if (projectRoot) {
+    for (const raw of rawInputFiles) {
+      const normalized = normalizeInputPath(raw, projectRoot);
+      if (normalized) {
+        inputFiles.push(normalized);
+      } else {
+        skipped.push(raw);
+      }
+    }
+  } else {
+    inputFiles.push(...rawInputFiles);
+  }
+  if (skipped.length > 0 && !options.json) {
+    console.error(`Skipped ${skipped.length} path(s) outside project root: ${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? "..." : ""}`);
   }
 
   const changedFiles = inputFiles.slice().sort();

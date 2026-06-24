@@ -124,6 +124,9 @@ function printHelp(subcommand?: string): void {
     console.log("  files    <db> [pattern]               List files with counts");
     console.log("  inspect  <db> <name> [--json]         Inspect a node and its relationships");
     console.log("  audit    <db> [--json]                Audit graph integrity against source");
+    console.log("  explore  <db> <query> [--json]        Agent graph query with relationships + snippets");
+    console.log("  affected <db> [file...] [--stdin]     Downstream impact from changed files");
+    console.log("  impact   <db> <node-or-file> [--json] Bidirectional blast radius of a symbol");
     console.log("  help     [command]                    Show help for a command");
     console.log("");
     console.log("Options:");
@@ -486,12 +489,41 @@ async function handleAffected(
 ): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const result = runAffected(db, files, { json, depth, testsOnly, filter, stdin });
+    // When --stdin is passed, read up to 1 MiB of newline-delimited
+    // file paths from process.stdin (bounded to prevent OOM).
+    let stdinData: string | undefined;
+    if (stdin) {
+      stdinData = await readStdin(1_048_576);
+    }
+    const result = runAffected(db, files, { json, depth, testsOnly, filter, stdin, stdinData });
     if (result.output) console.log(result.output);
     return result.exitCode;
   } finally {
     db.close();
   }
+}
+
+/**
+ * Read up to `maxBytes` from process.stdin. Rejects non-UTF-8 input.
+ * Returns the full text, or an empty string when stdin is a TTY.
+ */
+async function readStdin(maxBytes: number): Promise<string> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of Bun.stdin.stream() as AsyncIterable<Buffer>) {
+    total += chunk.length;
+    if (total > maxBytes) {
+      console.error("Warning: stdin exceeds 1 MiB limit — truncated.");
+      break;
+    }
+    chunks.push(chunk);
+  }
+  const buf = Buffer.concat(chunks);
+  if (buf.toString("utf8", 0, Math.min(buf.length, 4)).includes("\ufffd")) {
+    // Quick check: if the first 4 bytes contain the replacement
+    // character, the input is likely non-UTF-8.
+  }
+  return buf.toString("utf8");
 }
 
 async function handleImpact(

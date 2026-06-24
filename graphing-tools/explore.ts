@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
 import { searchNodes } from "./search";
 import { getStaleFiles, getProjectRoot } from "./meta";
 import { toRelativePath } from "./paths";
@@ -231,6 +231,11 @@ function expandRelationships(
   return results;
 }
 
+/** Maximum file size (bytes) for source snippet extraction. Files
+ * larger than this are skipped to prevent OOM on giant bundles or
+ * generated files. */
+const MAX_SNIPPET_FILE_BYTES = 10 * 1024 * 1024; // 10 MiB
+
 function buildSnippet(
   db: Database,
   match: { id: string; filePath: string; type: string; name: string },
@@ -243,6 +248,13 @@ function buildSnippet(
     ? toAbsolute(match.filePath, projectRoot)
     : match.filePath;
   if (!filePath || !existsSync(filePath)) return null;
+  // Reject files larger than MAX_SNIPPET_FILE_BYTES to avoid OOM.
+  try {
+    const stat = statSync(filePath);
+    if (stat.size > MAX_SNIPPET_FILE_BYTES) return null;
+  } catch {
+    return null;
+  }
   let content: string;
   try {
     content = readFileSync(filePath, "utf-8");

@@ -320,4 +320,157 @@ describe("parseArgs", () => {
       expect(() => parseArgs(argv([]))).toThrow("Usage: build-graph <command> [options]");
     });
   });
+
+  // ── explore CLI parse (A3 — Red Phase) ────────────────────────────────────
+
+  describe("explore", () => {
+    it("parses explore <db> <query>", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson"]));
+      expect(result.subcommand).toBe("explore");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.query).toBe("lesson");
+    });
+
+    it("parses explore with --json", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson", "--json"]));
+      expect(result.subcommand).toBe("explore");
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses explore with --limit N", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson", "--limit", "5"]));
+      expect(result.args.limit).toBe(5);
+    });
+
+    it("parses explore with --depth N", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson", "--depth", "2"]));
+      expect(result.args.depth).toBe(2);
+    });
+
+    it("parses explore with --include-source", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson", "--include-source"]));
+      expect(result.args.includeSource).toBe(true);
+    });
+
+    it("parses explore with all flags combined", () => {
+      const result = parseArgs(argv(["explore", "./graph.db", "lesson", "--json", "--limit", "10", "--depth", "3", "--include-source"]));
+      expect(result.subcommand).toBe("explore");
+      expect(result.args.json).toBe(true);
+      expect(result.args.limit).toBe(10);
+      expect(result.args.depth).toBe(3);
+      expect(result.args.includeSource).toBe(true);
+    });
+
+    it("throws on missing query", () => {
+      expect(() => parseArgs(argv(["explore", "./graph.db"]))).toThrow();
+    });
+  });
+
+  // ── affected CLI parse (A4 — Red Phase) ───────────────────────────────────
+
+  describe("affected", () => {
+    it("parses affected <db> <file...>", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/foo.ts"]));
+      expect(result.subcommand).toBe("affected");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.files).toEqual(["src/foo.ts"]);
+    });
+
+    it("parses affected with multiple file arguments", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/a.ts", "src/b.ts"]));
+      expect(result.args.files).toEqual(["src/a.ts", "src/b.ts"]);
+    });
+
+    it("parses affected with --stdin", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "--stdin"]));
+      expect(result.args.stdin).toBe(true);
+    });
+
+    it("parses affected with --json", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/foo.ts", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses affected with --depth N", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/foo.ts", "--depth", "2"]));
+      expect(result.args.depth).toBe(2);
+    });
+
+    it("parses affected with --tests-only", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/foo.ts", "--tests-only"]));
+      expect(result.args.testsOnly).toBe(true);
+    });
+
+    it("parses affected with --filter <glob>", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/foo.ts", "--filter", "*.test.ts"]));
+      expect(result.args.filter).toBe("*.test.ts");
+    });
+
+    it("parses affected with all flags combined", () => {
+      const result = parseArgs(argv(["affected", "./graph.db", "src/a.ts", "--stdin", "--json", "--depth", "3", "--tests-only"]));
+      expect(result.subcommand).toBe("affected");
+      expect(result.args.json).toBe(true);
+      expect(result.args.depth).toBe(3);
+      expect(result.args.testsOnly).toBe(true);
+      expect(result.args.stdin).toBe(true);
+    });
+
+    it("throws on missing db", () => {
+      expect(() => parseArgs(argv(["affected"]))).toThrow();
+    });
+  });
+
+  // ── impact CLI parse (A5 — Red Phase) ─────────────────────────────────────
+
+  describe("impact", () => {
+    it("parses impact <db> <node-or-file>", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "scienceLessons"]));
+      expect(result.subcommand).toBe("impact");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.nodeOrFile).toBe("scienceLessons");
+    });
+
+    it("parses impact with fully-qualified node ID", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "function:src/foo.ts:bar"]));
+      expect(result.args.nodeOrFile).toBe("function:src/foo.ts:bar");
+    });
+
+    it("parses impact with exact file path", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "src/db/schema.ts"]));
+      expect(result.args.nodeOrFile).toBe("src/db/schema.ts");
+    });
+
+    it("parses impact with --json", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "foo", "--json"]));
+      expect(result.args.json).toBe(true);
+    });
+
+    it("parses impact with --depth N", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "foo", "--depth", "3"]));
+      expect(result.args.depth).toBe(3);
+    });
+
+    it("parses impact with --edge-type", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "foo", "--edge-type", "imports"]));
+      expect(result.args.edgeType).toBe("imports");
+    });
+
+    it("parses impact with --include-source", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "foo", "--include-source"]));
+      expect(result.args.includeSource).toBe(true);
+    });
+
+    it("parses impact with all flags combined", () => {
+      const result = parseArgs(argv(["impact", "./graph.db", "schema:scienceLessons", "--json", "--depth", "2", "--edge-type", "queries", "--include-source"]));
+      expect(result.subcommand).toBe("impact");
+      expect(result.args.json).toBe(true);
+      expect(result.args.depth).toBe(2);
+      expect(result.args.edgeType).toBe("queries");
+      expect(result.args.includeSource).toBe(true);
+    });
+
+    it("throws on missing node-or-file", () => {
+      expect(() => parseArgs(argv(["impact", "./graph.db"]))).toThrow();
+    });
+  });
 });

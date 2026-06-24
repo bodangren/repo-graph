@@ -48,37 +48,54 @@ Define the durable graph contracts before writing implementation code.
 
 Write failing tests for the new contracts before implementing behavior.
 
-- [ ] Task: Tests A1 — FTS-backed search
-    - [ ] Add test that `createSchema` creates the FTS table when supported.
-    - [ ] Add test that scan/update keep FTS results synchronized with node changes.
-    - [ ] Add test that `searchNodes` ranks exact/FTS matches above broad substring matches.
-    - [ ] Add fallback test for environments where FTS5 creation fails.
+- [x] Task: Tests A1 — FTS-backed search
+    - [x] Add test that `createSchema` creates the FTS table when supported.
+    - [x] Add test that scan/update keep FTS results synchronized with node changes.
+    - [x] Add test that `searchNodes` ranks exact/FTS matches above broad substring matches.
+    - [x] Add fallback test for environments where FTS5 creation fails.
 
-- [ ] Task: Tests A2 — file metadata and freshness
-    - [ ] Add test that full scan records file metadata and node counts.
-    - [ ] Add test that incremental update refreshes metadata after content changes.
-    - [ ] Add test that deleted files remove file metadata, nodes, and dependent edges.
-    - [ ] Add test that freshness helpers detect modified, deleted, and current files.
+- [x] Task: Tests A2 — file metadata and freshness
+    - [x] Add test that full scan records file metadata and node counts.
+    - [x] Add test that incremental update refreshes metadata after content changes.
+    - [x] Add test that deleted files remove file metadata, nodes, and dependent edges.
+    - [x] Add test that freshness helpers detect modified, deleted, and current files.
 
-- [ ] Task: Tests A3 — explore command contract
-    - [ ] Add CLI parse tests for `explore`.
-    - [ ] Add integration fixture with Next route, component, hook, and Drizzle-style query.
-    - [ ] Add text output test for matches, relationships, relative paths, and stale warnings.
-    - [ ] Add JSON output test for deterministic `matches`, `relationships`, `sourceSnippets`, and `freshness`.
+- [x] Task: Tests A3 — explore command contract
+    - [x] Add CLI parse tests for `explore`.
+    - [x] Add integration fixture with Next route, component, hook, and Drizzle-style query.
+    - [x] Add text output test for matches, relationships, relative paths, and stale warnings.
+    - [x] Add JSON output test for deterministic `matches`, `relationships`, `sourceSnippets`, and `freshness`.
 
-- [ ] Task: Tests A4 — affected command contract
-    - [ ] Add CLI parse tests for file arguments and `--stdin`.
-    - [ ] Add traversal test from changed source file to downstream components/routes/tests.
-    - [ ] Add tests-only output test.
-    - [ ] Add JSON path provenance test showing shortest graph paths.
+- [x] Task: Tests A4 — affected command contract
+    - [x] Add CLI parse tests for file arguments and `--stdin`.
+    - [x] Add traversal test from changed source file to downstream components/routes/tests.
+    - [x] Add tests-only output test.
+    - [x] Add JSON path provenance test showing shortest graph paths.
 
-- [ ] Task: Tests A5 — impact command contract
-    - [ ] Add CLI parse tests for symbol, node ID, and file path roots.
-    - [ ] Add ambiguity and not-found tests that preserve existing exit codes.
-    - [ ] Add schema/field impact test for Drizzle-style `queries`, `mutates`, and `param_flow` edges.
-    - [ ] Add affected-tests summary test.
+- [x] Task: Tests A5 — impact command contract
+    - [x] Add CLI parse tests for symbol, node ID, and file path roots.
+    - [x] Add ambiguity and not-found tests that preserve existing exit codes.
+    - [x] Add schema/field impact test for Drizzle-style `queries`, `mutates`, and `param_flow` edges.
+    - [x] Add affected-tests summary test.
 
 - [ ] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+
+### Red-test evidence (Phase 2)
+
+- **Command:** `CI=true bun test graphing-tools/search.test.ts graphing-tools/meta.test.ts graphing-tools/commands.test.ts graphing-tools/cli.test.ts graphing-tools/integration.test.ts graphing-tools/explore.test.ts graphing-tools/affected.test.ts graphing-tools/impact.test.ts`
+- **Result:** 120 pass, 77 fail, 242 expect() calls across 197 tests in 8 files
+- **Previously-passing tests:** All 120 existing tests continue to pass (commands.test.ts, cli.test.ts existing, search.test.ts existing, meta.test.ts existing, contract.test.ts, schema.test.ts)
+- **New test files:** `explore.test.ts` (13 tests), `affected.test.ts` (11 tests), `impact.test.ts` (15 tests)
+- **Extended test files:** `search.test.ts` (+7 A1 tests), `meta.test.ts` (+11 A2 tests), `cli.test.ts` (+24 parse tests for explore/affected/impact)
+- **Failure modes:**
+  - A1 FTS tests: `syncNodeFts` is not a function (export doesn't exist in search.ts yet)
+  - A2 freshness tests: `isFileStale`/`getStaleFiles` not a function (exports don't exist in meta.ts yet)
+  - A2 stale warnings: `parsed.freshness` is undefined (runStats/runInspect don't add freshness block yet)
+  - A3 explore tests: module `./explore` not found (explore.ts doesn't exist yet) + `syncNodeFts` undefined
+  - A4 affected tests: module `./affected` not found (affected.ts doesn't exist yet)
+  - A5 impact tests: module `./impact` not found (impact.ts doesn't exist yet)
+  - CLI parse tests: "Unknown subcommand: explore/affected/impact" (switch cases not implemented in cli.ts)
+- **Integration test:** Pre-existing timeout failure (unrelated to this track)
 
 ---
 

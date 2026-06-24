@@ -87,8 +87,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
       return { subcommand: "scan", args: { projectDir: args[1], dbPath: args[2], configPath, includePatterns } };
     }
     case "update": {
-      if (args.length < 3) throw new Error("Usage: build-graph update <db> <file> [<file> ...]");
-      return { subcommand: "update", args: { dbPath: args[1], filePaths: args.slice(2) } };
+      let offset = 1;
+      const json = args[offset] === "--json" || args[offset] === "-j";
+      if (json) offset++;
+      if (args.length < offset + 2) throw new Error("Usage: build-graph update <db> <file> [<file> ...] [--json]");
+      return {
+        subcommand: "update",
+        args: { dbPath: args[offset], filePaths: args.slice(offset + 1), json },
+      };
     }
     case "query": {
       let offset = 1;
@@ -173,6 +179,17 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     case "config": {
       return { subcommand: "config", args: {} };
+    }
+    case "install-hooks": {
+      const pathIdx = args.indexOf("--path");
+      let hookPath: string | undefined;
+      if (pathIdx >= 0 && pathIdx + 1 < args.length) hookPath = args[pathIdx + 1];
+      const force = args.includes("--force");
+      const json = args.includes("--json") || args.includes("-j");
+      return {
+        subcommand: "install-hooks",
+        args: { path: hookPath, force, json },
+      };
     }
     default:
       throw new Error(`Unknown subcommand: ${subcommand}\nUsage: build-graph <command> [options]`);

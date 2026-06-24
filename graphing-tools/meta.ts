@@ -44,7 +44,7 @@ export function getMetadata(db: Database): GraphMetadata | undefined {
  * Merges the partial update with any existing metadata under GRAPH_META_KEY.
  */
 export function setMetadata(db: Database, partial: Partial<GraphMetadata>): void {
-  const existing = getMetadata(db) ?? {};
+  const existing: Partial<GraphMetadata> = getMetadata(db) ?? {};
   const merged: GraphMetadata = {
     schemaVersion: partial.schemaVersion ?? existing.schemaVersion ?? "",
     commitSha: partial.commitSha !== undefined ? partial.commitSha : (existing.commitSha ?? null),

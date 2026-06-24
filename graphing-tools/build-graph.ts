@@ -10,13 +10,14 @@ import { scanProject } from "./scanner";
 import { dirname, basename } from "path";
 import { runQuery, formatTable, formatJson } from "./query";
 import { searchNodes } from "./search";
-import { updateFiles } from "./update";
+import { updateFiles, runUpdate } from "./update";
 import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
 import { runAudit } from "./audit";
 import { runExplore } from "./explore";
 import { runAffected } from "./affected";
 import { runImpact } from "./impact";
 import { setMeta, getProjectRoot } from "./meta";
+import { installHooks } from "./hooks";
 import { ExitCode, type BuildGraphConfig, type CustomEdgeDef } from "./contract";
 import { loadConfig, applyCustomEdges } from "./config";
 import { discoverIncludeFiles } from "./include";
@@ -61,8 +62,15 @@ function printHelp(subcommand?: string): void {
     console.log("  build-graph scan ./ ./graph.db --config ./build-graph.config.json");
     console.log("  build-graph scan ./ ./graph.db --include 'supabase/seed/**/*.json'");
   } else if (subcommand === "update") {
-    console.log("Usage: build-graph update <db> <file> [<file> ...]");
+    console.log("Usage: build-graph update <db> <file> [<file> ...] [--json]");
     console.log("  Incrementally update the graph for changed files.");
+    console.log("  --json    Emit a JSON RunUpdateResult to stdout");
+  } else if (subcommand === "install-hooks") {
+    console.log("Usage: build-graph install-hooks [--path <git-dir>] [--force] [--json]");
+    console.log("  Install pre-commit and post-checkout git hooks into <git-dir>/hooks/.");
+    console.log("  --path    Path to the .git directory (default: ./.git)");
+    console.log("  --force   Overwrite non-repo-graph hooks without warning");
+    console.log("  --json    Emit a JSON InstallHooksResult to stdout");
   } else if (subcommand === "query") {
     console.log("Usage: build-graph query [--json] <db> <sql>");
     console.log("  Execute a SQL query against the graph database.");
@@ -114,7 +122,8 @@ function printHelp(subcommand?: string): void {
     console.log("  init     <db>                         Create a new graph database");
     console.log("  scan     <project-dir> <db>           Scan a TypeScript project");
     console.log("  config                                 Show config file schema and examples");
-    console.log("  update   <db> <file...>               Incrementally update changed files");
+    console.log("  update   <db> <file...> [--json]      Incrementally update changed files");
+    console.log("  install-hooks [--path <git-dir>]      Install pre-commit/post-checkout hooks");
     console.log("  query    [--json] <db> <sql>          Run a SQL query");
     console.log("  search   <db> <keyword>               Search nodes by keyword");
     console.log("  deps     <db> <node> [--downstream]   Find dependents/dependencies");
@@ -375,15 +384,53 @@ async function handleSearch(dbPath: string, keyword: string, json: boolean, limi
   }
 }
 
-async function handleUpdate(dbPath: string, filePaths: string[]): Promise<void> {
-  const db = new Database(dbPath);
-  try {
-    const projectRoot = getProjectRoot(db) ?? ".";
-    const { project } = await createProject(projectRoot);
-    const stats = updateFiles(db, project, filePaths);
-    console.error(`Updated ${stats.filesUpdated} files (${stats.nodesDeleted} → ${stats.nodesInserted} nodes, ${stats.edgesDeleted} → ${stats.edgesInserted} edges)`);
-  } finally {
-    db.close();
+async function handleUpdate(dbPath: string, filePaths: string[], json?: boolean): Promise<void> {
+  const projectRootFromMeta = await (async () => {
+    try {
+      const db = new Database(dbPath);
+      try {
+        return getProjectRoot(db) ?? ".";
+      } finally {
+        db.close();
+      }
+    } catch {
+      return ".";
+    }
+  })();
+  const { project } = await createProject(projectRootFromMeta);
+  const result = runUpdate(dbPath, project, filePaths);
+
+  if (json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  console.error(
+    `Updated ${result.filesUpdated} files (${result.nodesDeleted} → ${result.nodesInserted} nodes, ${result.edgesDeleted} → ${result.edgesInserted} edges)` +
+    (result.fallbackToFullScan ? " [full-rescan fallback]" : ""),
+  );
+}
+
+async function handleInstallHooks(
+  gitDir: string | undefined,
+  force: boolean | undefined,
+  json: boolean | undefined
+): Promise<void> {
+  const result = installHooks({
+    gitDir: gitDir ?? join(process.cwd(), ".git"),
+    force: force ?? false,
+  });
+  if (json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  for (const created of result.created) {
+    console.error(`Created hook: ${created}`);
+  }
+  for (const overwritten of result.overwritten) {
+    console.error(`Overwrote hook: ${overwritten}`);
+  }
+  for (const warning of result.warned) {
+    console.error(`Warning: ${warning}`);
   }
 }
 
@@ -561,7 +608,7 @@ export async function main(argv: string[]): Promise<number> {
       await handleSearch(parsed.args.dbPath, parsed.args.keyword, parsed.args.json ?? false, parsed.args.limit, parsed.args.type);
       break;
     case "update":
-      await handleUpdate(parsed.args.dbPath, parsed.args.filePaths);
+      await handleUpdate(parsed.args.dbPath, parsed.args.filePaths, parsed.args.json);
       break;
     case "deps":
       return await handleDeps(parsed.args.dbPath, parsed.args.name, parsed.args.downstream, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth, parsed.args.fromPackage, parsed.args.toPackage);
@@ -590,6 +637,9 @@ export async function main(argv: string[]): Promise<number> {
       break;
     case "config":
       printHelp("config");
+      break;
+    case "install-hooks":
+      await handleInstallHooks(parsed.args.path, parsed.args.force, parsed.args.json);
       break;
     case "version":
       console.log(VERSION);

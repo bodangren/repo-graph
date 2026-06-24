@@ -126,33 +126,58 @@ Write all failing tests before touching update or hook implementation.
 
 ## Phase 3 — Implementation (Green Phase)
 
-- [ ] Task: Implement G1 — Incremental update command
-    - [ ] Create `update.ts` with `runUpdate(db, files, options)` function
-    - [ ] Implement node removal by `file_path`
-    - [ ] Implement dangling edge cleanup after node removal
-    - [ ] Implement per-file re-scan and insertion
-    - [ ] Implement full-scan fallback when no files are provided
-    - [ ] Integrate into CLI as `repo-graph update <db> [files...]`
-    - [ ] Run `bun test`; confirm G1 tests pass
-    - [ ] Commit: `feat(update): Add incremental graph update command`
+- [x] Task: Implement G1 — Incremental update command
+    - [x] Create `update.ts` with `runUpdate(db, files, options)` function — commit `a96454e`
+    - [x] Implement node removal by `file_path` — already in `updateFiles`; regression-locked
+    - [x] Implement dangling edge cleanup after node removal — already in `updateFiles`; regression-locked
+    - [x] Implement per-file re-scan and insertion — already in `updateFiles`; regression-locked
+    - [x] Implement full-scan fallback when no files are provided — commit `a96454e` (`runUpdateBody` clears nodes/edges then re-scans all project source files)
+    - [x] Integrate into CLI as `repo-graph update <db> [files...]` — commit `1e417b1` (`handleUpdate` delegates to `runUpdate` with `--json` support)
+    - [x] Run `bun test`; confirm G1 tests pass — `CI=true bun test` → 451 pass / 0 fail
+    - [x] Commit: `feat(update): Add incremental graph update command` — see `a96454e`
 
-- [ ] Task: Implement G2 — Hook installation CLI
-    - [ ] Create `installHooks.ts` with `runInstallHooks(gitDir)` function
-    - [ ] Generate POSIX-compliant `pre-commit` shell script
-    - [ ] Generate POSIX-compliant `post-checkout` shell script
-    - [ ] Implement idempotent overwrite with conflict detection
-    - [ ] Integrate into CLI as `repo-graph install-hooks [--path]`
-    - [ ] Run `bun test`; confirm G2 tests pass
-    - [ ] Commit: `feat(hooks): Add git hook installation command`
+- [x] Task: Implement G2 — Hook installation CLI
+    - [x] Create `installHooks.ts` with `runInstallHooks(gitDir)` function — commit `1e417b1` (new file `graphing-tools/hooks.ts`)
+    - [x] Generate POSIX-compliant `pre-commit` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --cached --name-only --diff-filter=ACM)`
+    - [x] Generate POSIX-compliant `post-checkout` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --name-only "$1" "$2")`
+    - [x] Implement idempotent overwrite with conflict detection — `HOOK_MARKER` line distinguishes repo-graph vs hand-rolled hooks; `.bak` saved on non-repo-graph overwrite
+    - [x] Integrate into CLI as `repo-graph install-hooks [--path]` — commit `1e417b1` (`install-hooks` case in `parseArgs` + `handleInstallHooks` in `build-graph.ts`)
+    - [x] Run `bun test`; confirm G2 tests pass — H1–H7 green (7/7)
+    - [x] Commit: `feat(hooks): Add git hook installation command` — see `1e417b1`
 
-- [ ] Task: Implement G4 — Conflict resolution
-    - [ ] Add schema version constant to the codebase
-    - [ ] Implement metadata comparison in `runUpdate`
-    - [ ] Implement fallback path: delete DB + full scan on mismatch
-    - [ ] Run `bun test`; confirm G4 tests pass
-    - [ ] Commit: `feat(update): Add conflict detection and full-scan fallback`
+- [x] Task: Implement G4 — Conflict resolution
+    - [x] Add schema version constant to the codebase — `SCHEMA_VERSION = "1.0.0"` in `schema.ts` (added in Phase 1)
+    - [x] Implement metadata comparison in `runUpdate` — commit `a96454e` (`detectMetadataState` distinguishes missing-table / missing-row / version-mismatch)
+    - [x] Implement fallback path: delete DB + full scan on mismatch — on-disk path branch unlinks and recreates via `resetOnConflict` (default true)
+    - [x] Run `bun test`; confirm G4 tests pass — U6, U7, U8 green (8/8 in `runUpdate` describe block)
+    - [x] Commit: `feat(update): Add conflict detection and full-scan fallback` — see `a96454e`
 
 - [ ] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+
+### Phase 3 Green Evidence
+
+**Green command:** `CI=true bun test`
+
+**Result:** 451 pass, 0 fail, 1016 expect() calls
+
+**Per-file gate:**
+- `graphing-tools/update.test.ts` → 11/11 pass (3 baseline + U1–U8)
+- `graphing-tools/hooks.test.ts` → 7/7 pass (H1–H7)
+- `graphing-tools/cli.test.ts` → 81/81 pass (77 baseline + C1–C4)
+- `graphing-tools/schema.test.ts` → 41/41 pass (37 baseline + 4 Phase 1 metadata tests now green)
+- `graphing-tools/contract.test.ts` → 41/41 pass (Phase 1 contract tests stay green)
+- `graphing-tools/files.test.ts` → 6/6 pass (deleteFileData semantic shift: filesDeleted now logical count of 1)
+
+**Pre-existing baseline preserved:** all 428 pre-existing tests still pass (no regressions).
+
+**Phase 1 stubs closed:** 4 stub failures (`getMetadata` / `setMetadata`) now green.
+
+**Phase 2 reds closed:** all 19 (8 update + 7 hooks + 4 cli) now green.
+
+**Live gates:**
+- `bun run lint` → exit 0
+- `./measure/doctor.sh` → exit 0
+- `bunx tsc --noEmit` → only 1 pre-existing `update.ts:122` error remains (unchanged from baseline); 4 new errors I briefly introduced in `meta.ts` were fixed in commit `1e417b1`
 
 ---
 

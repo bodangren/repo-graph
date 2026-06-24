@@ -415,7 +415,7 @@ async function handleInstallHooks(
   force: boolean | undefined,
   json: boolean | undefined
 ): Promise<void> {
-  const result = installHooks({
+  const result = await installHooks({
     gitDir: gitDir ?? join(process.cwd(), ".git"),
     force: force ?? false,
   });

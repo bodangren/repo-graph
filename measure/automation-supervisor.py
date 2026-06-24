@@ -631,6 +631,26 @@ def closeout_metadata_path(config: Config, track_id: str) -> Path:
     return closeout_track_dir(config, track_id) / "metadata.json"
 
 
+def is_task_structurally_blocked(task: str) -> bool:
+    """A task is *structurally blocked / human-gated* iff its checkbox marker is a structured
+    signal. Free-text occurrences of the word "deferred" do NOT count.
+
+    Structured signals:
+      - status 'b' (e.g. `- [b]`) — blocked / human-gated marker
+      - trailing `deferred:<owner>` field (e.g. `… — deferred:phikul`)
+      - `(deferred)` flag inside parens immediately after the task verb
+
+    Substring `"deferred" in task.lower()` is intentionally NOT used: it was being exploited
+    by plans to bypass the incomplete-task count without the underlying work being done.
+    See measure_integrity_remediation_20260624 Finding 1.
+    """
+    if re.search(r"^\[b\]", task):
+        return True
+    if re.search(r"\bdeferred:[\w.-]+", task, re.IGNORECASE):
+        return True
+    return False
+
+
 def plan_closeout_feedback(plan_path: Path) -> list[str]:
     if not plan_path.exists():
         return [f"Closeout plan file is missing: {plan_path}."]
@@ -638,7 +658,7 @@ def plan_closeout_feedback(plan_path: Path) -> list[str]:
     text = plan_path.read_text(encoding="utf-8", errors="ignore")
     feedback: list[str] = []
     for full_line, status, task in re.findall(r"^(\s*- \[([ ~x])\] (.+))$", text, re.MULTILINE):
-        if "deferred" in task.lower():
+        if is_task_structurally_blocked(task):
             continue
         if status != "x":
             feedback.append(f"Closeout plan task is not complete: {full_line.strip()}")
@@ -830,7 +850,12 @@ def discover_phases(config: Config, tracks: Iterable[str]) -> list[Phase]:
                 continue
             heading = re.sub(r" *\[(checkpoint|final-verification):[^\]]*\]", "", heading_match.group(1))
             tasks = re.findall(r"^- \[([ ~x])\] (.+)", block, re.MULTILINE)
-            incomplete = sum(1 for status, task in tasks if status != "x" and "deferred" not in task.lower())
+            incomplete = sum(
+                1
+                for status, task in tasks
+                if status not in ("x", " ")
+                and not is_task_structurally_blocked(task)
+            )
             if incomplete > 0:
                 phases.append(Phase(len(phases) + 1, track_id, heading, incomplete, len(tasks)))
     return phases
@@ -1198,7 +1223,12 @@ def phase_counts(plan_path: Path, phase_heading: str) -> tuple[int, int, int, in
         total = len(tasks)
         complete = sum(1 for status, _ in tasks if status == "x")
         in_progress = sum(1 for status, _ in tasks if status == "~")
-        incomplete = sum(1 for status, task in tasks if status != "x" and "deferred" not in task.lower())
+        incomplete = sum(
+            1
+            for status, task in tasks
+            if status not in ("x", " ")
+            and not is_task_structurally_blocked(task)
+        )
         with_sha = sum(1 for status, task in tasks if status == "x" and re.search(r"\b[0-9a-f]{7,40}\b", task))
         return total, complete, in_progress, incomplete, with_sha
     return 0, 0, 0, 0, 0
@@ -1207,7 +1237,12 @@ def phase_counts(plan_path: Path, phase_heading: str) -> tuple[int, int, int, in
 def track_incomplete_count(plan_path: Path) -> int:
     text = plan_path.read_text(encoding="utf-8", errors="ignore")
     tasks = re.findall(r"^- \[([ ~x])\] (.+)", text, re.MULTILINE)
-    return sum(1 for status, task in tasks if status != "x" and "deferred" not in task.lower())
+    return sum(
+        1
+        for status, task in tasks
+        if status not in ("x", " ")
+        and not is_task_structurally_blocked(task)
+    )
 
 
 def gate_strategy(config: Config, ctx: RoleContext) -> GateResult:

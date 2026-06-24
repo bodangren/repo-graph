@@ -6,6 +6,13 @@ import { Database } from "bun:sqlite";
  * This SQL is executed defensively: if the local SQLite build does not include
  * FTS5 support, `createSchema` catches the error and continues without it.
  * All search queries must fall back to `LIKE` when `nodes_fts` is absent.
+ *
+ * Note: triggers that automatically mirror INSERT/UPDATE/DELETE on `nodes`
+ * into `nodes_fts` are intentionally NOT created here. The Phase 3
+ * implementation of A1 must synchronize the FTS index from application
+ * code paths (full scan + incremental update) so that callers can rely on
+ * `DELETE FROM nodes ... .changes` reporting only the row count on `nodes`
+ * and not the FTS5 shadow-table writes. See `search.ts` for the sync helper.
  */
 export const FTS5_CREATE_SQL = `
   CREATE VIRTUAL TABLE IF NOT EXISTS nodes_fts USING fts5(
@@ -20,26 +27,18 @@ export const FTS5_CREATE_SQL = `
 `;
 
 /**
- * FTS5 triggers to keep the virtual table in sync with the `nodes` table.
- * These are only created when FTS5 is available.
+ * Statements used by the Phase 3 application-level FTS sync helper
+ * (`syncNodeFts` in `search.ts`). Kept here as a contract so `schema.ts`
+ * remains the single source of truth for FTS5 DDL.
  */
-export const FTS5_TRIGGERS_SQL = `
-  CREATE TRIGGER IF NOT EXISTS nodes_fts_insert AFTER INSERT ON nodes BEGIN
-    INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
-    VALUES (NEW.rowid, NEW.id, NEW.name, NEW.file_path, NEW.summary, NEW.tags);
-  END;
+export const FTS5_INSERT_NODE_SQL = `
+  INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
+  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?tags);
+`;
 
-  CREATE TRIGGER IF NOT EXISTS nodes_fts_delete AFTER DELETE ON nodes BEGIN
-    INSERT INTO nodes_fts(nodes_fts, rowid, id, name, file_path, summary, tags)
-    VALUES ('delete', OLD.rowid, OLD.id, OLD.name, OLD.file_path, OLD.summary, OLD.tags);
-  END;
-
-  CREATE TRIGGER IF NOT EXISTS nodes_fts_update AFTER UPDATE ON nodes BEGIN
-    INSERT INTO nodes_fts(nodes_fts, rowid, id, name, file_path, summary, tags)
-    VALUES ('delete', OLD.rowid, OLD.id, OLD.name, OLD.file_path, OLD.summary, OLD.tags);
-    INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
-    VALUES (NEW.rowid, NEW.id, NEW.name, NEW.file_path, NEW.summary, NEW.tags);
-  END;
+export const FTS5_DELETE_NODE_SQL = `
+  INSERT INTO nodes_fts('delete', rowid, id, name, file_path, summary, tags)
+  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?tags);
 `;
 
 /**
@@ -127,10 +126,13 @@ export function createSchema(db: Database): void {
   // Edge traversal indexes (additive)
   db.exec(EDGE_TRAVERSAL_INDEX_SQL);
 
-  // FTS5 virtual table — defensive: catch and continue if FTS5 is unavailable
+  // FTS5 virtual table — defensive: catch and continue if FTS5 is unavailable.
+  // Triggers that auto-mirror nodes -> nodes_fts are intentionally omitted:
+  // they would inflate `DELETE FROM nodes ... .changes` with FTS5 shadow
+  // writes and break update-path row counts. Phase 3 keeps `nodes_fts` in
+  // sync via `syncNodeFts` from application code.
   try {
     db.exec(FTS5_CREATE_SQL);
-    db.exec(FTS5_TRIGGERS_SQL);
   } catch {
     // FTS5 not available in this SQLite build — search will fall back to LIKE
   }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { createSchema, FTS5_CREATE_SQL, FTS5_TRIGGERS_SQL, FILES_TABLE_SQL, FILES_INDEX_SQL, EDGE_TRAVERSAL_INDEX_SQL } from "./schema";
+import { createSchema, FTS5_CREATE_SQL, FTS5_INSERT_NODE_SQL, FTS5_DELETE_NODE_SQL, FILES_TABLE_SQL, FILES_INDEX_SQL, EDGE_TRAVERSAL_INDEX_SQL } from "./schema";
 
 describe("createSchema", () => {
   let db: Database;
@@ -209,12 +209,18 @@ describe("FTS5 DDL constants", () => {
     expect(FTS5_CREATE_SQL).toContain("content='nodes'");
   });
 
-  it("exports FTS5_TRIGGERS_SQL with insert, delete, and update triggers", () => {
-    expect(FTS5_TRIGGERS_SQL).toBeDefined();
-    expect(typeof FTS5_TRIGGERS_SQL).toBe("string");
-    expect(FTS5_TRIGGERS_SQL).toContain("nodes_fts_insert");
-    expect(FTS5_TRIGGERS_SQL).toContain("nodes_fts_delete");
-    expect(FTS5_TRIGGERS_SQL).toContain("nodes_fts_update");
+  it("exports FTS5_INSERT_NODE_SQL for application-level FTS sync", () => {
+    expect(FTS5_INSERT_NODE_SQL).toBeDefined();
+    expect(typeof FTS5_INSERT_NODE_SQL).toBe("string");
+    expect(FTS5_INSERT_NODE_SQL).toContain("INSERT INTO nodes_fts");
+    expect(FTS5_INSERT_NODE_SQL).not.toMatch(/CREATE\s+TRIGGER/i);
+  });
+
+  it("exports FTS5_DELETE_NODE_SQL for application-level FTS sync", () => {
+    expect(FTS5_DELETE_NODE_SQL).toBeDefined();
+    expect(typeof FTS5_DELETE_NODE_SQL).toBe("string");
+    expect(FTS5_DELETE_NODE_SQL).toContain("'delete'");
+    expect(FTS5_DELETE_NODE_SQL).not.toMatch(/CREATE\s+TRIGGER/i);
   });
 
   it("exports FILES_TABLE_SQL", () => {
@@ -267,9 +273,9 @@ describe("FTS5 defensive creation", () => {
     expect(result).toBeDefined();
   });
 
-  it("FTS5 triggers are created when FTS5 is available", () => {
+  it("FTS5 triggers are intentionally NOT created at schema time (Phase 3 application-level sync)", () => {
     createSchema(db);
     const triggers = db.query("SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'nodes_fts_%'").all();
-    expect(triggers.length).toBeGreaterThanOrEqual(1);
+    expect(triggers.length).toBe(0);
   });
 });

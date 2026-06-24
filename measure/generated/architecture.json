@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T14:23:34.996Z",
+  "generated_at": "2026-06-24T16:28:01.190Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -38,7 +38,7 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 4569
+        "size": 5259
       },
       {
         "type": "file",
@@ -206,7 +206,7 @@
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 11651
+        "size": 12320
       },
       {
         "type": "file",
@@ -230,7 +230,7 @@
         "type": "file",
         "path": "schema.test.ts",
         "extension": "ts",
-        "size": 10739
+        "size": 14912
       },
       {
         "type": "file",
@@ -248,7 +248,7 @@
         "type": "file",
         "path": "meta.ts",
         "extension": "ts",
-        "size": 3100
+        "size": 4541
       },
       {
         "type": "file",
@@ -276,9 +276,15 @@
       },
       {
         "type": "file",
+        "path": "hooks.test.ts",
+        "extension": "ts",
+        "size": 5840
+      },
+      {
+        "type": "file",
         "path": "update.test.ts",
         "extension": "ts",
-        "size": 3118
+        "size": 10932
       },
       {
         "type": "file",
@@ -296,7 +302,7 @@
         "type": "file",
         "path": "files.ts",
         "extension": "ts",
-        "size": 3548
+        "size": 3742
       },
       {
         "type": "file",
@@ -320,7 +326,7 @@
         "type": "file",
         "path": "update.ts",
         "extension": "ts",
-        "size": 3562
+        "size": 10924
       },
       {
         "type": "file",
@@ -368,7 +374,7 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 18034
+        "size": 19232
       },
       {
         "type": "file",
@@ -380,7 +386,7 @@
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 23571
+        "size": 25338
       },
       {
         "type": "file",
@@ -398,7 +404,7 @@
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 8532
+        "size": 9136
       },
       {
         "type": "file",
@@ -420,9 +426,15 @@
       },
       {
         "type": "file",
+        "path": "hooks.ts",
+        "extension": "ts",
+        "size": 6164
+      },
+      {
+        "type": "file",
         "path": "contract.test.ts",
         "extension": "ts",
-        "size": 10640
+        "size": 12402
       },
       {
         "type": "file",
@@ -726,6 +738,48 @@
           },
           {
             "type": "directory",
+            "path": "archive/agent_explore_freshness_impact_20260622",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/plan.md",
+                "extension": "md",
+                "size": 19912
+              },
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/metadata.json",
+                "extension": "json",
+                "size": 1105
+              },
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/test-strategy.md",
+                "extension": "md",
+                "size": 14982
+              },
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/spec.md",
+                "extension": "md",
+                "size": 7766
+              },
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/automation-supervisor-closeout-manifest.json",
+                "extension": "json",
+                "size": 2192
+              },
+              {
+                "type": "file",
+                "path": "archive/agent_explore_freshness_impact_20260622/index.md",
+                "extension": "md",
+                "size": 151
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "path": "archive/audit_20260529",
             "children": [
               {
@@ -836,7 +890,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 27094
+            "size": 27095
           },
           {
             "type": "file",
@@ -862,7 +916,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 4017
+        "size": 4031
       },
       {
         "type": "file",
@@ -936,13 +990,19 @@
                 "type": "file",
                 "path": "tracks/git_hook_incremental_updates_20260528/plan.md",
                 "extension": "md",
-                "size": 4539
+                "size": 12329
               },
               {
                 "type": "file",
                 "path": "tracks/git_hook_incremental_updates_20260528/metadata.json",
                 "extension": "json",
                 "size": 398
+              },
+              {
+                "type": "file",
+                "path": "tracks/git_hook_incremental_updates_20260528/test-strategy.md",
+                "extension": "md",
+                "size": 23897
               },
               {
                 "type": "file",
@@ -973,42 +1033,6 @@
                 "path": "tracks/ci_cd_integration_20260528/spec.md",
                 "extension": "md",
                 "size": 4124
-              }
-            ]
-          },
-          {
-            "type": "directory",
-            "path": "tracks/agent_explore_freshness_impact_20260622",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/agent_explore_freshness_impact_20260622/plan.md",
-                "extension": "md",
-                "size": 14564
-              },
-              {
-                "type": "file",
-                "path": "tracks/agent_explore_freshness_impact_20260622/metadata.json",
-                "extension": "json",
-                "size": 448
-              },
-              {
-                "type": "file",
-                "path": "tracks/agent_explore_freshness_impact_20260622/test-strategy.md",
-                "extension": "md",
-                "size": 14982
-              },
-              {
-                "type": "file",
-                "path": "tracks/agent_explore_freshness_impact_20260622/spec.md",
-                "extension": "md",
-                "size": 7766
-              },
-              {
-                "type": "file",
-                "path": "tracks/agent_explore_freshness_impact_20260622/index.md",
-                "extension": "md",
-                "size": 151
               }
             ]
           }

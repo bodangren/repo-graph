@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "track_id": "git_hook_incremental_updates_20260528",
+  "closeout_date": "2026-06-25T00:00:00Z",
+  "baseline_sha": "f47bc11",
+  "closeout_sha": "1549209",
+  "preconditions": {
+    "bun_test": "pass (per commit 1549209 plan.md Phase 4 closeout annotations)",
+    "bun_run_lint": "clean",
+    "bunx_tsc_noemit": "clean",
+    "git_status_short": "clean"
+  },
+  "phase_acceptance": {
+    "phase_1_contracts": "pass — schema_version + GraphMetadata + CLI args (commit fa9db57)",
+    "phase_2_red": "pass — 19 red tests for update/hooks/cli (commit 112b0ea)",
+    "phase_3_green": "pass — getMetadata/setMetadata + runUpdate + install-hooks CLI wiring (commits a892c01, a96454e, 1e417b1); security hardening path-traversal + atomic write + git timeout (4b618b8); CLI handler awaits installHooks result (fcedd95)",
+    "phase_4_closeout": "pass — closeout tasks complete with audit evidence (commit 1549209)"
+  },
+  "final_acceptance": {
+    "status": "pass",
+    "evidence": "All 4 phases Green with commit SHA evidence. Security: path-traversal guard, atomic write (.tmp + rename), git timeout. Hook installation uses generate-then-rename pattern (lessons-learned.md 2026-06-25). FTS5 auto-triggers removed from Phase 1 contract (commit 1100501)."
+  },
+  "interphase_checks": {
+    "closeout_pre": "passed — track in measure/tracks/, archive subdir absent",
+    "closeout_post": "passed — track in measure/archive/, tracks.md updated, metadata.json status=done"
+  },
+  "commits": [
+    "2468bf2 — test strategy",
+    "fa9db57 — Phase 1 contracts (schema_version, GraphMetadata, CLI args)",
+    "1100501 — remove buggy FTS5 auto-triggers from Phase 1 contract",
+    "112b0ea — Phase 2 red tests for update/hooks/cli (19 tests)",
+    "a892c01 — feat(meta): implement getMetadata and setMetadata",
+    "a96454e — feat(update): add runUpdate entry point with conflict resolution",
+    "1e417b1 — feat(hooks,cli): add install-hooks and runUpdate CLI wiring",
+    "b6f094f — Phase 3 Green evidence",
+    "4b618b8 — security: path-traversal guard, atomic write, git timeout",
+    "fcedd95 — fix(build-graph): await installHooks result in CLI handler",
+    "fa63b32 — regenerate architecture.json with hooks.ts module",
+    "1549209 — Phase 4 closeout tasks complete with audit evidence"
+  ],
+  "deviations": [
+    "Binary-naming gap (Review-A finding): package.json name is 'repo-graph' but bun compile target produces './bin/build-graph'. Workaround: install the same binary under both names. Cosmetic mismatch in --help banner. Not blocking acceptance; tracked in tech-debt.md for future rename track."
+  ],
+  "lessons_learned": [
+    "POSIX shell scripts from a TS template: quote every parameter ($1, $2); subshell expansion $(git diff --cached --name-only --diff-filter=ACM) skips deleted files",
+    "Generate-then-rename beats direct write for hook installation (.tmp.<pid> + fs.renameSync)",
+    "FTS5 auto-triggers in SQLite knowledge graph were buggy; remove them from contracts (caught in Phase 1, not after Green)"
+  ],
+  "tech_debt_resolved": [
+    "review_remediation_20260524 deferred items not applicable",
+    "Binary-naming gap registered as Low/Open in tech-debt.md for a future rename track"
+  ]
+}

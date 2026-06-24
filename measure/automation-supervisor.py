@@ -631,20 +631,19 @@ def closeout_metadata_path(config: Config, track_id: str) -> Path:
     return closeout_track_dir(config, track_id) / "metadata.json"
 
 
-def is_task_structurally_blocked(task: str) -> bool:
-    """A task is *structurally blocked / human-gated* iff its checkbox marker is a structured
-    signal. Free-text occurrences of the word "deferred" do NOT count.
+def is_task_structurally_blocked(task: str, status: str | None = None) -> bool:
+    """A task is *structurally blocked / human-gated* iff its marker is structured.
 
     Structured signals:
-      - status 'b' (e.g. `- [b]`) — blocked / human-gated marker
+      - checkbox status 'b' (e.g. `- [b]`)
       - trailing `deferred:<owner>` field (e.g. `… — deferred:phikul`)
-      - `(deferred)` flag inside parens immediately after the task verb
 
-    Substring `"deferred" in task.lower()` is intentionally NOT used: it was being exploited
+    Free-text occurrences of the word "deferred" do NOT count. Substring
+    `"deferred" in task.lower()` is intentionally not used; it was being exploited
     by plans to bypass the incomplete-task count without the underlying work being done.
     See measure_integrity_remediation_20260624 Finding 1.
     """
-    if re.search(r"^\[b\]", task):
+    if status == "b":
         return True
     if re.search(r"\bdeferred:[\w.-]+", task, re.IGNORECASE):
         return True
@@ -657,8 +656,8 @@ def plan_closeout_feedback(plan_path: Path) -> list[str]:
 
     text = plan_path.read_text(encoding="utf-8", errors="ignore")
     feedback: list[str] = []
-    for full_line, status, task in re.findall(r"^(\s*- \[([ ~x])\] (.+))$", text, re.MULTILINE):
-        if is_task_structurally_blocked(task):
+    for full_line, status, task in re.findall(r"^(\s*- \[([~xb])\] (.+))$", text, re.MULTILINE):
+        if is_task_structurally_blocked(task, status):
             continue
         if status != "x":
             feedback.append(f"Closeout plan task is not complete: {full_line.strip()}")
@@ -849,12 +848,12 @@ def discover_phases(config: Config, tracks: Iterable[str]) -> list[Phase]:
             if not heading_match:
                 continue
             heading = re.sub(r" *\[(checkpoint|final-verification):[^\]]*\]", "", heading_match.group(1))
-            tasks = re.findall(r"^- \[([ ~x])\] (.+)", block, re.MULTILINE)
+            tasks = re.findall(r"^- \[([~xb])\] (.+)", block, re.MULTILINE)
             incomplete = sum(
                 1
                 for status, task in tasks
-                if status not in ("x", " ")
-                and not is_task_structurally_blocked(task)
+                if status != "x"
+                and not is_task_structurally_blocked(task, status)
             )
             if incomplete > 0:
                 phases.append(Phase(len(phases) + 1, track_id, heading, incomplete, len(tasks)))
@@ -1219,15 +1218,15 @@ def phase_counts(plan_path: Path, phase_heading: str) -> tuple[int, int, int, in
         display = re.sub(r" *\[(checkpoint|final-verification):[^\]]*\]", "", heading_match.group(1))
         if display != phase_heading:
             continue
-        tasks = re.findall(r"^- \[([ ~x])\] (.+)", block, re.MULTILINE)
+        tasks = re.findall(r"^- \[([~xb])\] (.+)", block, re.MULTILINE)
         total = len(tasks)
         complete = sum(1 for status, _ in tasks if status == "x")
         in_progress = sum(1 for status, _ in tasks if status == "~")
         incomplete = sum(
             1
             for status, task in tasks
-            if status not in ("x", " ")
-            and not is_task_structurally_blocked(task)
+            if status != "x"
+            and not is_task_structurally_blocked(task, status)
         )
         with_sha = sum(1 for status, task in tasks if status == "x" and re.search(r"\b[0-9a-f]{7,40}\b", task))
         return total, complete, in_progress, incomplete, with_sha
@@ -1236,12 +1235,12 @@ def phase_counts(plan_path: Path, phase_heading: str) -> tuple[int, int, int, in
 
 def track_incomplete_count(plan_path: Path) -> int:
     text = plan_path.read_text(encoding="utf-8", errors="ignore")
-    tasks = re.findall(r"^- \[([ ~x])\] (.+)", text, re.MULTILINE)
+    tasks = re.findall(r"^- \[([~xb])\] (.+)", text, re.MULTILINE)
     return sum(
         1
         for status, task in tasks
-        if status not in ("x", " ")
-        and not is_task_structurally_blocked(task)
+        if status != "x"
+        and not is_task_structurally_blocked(task, status)
     )
 
 

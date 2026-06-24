@@ -57,8 +57,8 @@ This file tracks all major tracks for the project.
 
 _Status (verified 2026-06-21): all four below are genuinely not started — 0 plan tasks each, metadata `pending`, no implementation in `graphing-tools/`, and no `.github/workflows`. Registry is accurate._
 
-- [ ] **Track: Git Hook Integration for Incremental Graph Updates**
-  *Link: [./tracks/git_hook_incremental_updates_20260528/](./tracks/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes.
+- [x] **Track: Git Hook Integration for Incremental Graph Updates** *(archived 2026-06-25)*
+  *Link: [./archive/git_hook_incremental_updates_20260528/](./archive/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes. All 4 phases Green; closeout recorded in commit 1549209.
 
 - [ ] **Track: Query Performance Optimization & Benchmarks**
   *Link: [./tracks/query_performance_benchmarks_20260528/](./tracks/query_performance_benchmarks_20260528/)* — Add composite SQLite indexes, query result caching, and a benchmark suite targeting sub-100ms dependency lookups on monorepos.

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
-import { createSchema, FTS5_CREATE_SQL, FTS5_INSERT_NODE_SQL, FTS5_DELETE_NODE_SQL, FILES_TABLE_SQL, FILES_INDEX_SQL, EDGE_TRAVERSAL_INDEX_SQL } from "./schema";
+import { createSchema, FTS5_CREATE_SQL, FTS5_INSERT_NODE_SQL, FTS5_DELETE_NODE_SQL, FILES_TABLE_SQL, FILES_INDEX_SQL, EDGE_TRAVERSAL_INDEX_SQL, SCHEMA_VERSION, GRAPH_META_KEY } from "./schema";
+import { getMetadata, setMetadata } from "./meta";
 
 describe("createSchema", () => {
   let db: Database;
@@ -277,5 +278,126 @@ describe("FTS5 defensive creation", () => {
     createSchema(db);
     const triggers = db.query("SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'nodes_fts_%'").all();
     expect(triggers.length).toBe(0);
+  });
+});
+
+// ── SCHEMA_VERSION constant ─────────────────────────────────────────────────
+
+describe("SCHEMA_VERSION", () => {
+  it("is exported and is a non-empty string", () => {
+    expect(typeof SCHEMA_VERSION).toBe("string");
+    expect(SCHEMA_VERSION.length).toBeGreaterThan(0);
+  });
+
+  it("follows semver-like format", () => {
+    expect(SCHEMA_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
+
+// ── GRAPH_META_KEY constant ─────────────────────────────────────────────────
+
+describe("GRAPH_META_KEY", () => {
+ it("is exported and equals 'graph'", () => {
+    expect(GRAPH_META_KEY).toBe("graph");
+  });
+});
+
+// ── meta table schema_version and commit_sha columns ────────────────────────
+
+describe("meta table schema_version and commit_sha columns", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("createSchema adds schema_version column to meta table", () => {
+    createSchema(db);
+    const cols = db.query<{ name: string }, []>("PRAGMA table_info(meta)").all();
+    const names = cols.map((c) => c.name);
+    expect(names).toContain("schema_version");
+  });
+
+  it("createSchema adds commit_sha column to meta table", () => {
+    createSchema(db);
+    const cols = db.query<{ name: string }, []>("PRAGMA table_info(meta)").all();
+    const names = cols.map((c) => c.name);
+    expect(names).toContain("commit_sha");
+  });
+
+  it("column addition is idempotent (no error on second createSchema call)", () => {
+    createSchema(db);
+    expect(() => createSchema(db)).not.toThrow();
+    const cols = db.query<{ name: string }, []>("PRAGMA table_info(meta)").all();
+    const names = cols.map((c) => c.name);
+    expect(names).toContain("schema_version");
+    expect(names).toContain("commit_sha");
+  });
+});
+
+// ── getMetadata / setMetadata operations ─────────────────────────────────────
+
+describe("getMetadata", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("returns a GraphMetadata object when metadata exists", () => {
+    // Seed structured metadata via the raw meta table
+    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)").run(
+      GRAPH_META_KEY,
+      JSON.stringify({ schemaVersion: SCHEMA_VERSION, commitSha: "abc1234" })
+    );
+    const result = getMetadata(db);
+    expect(result).toBeDefined();
+    expect(result!.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(result!.commitSha).toBe("abc1234");
+  });
+
+  it("returns undefined when no metadata row exists", () => {
+    const result = getMetadata(db);
+    expect(result).toBeUndefined();
+  });
+});
+
+describe("setMetadata", () => {
+  let db: Database;
+
+  beforeEach(() => {
+    db = new Database(":memory:");
+    createSchema(db);
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("writes structured metadata to the meta table", () => {
+    setMetadata(db, { schemaVersion: SCHEMA_VERSION, commitSha: "def5678" });
+    const row = db.prepare("SELECT value FROM meta WHERE key = ?").get(GRAPH_META_KEY) as { value: string } | undefined;
+    expect(row).toBeDefined();
+    const parsed = JSON.parse(row!.value);
+    expect(parsed.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(parsed.commitSha).toBe("def5678");
+  });
+
+  it("merges partial updates with existing metadata", () => {
+    setMetadata(db, { schemaVersion: SCHEMA_VERSION, commitSha: "aaa" });
+    setMetadata(db, { commitSha: "bbb" });
+    const row = db.prepare("SELECT value FROM meta WHERE key = ?").get(GRAPH_META_KEY) as { value: string };
+    const parsed = JSON.parse(row.value);
+    expect(parsed.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(parsed.commitSha).toBe("bbb");
   });
 });

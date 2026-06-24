@@ -1,5 +1,7 @@
 import { Database } from "bun:sqlite";
 import { existsSync, statSync } from "fs";
+import type { GraphMetadata } from "./contract";
+import { GRAPH_META_KEY } from "./schema";
 
 export function setMeta(db: Database, key: string, value: string): void {
   db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)").run(key, value);
@@ -15,6 +17,23 @@ export function getMeta(db: Database, key: string): string | undefined {
     }
     throw err;
   }
+}
+
+/**
+ * Read structured graph metadata from the `meta` table.
+ * Returns a `GraphMetadata` object with schema version and commit SHA.
+ * Returns `undefined` if no metadata row exists.
+ */
+export function getMetadata(db: Database): GraphMetadata | undefined {
+  throw new Error("not implemented");
+}
+
+/**
+ * Write structured graph metadata to the `meta` table.
+ * Merges the partial update with any existing metadata under GRAPH_META_KEY.
+ */
+export function setMetadata(db: Database, partial: Partial<GraphMetadata>): void {
+  throw new Error("not implemented");
 }
 
 export function getProjectRoot(db: Database): string | undefined {

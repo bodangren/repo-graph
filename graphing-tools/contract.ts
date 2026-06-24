@@ -7,7 +7,7 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
-export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit" | "config" | "explore" | "affected" | "impact";
+export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit" | "config" | "explore" | "affected" | "impact" | "install-hooks";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
@@ -25,6 +25,13 @@ export interface ScanArgs {
 export interface UpdateArgs {
   dbPath: string;
   filePaths: string[];
+  json?: boolean;
+}
+
+export interface InstallHooksArgs {
+  path?: string;
+  force?: boolean;
+  json?: boolean;
 }
 
 export interface QueryArgs {
@@ -148,6 +155,7 @@ export type ParsedArgs =
   | { subcommand: "explore"; args: ExploreArgs }
   | { subcommand: "affected"; args: AffectedArgs }
   | { subcommand: "impact"; args: ImpactArgs }
+  | { subcommand: "install-hooks"; args: InstallHooksArgs }
   | { subcommand: "config"; args: {} };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
@@ -405,6 +413,19 @@ export interface TruncationMeta {
   totalAvailable: number;
   returned: number;
   nextQuery?: string;
+}
+
+// ── Graph metadata contract ─────────────────────────────────────────────────
+
+/**
+ * Structured metadata stored in the `meta` table under the key `"graph"`.
+ * Tracks schema version for conflict detection and the last commit SHA
+ * that updated the graph.
+ */
+export interface GraphMetadata {
+  schemaVersion: string;
+  commitSha: string | null;
+  lastIndexedAt?: number;
 }
 
 // ── Affected/impact traversal semantics ─────────────────────────────────────

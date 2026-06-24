@@ -22,6 +22,9 @@ import {
   type AffectedFileEntry,
   type AffectedGroup,
   type TruncationMeta,
+  type GraphMetadata,
+  type InstallHooksArgs,
+  type UpdateArgs,
 } from "./contract";
 
 describe("ExitCode", () => {
@@ -359,5 +362,55 @@ describe("TEST_FILE_PATTERNS", () => {
 describe("AFFECTED_GROUP_NAMES", () => {
   it("includes 5 groups in priority order", () => {
     expect(AFFECTED_GROUP_NAMES).toEqual(["tests", "routes", "components", "dataAccess", "other"]);
+  });
+});
+
+// ── Git hook integration contracts ──────────────────────────────────────────
+
+describe("GraphMetadata", () => {
+  it("has schemaVersion and commitSha fields", () => {
+    const m: GraphMetadata = { schemaVersion: "1.0.0", commitSha: "abc123" };
+    expect(m.schemaVersion).toBe("1.0.0");
+    expect(m.commitSha).toBe("abc123");
+  });
+
+  it("allows commitSha to be null", () => {
+    const m: GraphMetadata = { schemaVersion: "1.0.0", commitSha: null };
+    expect(m.commitSha).toBeNull();
+  });
+
+  it("allows optional lastIndexedAt", () => {
+    const m: GraphMetadata = { schemaVersion: "1.0.0", commitSha: null, lastIndexedAt: 1700000000 };
+    expect(m.lastIndexedAt).toBe(1700000000);
+  });
+});
+
+describe("Subcommand union", () => {
+  it("includes install-hooks subcommand", () => {
+    const cmd: Subcommand = "install-hooks";
+    expect(cmd).toBe("install-hooks");
+  });
+});
+
+describe("InstallHooksArgs", () => {
+  it("has optional path, force, and json fields", () => {
+    const args: InstallHooksArgs = { path: ".git/hooks", force: true, json: false };
+    expect(args.path).toBe(".git/hooks");
+    expect(args.force).toBe(true);
+    expect(args.json).toBe(false);
+  });
+
+  it("allows all fields to be omitted", () => {
+    const args: InstallHooksArgs = {};
+    expect(args.path).toBeUndefined();
+    expect(args.force).toBeUndefined();
+    expect(args.json).toBeUndefined();
+  });
+});
+
+describe("UpdateArgs", () => {
+  it("has optional json field", () => {
+    const args: UpdateArgs = { dbPath: "graph.db", filePaths: ["src/app.ts"], json: true };
+    expect(args.json).toBe(true);
   });
 });

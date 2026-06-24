@@ -8,12 +8,47 @@ Features are implemented in dependency order: incremental update command first, 
 
 Update `contract.ts` and `schema.ts` to support metadata tracking and incremental update operations before writing any tests or implementation.
 
-- [ ] Task: Expand metadata table schema
-    - [ ] Add `schema_version TEXT` and `commit_sha TEXT` columns to `metadata` table
-    - [ ] Add `GraphMetadata` interface to `contract.ts` with `schemaVersion` and `commitSha` fields
-    - [ ] Add `getMetadata()` and `setMetadata()` operations to the database contract
+- [~] Task: Expand metadata table schema
+    - [x] Add `schema_version TEXT` and `commit_sha TEXT` columns to `metadata` table — added via `ALTER TABLE` in `createSchema`
+    - [x] Add `GraphMetadata` interface to `contract.ts` with `schemaVersion` and `commitSha` fields — added with `schemaVersion: string`, `commitSha: string | null`, `lastIndexedAt?: number`
+    - [~] Add `getMetadata()` and `setMetadata()` operations to the database contract — stubs added to `meta.ts` (throw "not implemented"); tests written and failing as expected
+
+- [x] Task: Add CLI subcommand and arg types
+    - [x] Add `install-hooks` to `Subcommand` union in `contract.ts`
+    - [x] Add `InstallHooksArgs { path?: string; force?: boolean; json?: boolean }` interface
+    - [x] Add `json?: boolean` to existing `UpdateArgs` interface
+    - [x] Add `install-hooks` variant to `ParsedArgs` union
 
 - [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+
+### Phase 1 Red Evidence
+
+**Red command:** `CI=true bun test graphing-tools/update.test.ts graphing-tools/contract.test.ts graphing-tools/schema.test.ts`
+
+**Result:** 75 pass, 4 fail, 187 expect() calls
+
+**New passing tests (contract/schema shape):**
+- `GraphMetadata > has schemaVersion and commitSha fields`
+- `GraphMetadata > allows commitSha to be null`
+- `GraphMetadata > allows optional lastIndexedAt`
+- `Subcommand union > includes install-hooks subcommand`
+- `InstallHooksArgs > has optional path, force, and json fields`
+- `InstallHooksArgs > allows all fields to be omitted`
+- `UpdateArgs > has optional json field`
+- `SCHEMA_VERSION > is exported and is a non-empty string`
+- `SCHEMA_VERSION > follows semver-like format`
+- `GRAPH_META_KEY > is exported and equals 'graph'`
+- `meta table schema_version and commit_sha columns > createSchema adds schema_version column to meta table`
+- `meta table schema_version and commit_sha columns > createSchema adds commit_sha column to meta table`
+- `meta table schema_version and commit_sha columns > column addition is idempotent`
+
+**Failing tests (behavior — stubs throw "not implemented"):**
+- `getMetadata > returns a GraphMetadata object when metadata exists`
+- `getMetadata > returns undefined when no metadata row exists`
+- `setMetadata > writes structured metadata to the meta table`
+- `setMetadata > merges partial updates with existing metadata`
+
+**Phase1:tscErrors:N** — 102 pre-existing tsc errors (none introduced by Phase 1 changes)
 
 ---
 

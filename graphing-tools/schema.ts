@@ -1,6 +1,18 @@
 import { Database } from "bun:sqlite";
 
 /**
+ * Schema version constant used for conflict detection.
+ * Increment this when the database schema changes in a backward-incompatible way.
+ */
+export const SCHEMA_VERSION = "1.0.0";
+
+/**
+ * Key used in the `meta` table to store structured graph metadata
+ * (schema version, commit SHA, last indexed timestamp).
+ */
+export const GRAPH_META_KEY = "graph";
+
+/**
  * FTS5 virtual table DDL for node search.
  *
  * This SQL is executed defensively: if the local SQLite build does not include
@@ -140,6 +152,18 @@ export function createSchema(db: Database): void {
   // Backward-compat: add metadata column to pre-existing edges tables
   try {
     db.exec(`ALTER TABLE edges ADD COLUMN metadata TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
+
+  // Backward-compat: add schema_version and commit_sha columns to meta table
+  try {
+    db.exec(`ALTER TABLE meta ADD COLUMN schema_version TEXT`);
+  } catch {
+    // Column already exists — ignore
+  }
+  try {
+    db.exec(`ALTER TABLE meta ADD COLUMN commit_sha TEXT`);
   } catch {
     // Column already exists — ignore
   }

@@ -90,7 +90,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
       let offset = 1;
       const json = args[offset] === "--json" || args[offset] === "-j";
       if (json) offset++;
-      if (args.length < offset + 2) throw new Error("Usage: build-graph update <db> <file> [<file> ...] [--json]");
+      if (args.length < offset + 1) throw new Error("Usage: build-graph update <db> [<file> ...] [--json]");
       return {
         subcommand: "update",
         args: { dbPath: args[offset], filePaths: args.slice(offset + 1), json },

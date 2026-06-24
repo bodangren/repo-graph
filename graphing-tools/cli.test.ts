@@ -69,8 +69,11 @@ describe("parseArgs", () => {
       expect(result.args.filePaths).toEqual(["src/a.ts", "src/b.ts"]);
     });
 
-    it("throws on missing files", () => {
-      expect(() => parseArgs(argv(["update", "./graph.db"]))).toThrow("Usage: build-graph update <db> <file> [<file> ...]");
+    it("parses update with no files for full-scan fallback", () => {
+      const result = parseArgs(argv(["update", "./graph.db"]));
+      expect(result.subcommand).toBe("update");
+      expect(result.args.dbPath).toBe("./graph.db");
+      expect(result.args.filePaths).toEqual([]);
     });
   });
 

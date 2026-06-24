@@ -62,7 +62,7 @@ function printHelp(subcommand?: string): void {
     console.log("  build-graph scan ./ ./graph.db --config ./build-graph.config.json");
     console.log("  build-graph scan ./ ./graph.db --include 'supabase/seed/**/*.json'");
   } else if (subcommand === "update") {
-    console.log("Usage: build-graph update <db> <file> [<file> ...] [--json]");
+    console.log("Usage: build-graph update <db> [<file> ...] [--json]");
     console.log("  Incrementally update the graph for changed files.");
     console.log("  --json    Emit a JSON RunUpdateResult to stdout");
   } else if (subcommand === "install-hooks") {

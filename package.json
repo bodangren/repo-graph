@@ -9,6 +9,7 @@
     "build": "bun build --compile ./graphing-tools/build-graph.ts --outfile ./bin/build-graph"
   },
   "devDependencies": {
+    "bun-types": "^1.3.14",
     "eslint": "^9.0.0",
     "eslint-plugin-boundaries": "^5.0.0"
   },

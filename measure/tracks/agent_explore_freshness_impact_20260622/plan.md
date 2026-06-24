@@ -8,30 +8,39 @@ This track imports CodeGraph's best low-hanging product patterns while keeping `
 
 Define the durable graph contracts before writing implementation code.
 
-- [ ] Task: Define schema additions for FTS and file metadata
-    - [ ] Add `files` table contract to `schema.ts` with path, hash, size, modified time, indexed time, node count, and errors.
-    - [ ] Add additive FTS5 contract for `nodes_fts` with fallback behavior documented for SQLite builds without FTS5.
-    - [ ] Add index contracts for file path, modified time, FTS lookup, and edge traversal patterns used by affected/impact.
-    - [ ] Document compatibility expectations for existing `graph.db` files.
+- [x] Task: Define schema additions for FTS and file metadata
+    - [x] Add `files` table contract to `schema.ts` with path, hash, size, modified time, indexed time, node count, and errors.
+    - [x] Add additive FTS5 contract for `nodes_fts` with fallback behavior documented for SQLite builds without FTS5.
+    - [x] Add index contracts for file path, modified time, FTS lookup, and edge traversal patterns used by affected/impact.
+    - [x] Document compatibility expectations for existing `graph.db` files.
 
-- [ ] Task: Extend CLI contract types
-    - [ ] Add `explore`, `affected`, and `impact` to `Subcommand`.
-    - [ ] Define `ExploreArgs`, `AffectedArgs`, and `ImpactArgs`.
-    - [ ] Define shared freshness, relationship, source snippet, and affected-file JSON payload types.
-    - [ ] Preserve existing exit-code taxonomy and ambiguity contract.
+- [x] Task: Extend CLI contract types
+    - [x] Add `explore`, `affected`, and `impact` to `Subcommand`.
+    - [x] Define `ExploreArgs`, `AffectedArgs`, and `ImpactArgs`.
+    - [x] Define shared freshness, relationship, source snippet, and affected-file JSON payload types.
+    - [x] Preserve existing exit-code taxonomy and ambiguity contract.
 
-- [ ] Task: Define ranking and output budgets
-    - [ ] Specify match scoring order for exact node name, file path, FTS rank, tags, and relationship proximity.
-    - [ ] Specify default limits for matches, relationship fanout, traversal depth, and source snippet lines.
-    - [ ] Specify truncation metadata and next-query guidance for text and JSON output.
+- [x] Task: Define ranking and output budgets
+    - [x] Specify match scoring order for exact node name, file path, FTS rank, tags, and relationship proximity.
+    - [x] Specify default limits for matches, relationship fanout, traversal depth, and source snippet lines.
+    - [x] Specify truncation metadata and next-query guidance for text and JSON output.
 
-- [ ] Task: Define affected/impact traversal semantics
-    - [ ] Define which edge types count for reverse impact traversal.
-    - [ ] Define changed-file normalization against `project_root`.
-    - [ ] Define test-file classifier defaults and `--filter` behavior.
-    - [ ] Define output group names: tests, routes, components, dataAccess, and other.
+- [x] Task: Define affected/impact traversal semantics
+    - [x] Define which edge types count for reverse impact traversal.
+    - [x] Define changed-file normalization against `project_root`.
+    - [x] Define test-file classifier defaults and `--filter` behavior.
+    - [x] Define output group names: tests, routes, components, dataAccess, and other.
 
 - [ ] Task: Measure - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+
+### Red-test evidence (Phase 1)
+
+- **Command:** `CI=true bun test graphing-tools/contract.test.ts graphing-tools/schema.test.ts`
+- **Result:** 58 pass, 0 fail, 148 expect() calls
+- **Contract.ts additions:** `explore`/`affected`/`impact` in `Subcommand` union; `ExploreArgs`, `AffectedArgs`, `ImpactArgs` interfaces; `ExploreOutput`, `AffectedOutput`, `ImpactOutput` payload types; `FileFreshnessEntry`, `FreshnessBlock`, `RelationshipEntry`, `SourceSnippet`, `AffectedFileEntry`, `TruncationMeta` sub-types; `MATCH_SCORING_ORDER`, `OutputLimits`, `IMPACT_TRAVERSAL_EDGE_TYPES`, `TEST_FILE_PATTERNS`, `AFFECTED_GROUP_NAMES` constants.
+- **Schema.ts additions:** `files` table DDL (`FILES_TABLE_SQL`), file/edge indexes (`FILES_INDEX_SQL`, `EDGE_TRAVERSAL_INDEX_SQL`), FTS5 virtual table + triggers (`FTS5_CREATE_SQL`, `FTS5_TRIGGERS_SQL`) with defensive try/catch in `createSchema`.
+- **New tests:** 45 new shape tests in contract.test.ts (subcommands, args, output types, ranking, traversal); 22 new tests in schema.test.ts (files table, indexes, FTS5 DDL constants, defensive creation).
+- **tsc note:** Pre-existing tsc errors in `cli.test.ts`, `commands.ts`, `audit.ts`, `scanner.ts` (unrelated to new code). New contract/schema types compile cleanly under bun's test runner.
 
 ---
 

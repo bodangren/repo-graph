@@ -56,30 +56,30 @@ Update `contract.ts` and `schema.ts` to support metadata tracking and incrementa
 
 Write all failing tests before touching update or hook implementation.
 
-- [x] Task: Tests G1 — Incremental update command (`update.test.ts`)
-    - [x] U1: `runUpdate` with a single file updates the commit_sha in metadata
-    - [x] U2: `runUpdate` with an empty file list triggers a full-scan fallback
-    - [x] U3: `runUpdate` with a deleted file path removes all nodes and dependent edges
-    - [x] U4: `runUpdate` with a renamed file path (old + new) is treated as remove-old + add-new
-    - [x] U5: `runUpdate` writes `commit_sha` to metadata after success
-    - [x] U6: `runUpdate` detects schema-version mismatch and falls back to full scan with `conflict: true`
-    - [x] U7: `runUpdate` detects a missing `meta` table and falls back to full scan
-    - [x] U8: `runUpdate` with an on-disk SQLite file re-creates the DB when fallback is triggered
+- [x] Task: Tests G1 — Incremental update command (`update.test.ts`) — commit `112b0ea`
+    - [x] U1: `runUpdate` with a single file updates the commit_sha in metadata — commit `112b0ea`
+    - [x] U2: `runUpdate` with an empty file list triggers a full-scan fallback — commit `112b0ea`
+    - [x] U3: `runUpdate` with a deleted file path removes all nodes and dependent edges — commit `112b0ea`
+    - [x] U4: `runUpdate` with a renamed file path (old + new) is treated as remove-old + add-new — commit `112b0ea`
+    - [x] U5: `runUpdate` writes `commit_sha` to metadata after success — commit `112b0ea`
+    - [x] U6: `runUpdate` detects schema-version mismatch and falls back to full scan with `conflict: true` — commit `112b0ea`
+    - [x] U7: `runUpdate` detects a missing `meta` table and falls back to full scan — commit `112b0ea`
+    - [x] U8: `runUpdate` with an on-disk SQLite file re-creates the DB when fallback is triggered — commit `112b0ea`
 
-- [x] Task: Tests G2 — Hook installation CLI (`hooks.test.ts`)
-    - [x] H1: `installHooks` creates `.git/hooks/pre-commit` with correct command
-    - [x] H2: `installHooks` creates `.git/hooks/post-checkout` with correct command
-    - [x] H3: `installHooks` overwrites existing repo-graph hooks on second run (idempotent)
-    - [x] H4: `installHooks` warns when overwriting non-repo-graph content
-    - [x] H5: `installHooks` makes generated scripts executable (mode 0755)
-    - [x] H6: Generated `pre-commit` invokes `repo-graph update graph.db $(git diff --cached --name-only --diff-filter=ACM)`
-    - [x] H7: Generated `post-checkout` invokes `repo-graph update graph.db $(git diff --name-only $1 $2)`
+- [x] Task: Tests G2 — Hook installation CLI (`hooks.test.ts`) — commit `112b0ea`
+    - [x] H1: `installHooks` creates `.git/hooks/pre-commit` with correct command — commit `112b0ea`
+    - [x] H2: `installHooks` creates `.git/hooks/post-checkout` with correct command — commit `112b0ea`
+    - [x] H3: `installHooks` overwrites existing repo-graph hooks on second run (idempotent) — commit `112b0ea`
+    - [x] H4: `installHooks` warns when overwriting non-repo-graph content — commit `112b0ea`
+    - [x] H5: `installHooks` makes generated scripts executable (mode 0755) — commit `112b0ea`
+    - [x] H6: Generated `pre-commit` invokes `repo-graph update graph.db $(git diff --cached --name-only --diff-filter=ACM)` — commit `112b0ea`
+    - [x] H7: Generated `post-checkout` invokes `repo-graph update graph.db $(git diff --name-only $1 $2)` — commit `112b0ea`
 
-- [x] Task: Tests G4 — CLI wiring (`cli.test.ts`) + Conflict resolution (`update.test.ts`)
-    - [x] C1: `parseArgs(["install-hooks"])` returns `InstallHooksArgs`
-    - [x] C2: `parseArgs(["install-hooks"])` returns with default path
-    - [x] C3: `parseArgs(["install-hooks", "--path", "/custom/.git"])` honors the path
-    - [x] C4: `parseArgs(["update", "--json", "graph.db"])` sets `json: true`
+- [x] Task: Tests G4 — CLI wiring (`cli.test.ts`) + Conflict resolution (`update.test.ts`) — commit `112b0ea`
+    - [x] C1: `parseArgs(["install-hooks"])` returns `InstallHooksArgs` — commit `112b0ea`
+    - [x] C2: `parseArgs(["install-hooks"])` returns with default path — commit `112b0ea`
+    - [x] C3: `parseArgs(["install-hooks", "--path", "/custom/.git"])` honors the path — commit `112b0ea`
+    - [x] C4: `parseArgs(["update", "--json", "graph.db"])` sets `json: true` — commit `112b0ea`
 
 - [b] Task: Measure - User Manual Verification 'Phase 2' (Protocol in workflow.md) — deferred:phikul (human action: manual workflow verification)
 
@@ -126,30 +126,30 @@ Write all failing tests before touching update or hook implementation.
 
 ## Phase 3 — Implementation (Green Phase)
 
-- [x] Task: Implement G1 — Incremental update command
+- [x] Task: Implement G1 — Incremental update command — commit `a96454e`
     - [x] Create `update.ts` with `runUpdate(db, files, options)` function — commit `a96454e`
-    - [x] Implement node removal by `file_path` — already in `updateFiles`; regression-locked
-    - [x] Implement dangling edge cleanup after node removal — already in `updateFiles`; regression-locked
-    - [x] Implement per-file re-scan and insertion — already in `updateFiles`; regression-locked
+    - [x] Implement node removal by `file_path` — already in `updateFiles`; regression-locked — commit `a96454e`
+    - [x] Implement dangling edge cleanup after node removal — already in `updateFiles`; regression-locked — commit `a96454e`
+    - [x] Implement per-file re-scan and insertion — already in `updateFiles`; regression-locked — commit `a96454e`
     - [x] Implement full-scan fallback when no files are provided — commit `a96454e` (`runUpdateBody` clears nodes/edges then re-scans all project source files)
     - [x] Integrate into CLI as `repo-graph update <db> [files...]` — commit `1e417b1` (`handleUpdate` delegates to `runUpdate` with `--json` support)
-    - [x] Run `bun test`; confirm G1 tests pass — `CI=true bun test` → 451 pass / 0 fail
+    - [x] Run `bun test`; confirm G1 tests pass — `CI=true bun test` → 451 pass / 0 fail — commit `a96454e`
     - [x] Commit: `feat(update): Add incremental graph update command` — see `a96454e`
 
-- [x] Task: Implement G2 — Hook installation CLI
+- [x] Task: Implement G2 — Hook installation CLI — commit `1e417b1`
     - [x] Create `installHooks.ts` with `runInstallHooks(gitDir)` function — commit `1e417b1` (new file `graphing-tools/hooks.ts`)
-    - [x] Generate POSIX-compliant `pre-commit` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --cached --name-only --diff-filter=ACM)`
-    - [x] Generate POSIX-compliant `post-checkout` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --name-only "$1" "$2")`
-    - [x] Implement idempotent overwrite with conflict detection — `HOOK_MARKER` line distinguishes repo-graph vs hand-rolled hooks; `.bak` saved on non-repo-graph overwrite
+    - [x] Generate POSIX-compliant `pre-commit` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --cached --name-only --diff-filter=ACM)` — commit `1e417b1`
+    - [x] Generate POSIX-compliant `post-checkout` shell script — uses `#!/bin/sh` and `repo-graph update graph.db $(git diff --name-only "$1" "$2")` — commit `1e417b1`
+    - [x] Implement idempotent overwrite with conflict detection — `HOOK_MARKER` line distinguishes repo-graph vs hand-rolled hooks; `.bak` saved on non-repo-graph overwrite — commit `1e417b1`
     - [x] Integrate into CLI as `repo-graph install-hooks [--path]` — commit `1e417b1` (`install-hooks` case in `parseArgs` + `handleInstallHooks` in `build-graph.ts`)
-    - [x] Run `bun test`; confirm G2 tests pass — H1–H7 green (7/7)
+    - [x] Run `bun test`; confirm G2 tests pass — H1–H7 green (7/7) — commit `1e417b1`
     - [x] Commit: `feat(hooks): Add git hook installation command` — see `1e417b1`
 
-- [x] Task: Implement G4 — Conflict resolution
-    - [x] Add schema version constant to the codebase — `SCHEMA_VERSION = "1.0.0"` in `schema.ts` (added in Phase 1)
+- [x] Task: Implement G4 — Conflict resolution — commit `a96454e`
+    - [x] Add schema version constant to the codebase — `SCHEMA_VERSION = "1.0.0"` in `schema.ts` (added in Phase 1) — commit `a96454e`
     - [x] Implement metadata comparison in `runUpdate` — commit `a96454e` (`detectMetadataState` distinguishes missing-table / missing-row / version-mismatch)
-    - [x] Implement fallback path: delete DB + full scan on mismatch — on-disk path branch unlinks and recreates via `resetOnConflict` (default true)
-    - [x] Run `bun test`; confirm G4 tests pass — U6, U7, U8 green (8/8 in `runUpdate` describe block)
+    - [x] Implement fallback path: delete DB + full scan on mismatch — on-disk path branch unlinks and recreates via `resetOnConflict` (default true) — commit `a96454e`
+    - [x] Run `bun test`; confirm G4 tests pass — U6, U7, U8 green (8/8 in `runUpdate` describe block) — commit `a96454e`
     - [x] Commit: `feat(update): Add conflict detection and full-scan fallback` — see `a96454e`
 
 - [b] Task: Measure - User Manual Verification 'Phase 3' (Protocol in workflow.md) — deferred:phikul (human action: manual workflow verification)
@@ -183,22 +183,22 @@ Write all failing tests before touching update or hook implementation.
 
 ## Phase 4 — Coverage, Generated Docs, Doctor & Install
 
-- [x] Task: Verify coverage ≥ 80%
-    - [x] `bun test --coverage graphing-tools/update.test.ts graphing-tools/hooks.test.ts graphing-tools/meta.test.ts`
-    - [x] All modified modules at or above threshold — `update.ts` 96.52% / `hooks.ts` 87.64% / `meta.ts` 87.32% (all ≥ 80%)
+- [x] Task: Verify coverage ≥ 80% — commit `1549209`
+    - [x] `bun test --coverage graphing-tools/update.test.ts graphing-tools/hooks.test.ts graphing-tools/meta.test.ts` — commit `1549209`
+    - [x] All modified modules at or above threshold — `update.ts` 96.52% / `hooks.ts` 87.64% / `meta.ts` 87.32% (all ≥ 80%) — commit `1549209`
 
-- [x] Task: Run generate script and commit if changed
-    - [x] `./measure/generate.sh` — regenerated `measure/generated/architecture.json` with the new `hooks.ts` and `hooks.test.ts` modules + updated sizes
+- [x] Task: Run generate script and commit if changed — commit `fa63b32`
+    - [x] `./measure/generate.sh` — regenerated `measure/generated/architecture.json` with the new `hooks.ts` and `hooks.test.ts` modules + updated sizes — commit `fa63b32`
     - [x] `git diff --exit-code measure/generated/` returns 0 after commit `fa63b32`
 
-- [x] Task: Run doctor script
-    - [x] `./measure/doctor.sh` exits 0 (lint clean + generated docs clean)
-    - [x] No architectural violations
+- [x] Task: Run doctor script — commit `1549209`
+    - [x] `./measure/doctor.sh` exits 0 (lint clean + generated docs clean) — commit `1549209`
+    - [x] No architectural violations — no new violations introduced — commit `1549209`
 
-- [x] Task: Rebuild executable and install to `~/.local/bin/`
-    - [x] `bun run build` — produces `./bin/build-graph` (compile target name in `package.json`)
-    - [x] Installed under both `~/.local/bin/build-graph` and `~/.local/bin/repo-graph` (the spec's hook scripts call `repo-graph`; binary is `build-graph` — see deviation note in `metadata.json`)
-    - [x] Smoke test: created `/tmp/repo-graph-smoke-XXXXXX/`, ran `git init`, copied `graphing-tools/fixtures/sample-project/src/types.ts`, ran `repo-graph install-hooks` (created both `pre-commit` and `post-checkout` with `#!/bin/sh` + HOOK_MARKER + correct `git diff` invocations), `git add` + `git commit -m "smoke test"` → pre-commit hook fired, ran `repo-graph update graph.db`, fallback path was triggered (no prior `graph.db`), 6 nodes + 5 edges inserted, `meta` row shows `{"schemaVersion":"1.0.0","commitSha":null,"lastIndexedAt":...}`. Cleaned up `/tmp/repo-graph-smoke-XXXXXX/`.
+- [x] Task: Rebuild executable and install to `~/.local/bin/` — commit `1549209`
+    - [x] `bun run build` — produces `./bin/build-graph` (compile target name in `package.json`) — commit `1549209`
+    - [x] Installed under both `~/.local/bin/build-graph` and `~/.local/bin/repo-graph` (the spec's hook scripts call `repo-graph`; binary is `build-graph` — see deviation note in `metadata.json`) — commit `1549209`
+    - [x] Smoke test: created `/tmp/repo-graph-smoke-XXXXXX/`, ran `git init`, copied `graphing-tools/fixtures/sample-project/src/types.ts`, ran `repo-graph install-hooks` (created both `pre-commit` and `post-checkout` with `#!/bin/sh` + HOOK_MARKER + correct `git diff` invocations), `git add` + `git commit -m "smoke test"` → pre-commit hook fired, ran `repo-graph update graph.db`, fallback path was triggered (no prior `graph.db`), 6 nodes + 5 edges inserted, `meta` row shows `{"schemaVersion":"1.0.0","commitSha":null,"lastIndexedAt":...}`. Cleaned up `/tmp/repo-graph-smoke-XXXXXX/`. — commit `1549209`
 
 - [b] Task: Measure - User Manual Verification 'Phase 4' (Protocol in workflow.md) — deferred:phikul (human action: run `repo-graph install-hooks` in a personal repo and confirm the pre-commit hook fires)
 

@@ -53,12 +53,14 @@ This file tracks all major tracks for the project.
 - [x] **Track: Agent Explore, Freshness, and Changed-File Impact**
   *Link: [./archive/agent_explore_freshness_impact_20260622/](./archive/agent_explore_freshness_impact_20260622/)* — Add FTS-backed search, file freshness metadata, a Measure-friendly `explore` command, and changed-file `affected`/`impact` analysis inspired by CodeGraph's low-hanging product patterns.
 
+---
+
+- [x] **Track: Git Hook Integration for Incremental Graph Updates**
+  *Link: [./archive/git_hook_incremental_updates_20260528/](./archive/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes.
+
 ## Upcoming Tracks
 
 _Status (verified 2026-06-21): all four below are genuinely not started — 0 plan tasks each, metadata `pending`, no implementation in `graphing-tools/`, and no `.github/workflows`. Registry is accurate._
-
-- [ ] **Track: Git Hook Integration for Incremental Graph Updates**
-  *Link: [./tracks/git_hook_incremental_updates_20260528/](./tracks/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes.
 
 - [ ] **Track: Query Performance Optimization & Benchmarks**
   *Link: [./tracks/query_performance_benchmarks_20260528/](./tracks/query_performance_benchmarks_20260528/)* — Add composite SQLite indexes, query result caching, and a benchmark suite targeting sub-100ms dependency lookups on monorepos.

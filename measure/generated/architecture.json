@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-29T14:36:54.485Z",
+  "generated_at": "2026-06-24T14:23:34.996Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -14,13 +14,19 @@
         "type": "file",
         "path": "search.ts",
         "extension": "ts",
-        "size": 929
+        "size": 6215
       },
       {
         "type": "file",
         "path": "paths.ts",
         "extension": "ts",
         "size": 265
+      },
+      {
+        "type": "file",
+        "path": "explore.test.ts",
+        "extension": "ts",
+        "size": 16475
       },
       {
         "type": "file",
@@ -32,13 +38,25 @@
         "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 1291
+        "size": 4569
       },
       {
         "type": "file",
         "path": "monorepo.test.ts",
         "extension": "ts",
         "size": 1596
+      },
+      {
+        "type": "file",
+        "path": "affected.ts",
+        "extension": "ts",
+        "size": 10525
+      },
+      {
+        "type": "file",
+        "path": "impact.test.ts",
+        "extension": "ts",
+        "size": 13829
       },
       {
         "type": "file",
@@ -182,13 +200,13 @@
         "type": "file",
         "path": "scanner.ts",
         "extension": "ts",
-        "size": 31562
+        "size": 33624
       },
       {
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 5382
+        "size": 11651
       },
       {
         "type": "file",
@@ -198,9 +216,21 @@
       },
       {
         "type": "file",
+        "path": "explore.ts",
+        "extension": "ts",
+        "size": 9228
+      },
+      {
+        "type": "file",
+        "path": "config.ts",
+        "extension": "ts",
+        "size": 4829
+      },
+      {
+        "type": "file",
         "path": "schema.test.ts",
         "extension": "ts",
-        "size": 2916
+        "size": 10739
       },
       {
         "type": "file",
@@ -210,9 +240,15 @@
       },
       {
         "type": "file",
+        "path": "files.test.ts",
+        "extension": "ts",
+        "size": 3961
+      },
+      {
+        "type": "file",
         "path": "meta.ts",
         "extension": "ts",
-        "size": 669
+        "size": 3100
       },
       {
         "type": "file",
@@ -228,9 +264,15 @@
       },
       {
         "type": "file",
+        "path": "config.test.ts",
+        "extension": "ts",
+        "size": 6317
+      },
+      {
+        "type": "file",
         "path": "paths.test.ts",
         "extension": "ts",
-        "size": 686
+        "size": 681
       },
       {
         "type": "file",
@@ -248,13 +290,25 @@
         "type": "file",
         "path": "search.test.ts",
         "extension": "ts",
-        "size": 1829
+        "size": 10107
+      },
+      {
+        "type": "file",
+        "path": "files.ts",
+        "extension": "ts",
+        "size": 3548
       },
       {
         "type": "file",
         "path": "resolve.test.ts",
         "extension": "ts",
         "size": 3066
+      },
+      {
+        "type": "file",
+        "path": "affected.test.ts",
+        "extension": "ts",
+        "size": 10471
       },
       {
         "type": "file",
@@ -266,7 +320,19 @@
         "type": "file",
         "path": "update.ts",
         "extension": "ts",
-        "size": 2500
+        "size": 3562
+      },
+      {
+        "type": "file",
+        "path": "include.test.ts",
+        "extension": "ts",
+        "size": 3300
+      },
+      {
+        "type": "file",
+        "path": "include.ts",
+        "extension": "ts",
+        "size": 2819
       },
       {
         "type": "directory",
@@ -302,19 +368,19 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 10200
+        "size": 18034
       },
       {
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 24840
+        "size": 25830
       },
       {
         "type": "file",
         "path": "build-graph.ts",
         "extension": "ts",
-        "size": 15660
+        "size": 23571
       },
       {
         "type": "file",
@@ -326,31 +392,37 @@
         "type": "file",
         "path": "meta.test.ts",
         "extension": "ts",
-        "size": 1558
+        "size": 11305
       },
       {
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 5619
+        "size": 8532
+      },
+      {
+        "type": "file",
+        "path": "impact.ts",
+        "extension": "ts",
+        "size": 22405
       },
       {
         "type": "file",
         "path": "scanner.test.ts",
         "extension": "ts",
-        "size": 21533
+        "size": 25545
       },
       {
         "type": "file",
         "path": "README.md",
         "extension": "md",
-        "size": 2320
+        "size": 3825
       },
       {
         "type": "file",
         "path": "contract.test.ts",
         "extension": "ts",
-        "size": 1331
+        "size": 10640
       },
       {
         "type": "file",
@@ -403,6 +475,36 @@
                 "path": "archive/buildgraph_20260524/index.md",
                 "extension": "md",
                 "size": 131
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "archive/extensibility_20260603",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/extensibility_20260603/plan.md",
+                "extension": "md",
+                "size": 5570
+              },
+              {
+                "type": "file",
+                "path": "archive/extensibility_20260603/metadata.json",
+                "extension": "json",
+                "size": 393
+              },
+              {
+                "type": "file",
+                "path": "archive/extensibility_20260603/spec.md",
+                "extension": "md",
+                "size": 6653
+              },
+              {
+                "type": "file",
+                "path": "archive/extensibility_20260603/index.md",
+                "extension": "md",
+                "size": 134
               }
             ]
           },
@@ -528,6 +630,42 @@
           },
           {
             "type": "directory",
+            "path": "archive/scanner_20260525",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/scanner_20260525/plan.md",
+                "extension": "md",
+                "size": 5644
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_20260525/metadata.json",
+                "extension": "json",
+                "size": 371
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_20260525/review-2026-06-19.md",
+                "extension": "md",
+                "size": 2928
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_20260525/spec.md",
+                "extension": "md",
+                "size": 5566
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_20260525/index.md",
+                "extension": "md",
+                "size": 1284
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "path": "archive/migration_audit_20260525",
             "children": [
               {
@@ -620,6 +758,12 @@
       },
       {
         "type": "file",
+        "path": "anti-patterns.md",
+        "extension": "md",
+        "size": 4996
+      },
+      {
+        "type": "file",
         "path": "tech-stack.md",
         "extension": "md",
         "size": 8724
@@ -628,7 +772,7 @@
         "type": "file",
         "path": "lessons-learned.md",
         "extension": "md",
-        "size": 763
+        "size": 2042
       },
       {
         "type": "directory",
@@ -668,6 +812,12 @@
       },
       {
         "type": "file",
+        "path": "review-2026-06-19.md",
+        "extension": "md",
+        "size": 806
+      },
+      {
+        "type": "file",
         "path": "doctor.sh",
         "extension": "sh",
         "size": 555
@@ -686,7 +836,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 22852
+            "size": 27094
           },
           {
             "type": "file",
@@ -706,19 +856,25 @@
         "type": "file",
         "path": "tech-debt.md",
         "extension": "md",
-        "size": 1139
+        "size": 1887
       },
       {
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 3062
+        "size": 4017
       },
       {
         "type": "file",
         "path": "product.md",
         "extension": "md",
-        "size": 2642
+        "size": 2753
+      },
+      {
+        "type": "file",
+        "path": "automation-supervisor.py",
+        "extension": "py",
+        "size": 86532
       },
       {
         "type": "directory",
@@ -798,36 +954,6 @@
           },
           {
             "type": "directory",
-            "path": "tracks/scanner_20260525",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/scanner_20260525/plan.md",
-                "extension": "md",
-                "size": 5644
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_20260525/metadata.json",
-                "extension": "json",
-                "size": 371
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_20260525/spec.md",
-                "extension": "md",
-                "size": 5566
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_20260525/index.md",
-                "extension": "md",
-                "size": 1284
-              }
-            ]
-          },
-          {
-            "type": "directory",
             "path": "tracks/ci_cd_integration_20260528",
             "children": [
               {
@@ -847,6 +973,42 @@
                 "path": "tracks/ci_cd_integration_20260528/spec.md",
                 "extension": "md",
                 "size": 4124
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/agent_explore_freshness_impact_20260622",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/agent_explore_freshness_impact_20260622/plan.md",
+                "extension": "md",
+                "size": 14564
+              },
+              {
+                "type": "file",
+                "path": "tracks/agent_explore_freshness_impact_20260622/metadata.json",
+                "extension": "json",
+                "size": 448
+              },
+              {
+                "type": "file",
+                "path": "tracks/agent_explore_freshness_impact_20260622/test-strategy.md",
+                "extension": "md",
+                "size": 14982
+              },
+              {
+                "type": "file",
+                "path": "tracks/agent_explore_freshness_impact_20260622/spec.md",
+                "extension": "md",
+                "size": 7766
+              },
+              {
+                "type": "file",
+                "path": "tracks/agent_explore_freshness_impact_20260622/index.md",
+                "extension": "md",
+                "size": 151
               }
             ]
           }

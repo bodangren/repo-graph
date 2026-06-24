@@ -17,4 +17,8 @@
 
 - (2026-06-24, agent_explore_freshness_impact_20260622) **Document `deferral:` markers explicitly in plan tasks.** When a Red test cannot be made green within a Phase 3 task (e.g. FTS5 `'delete'` command unsupported on `bun:sqlite`'s contentless FTS tables), document the per-test adjustment under "Test adjustments during Green (necessary)" and pin the behavior in a still-green assertion. Reviewers can audit the diff without re-deriving the rationale.
 
+- (2026-06-25, git_hook_incremental_updates_20260528) **POSIX shell scripts from a TS template: quote every parameter, never trust `$1`/`$2` are set.** The generated `post-checkout` script invokes `git diff --name-only "$1" "$2"`. Without the quotes, an empty positional arg would collapse to one token and break the diff invocation. The `pre-commit` script uses `$(git diff --cached --name-only --diff-filter=ACM)` — a subshell expansion — and the explicit `--diff-filter=ACM` skips deleted files. The test suite (`hooks.test.ts` H6/H7) asserts both the `$(...)` form is used and that bashisms like `[[` and `local ` are absent, which is the falsifiable contract for the POSIX-only requirement.
+
+- (2026-06-25, git_hook_incremental_updates_20260528) **Generate-then-rename beats direct write for hook installation.** `installHooks` writes the hook content to `<path>.tmp.<pid>` first, then `fs.renameSync` over the target. This avoids leaving a half-written `pre-commit` on the filesystem if the process is interrupted mid-write. The fallback (direct write) handles cross-device renames; the `.tmp` cleanup is best-effort. Reviewers should look for the same pattern when adding other config-file writers.
+
 ## Planning Improvements

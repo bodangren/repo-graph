@@ -473,4 +473,34 @@ describe("parseArgs", () => {
       expect(() => parseArgs(argv(["impact", "./graph.db"]))).toThrow();
     });
   });
+
+  // ── Phase 2 Red — Git hook CLI wiring ─────────────────────────────────────
+
+  describe("update with json flag", () => {
+    it("C4: parses update with --json flag", () => {
+      const result = parseArgs(argv(["update", "--json", "graph.db", "src/foo.ts"]));
+      expect(result.subcommand).toBe("update");
+      expect(result.args.json).toBe(true);
+    });
+  });
+
+  describe("install-hooks", () => {
+    it("C1: parses install-hooks subcommand", () => {
+      const result = parseArgs(argv(["install-hooks"]));
+      expect(result.subcommand).toBe("install-hooks");
+      expect(result.args).toBeDefined();
+    });
+
+    it("C2: parses install-hooks with default path", () => {
+      const result = parseArgs(argv(["install-hooks"]));
+      expect(result.subcommand).toBe("install-hooks");
+      expect(result.args.path).toBeUndefined();
+    });
+
+    it("C3: parses install-hooks with --path flag", () => {
+      const result = parseArgs(argv(["install-hooks", "--path", "/custom/.git"]));
+      expect(result.subcommand).toBe("install-hooks");
+      expect(result.args.path).toBe("/custom/.git");
+    });
+  });
 });

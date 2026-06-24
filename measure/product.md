@@ -22,7 +22,7 @@ A **standalone CLI tool** that programmatically scans TypeScript codebases, extr
 
 1. **Scan**: `repo-graph scan <dir> <db>` parses all `.ts`/`.tsx` files using `ts-morph`, extracts nodes (files, functions, classes, interfaces) and edges (imports, calls, contains, extends, implements).
 
-2. **Query**: Agents write SQL against a documented schema — indexed lookups, joins, recursive CTEs for path tracing.
+2. **Query**: Agents write SQL against a documented schema — indexed lookups, joins, recursive CTEs for path tracing. The CLI also exposes `explore`, `affected`, and `impact` for Measure agents working in Next.js/Vite codebases.
 
 3. **Update**: Git hooks run `repo-graph update <db> <changed-files>` to incrementally re-parse only touched files, keeping the graph fresh.
 

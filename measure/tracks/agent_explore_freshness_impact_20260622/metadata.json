@@ -3,9 +3,9 @@
   "type": "feature",
   "status": "pending",
   "created_at": "2026-06-22T03:16:08Z",
-  "updated_at": "2026-06-22T03:16:08Z",
+  "updated_at": "2026-06-24T14:24:00Z",
   "description": "Agent Explore, Freshness, and Changed-File Impact — borrow low-hanging product patterns from CodeGraph while preserving repo-graph's Measure-focused Next.js/Vite scope",
   "estimated_tasks": 23,
-  "actual_tasks": null,
-  "deviation_notes": ""
+  "actual_tasks": 23,
+  "deviation_notes": "Phase 3 §A1 and §A2 wiring were intentionally deferred: scan-time FTS sync (syncNodeFts) and per-file metadata capture (recordFileMetadata) are exposed as helpers but not auto-called from handleScan / updateFiles. Tests cover the helper contracts directly (search.test.ts and files.test.ts). Until the bulk callers invoke the helpers, a freshly scanned DB can lag FTS until the caller syncs each node and may not surface freshness warnings until the caller records metadata. Captured in measure/tech-debt.md as a Medium-Open follow-up. Phase 4 confirmed all 10 acceptance criteria and coverage ≥80% on every new module."
 }

@@ -22,10 +22,21 @@ export function getMeta(db: Database, key: string): string | undefined {
 /**
  * Read structured graph metadata from the `meta` table.
  * Returns a `GraphMetadata` object with schema version and commit SHA.
- * Returns `undefined` if no metadata row exists.
+ * Returns `undefined` if no metadata row exists or if the row cannot
+ * be parsed as JSON.
  */
 export function getMetadata(db: Database): GraphMetadata | undefined {
-  throw new Error("not implemented");
+  const raw = getMeta(db, GRAPH_META_KEY);
+  if (raw === undefined) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return parsed as GraphMetadata;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -33,7 +44,17 @@ export function getMetadata(db: Database): GraphMetadata | undefined {
  * Merges the partial update with any existing metadata under GRAPH_META_KEY.
  */
 export function setMetadata(db: Database, partial: Partial<GraphMetadata>): void {
-  throw new Error("not implemented");
+  const existing = getMetadata(db) ?? {};
+  const merged: GraphMetadata = {
+    schemaVersion: partial.schemaVersion ?? existing.schemaVersion ?? "",
+    commitSha: partial.commitSha !== undefined ? partial.commitSha : (existing.commitSha ?? null),
+  };
+  if (partial.lastIndexedAt !== undefined) {
+    merged.lastIndexedAt = partial.lastIndexedAt;
+  } else if (existing.lastIndexedAt !== undefined) {
+    merged.lastIndexedAt = existing.lastIndexedAt;
+  }
+  setMeta(db, GRAPH_META_KEY, JSON.stringify(merged));
 }
 
 export function getProjectRoot(db: Database): string | undefined {

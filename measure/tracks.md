@@ -68,12 +68,12 @@ _Status (verified 2026-06-21): all four below are genuinely not started — 0 pl
 - [ ] **Track: Graph Visualization Export (DOT & HTML)**
   *Link: [./tracks/graph_visualization_export_20260528/](./tracks/graph_visualization_export_20260528/)* — Export the knowledge graph to Graphviz DOT format and an interactive HTML page with D3.js or Cytoscape.js.
 
-- [ ] **Track: CI/CD Integration — GitHub Action**
-
 - [ ] **Track: Binary & Scanner Unification** — *created 2026-06-27*
   *Link: [./tracks/binary_scanner_unification_20260627/](./tracks/binary_scanner_unification_20260627/)*
   *Status: new → 7 ACs, 8 tasks in plan | Priority: MEDIUM*
   *Note: Resolves two long-standing tech-debt items (both Open since 2026-05-24): (a) rename `graphing-tools/build-graph.ts` → `repo-graph.ts`, update build script + bin field + help banner so `./bin/repo-graph` is the single install target (removes the dual-name workaround from `git_hook_incremental_updates_20260528` Phase 4 closeout); (b) rewrite `build-graph-db.ts` from JSON-batch-insert to ts-morph-driven AST extraction matching the agent_explore_freshness_impact_20260622 schema, with `syncNodeFts` + `recordFileMetadata` wired into the scan path (closes the Phase 3 §A1/§A2 deferral). Includes an integration test that scans a real fixture repo and asserts node/edge counts + FTS-stays-current invariant. No regression in the agent_explore test suite.*
+
+- [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
 
 

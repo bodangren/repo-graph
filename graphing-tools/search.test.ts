@@ -94,6 +94,26 @@ describe("FTS-backed search (A1)", () => {
     expect(results.some((r) => r.name === "authenticateUser")).toBe(true);
   });
 
+  it("bulkSyncNodeFts indexes complete node batches", async () => {
+    const { bulkSyncNodeFts } = await import("./search");
+    db.exec(`INSERT INTO nodes (id, type, name, file_path, summary, tags)
+      VALUES ('n1', 'function', 'batchOne', '/src/a.ts', 'First batch node', '[]'),
+             ('n2', 'function', 'batchTwo', '/src/b.ts', 'Second batch node', '[]')`);
+    const rows = db.prepare("SELECT rowid, id, name, file_path, summary, tags FROM nodes").all() as Array<{
+      rowid: number; id: string; name: string; file_path: string; summary: string | null; tags: string | null;
+    }>;
+    bulkSyncNodeFts(db, rows.map((row) => ({
+      rowid: row.rowid,
+      id: row.id,
+      name: row.name,
+      filePath: row.file_path,
+      summary: row.summary ?? undefined,
+      tags: row.tags ?? undefined,
+    })));
+    expect(searchNodes(db, "batchOne").some((node) => node.name === "batchOne")).toBe(true);
+    expect(searchNodes(db, "batchTwo").some((node) => node.name === "batchTwo")).toBe(true);
+  });
+
   it("exact node name match ranks above FTS substring match", async () => {
     const { syncNodeFts } = await import("./search");
     // Insert two nodes: one exact, one partial

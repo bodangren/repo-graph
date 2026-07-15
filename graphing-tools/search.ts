@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import type { SearchResult } from "./contract";
+import type { NodeDocumentation, SearchResult } from "./contract";
 
 /** Compact representation of a node row used for FTS sync. */
 export interface FtsNodeRow {
@@ -9,29 +9,34 @@ export interface FtsNodeRow {
   filePath: string;
   summary?: string;
   tags?: string;
+  documentation?: string;
 }
 
 /**
- * Insert (or update) a single node row into the `nodes_fts` FTS5 index.
- * Defensive: silently no-ops if the FTS5 table is missing.
+ * Insert or update a single node row in the FTS5 index.
  *
  * Note: the FTS5_INSERT_NODE_SQL contract in schema.ts uses `?rowid`
  * named parameters for documentation portability, but bun:sqlite
  * treats `rowid` as a reserved keyword and rejects the syntax. We
  * therefore use plain positional placeholders here.
+ *
+ * @param db Graph database containing the FTS table.
+ * @param node Node row to index.
+ * @returns Nothing.
  */
 export function syncNodeFts(db: Database, node: FtsNodeRow): void {
   if (!hasFtsTable(db)) return;
   try {
     db.prepare(
-      `INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO nodes_fts(rowid, id, name, file_path, summary, documentation, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(
       node.rowid,
       node.id,
       node.name,
       node.filePath,
       node.summary ?? null,
+      node.documentation ?? null,
       node.tags ?? null
     );
   } catch {
@@ -40,13 +45,16 @@ export function syncNodeFts(db: Database, node: FtsNodeRow): void {
 }
 
 /**
- * Remove a single node from the `nodes_fts` FTS5 index.
- * Defensive: silently no-ops if the FTS5 table is missing.
+ * Remove a single node from the FTS5 index.
  *
  * Note: bun:sqlite does not support the FTS5 special `'delete'`
  * command for contentless tables. A plain `DELETE FROM nodes_fts
  * WHERE rowid = ?` correctly removes the entry from the MATCH
  * index, which is the operationally meaningful check.
+ *
+ * @param db Graph database containing the FTS table.
+ * @param node Node row to remove.
+ * @returns Nothing.
  */
 export function syncNodeFtsDelete(db: Database, node: FtsNodeRow): void {
   if (!hasFtsTable(db)) return;
@@ -57,12 +65,18 @@ export function syncNodeFtsDelete(db: Database, node: FtsNodeRow): void {
   }
 }
 
-/** Bulk variant of `syncNodeFts` for full-scan rebuilds. */
+/**
+ * Index a batch of node rows for a full graph rebuild.
+ *
+ * @param db Graph database containing the FTS table.
+ * @param nodes Node rows to index.
+ * @returns Nothing.
+ */
 export function bulkSyncNodeFts(db: Database, nodes: FtsNodeRow[]): void {
   if (!hasFtsTable(db)) return;
   const insert = db.prepare(
-    `INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO nodes_fts(rowid, id, name, file_path, summary, documentation, tags)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
   db.transaction(() => {
     for (const n of nodes) {
@@ -72,6 +86,7 @@ export function bulkSyncNodeFts(db: Database, nodes: FtsNodeRow[]): void {
         n.name,
         n.filePath,
         n.summary ?? null,
+        n.documentation ?? null,
         n.tags ?? null
       );
     }
@@ -97,6 +112,11 @@ function hasFtsTable(db: Database): boolean {
  * that mirrors the legacy behaviour. Within a tied FTS rank, exact
  * node-name matches are placed first, then file-path matches, then
  * tag matches.
+ *
+ * @param db Graph database to search.
+ * @param keyword Search term.
+ * @param typeFilter Optional node-type filter.
+ * @returns Matching nodes ordered by relevance and stable tie-breakers.
  */
 export function searchNodes(db: Database, keyword: string, typeFilter?: string): SearchResult[] {
   // FTS5 path — try first when supported.
@@ -124,6 +144,7 @@ interface NodeRow {
   name: string;
   file_path: string;
   summary: string | null;
+  documentation: string | null;
 }
 
 function rowToResult(r: NodeRow): SearchResult {
@@ -133,6 +154,7 @@ function rowToResult(r: NodeRow): SearchResult {
     name: r.name,
     filePath: r.file_path,
     summary: r.summary ?? undefined,
+    documentation: parseDocumentation(r.documentation),
   };
 }
 
@@ -141,7 +163,7 @@ function ftsSearch(db: Database, keyword: string, typeFilter?: string): SearchRe
   const matchExpr = buildFtsQuery(keyword);
   const params: (string | number)[] = [matchExpr];
   let sql = `
-    SELECT n.id, n.type, n.name, n.file_path, n.summary, f.rank
+    SELECT n.id, n.type, n.name, n.file_path, n.summary, n.documentation, f.rank
     FROM nodes n
     JOIN nodes_fts f ON n.rowid = f.rowid
     WHERE nodes_fts MATCH ?
@@ -181,11 +203,11 @@ function buildFtsQuery(keyword: string): string {
 
 function likeSearch(db: Database, keyword: string, typeFilter?: string): SearchResult[] {
   const like = `%${keyword.toLowerCase()}%`;
-  const params: (string | number)[] = [like, like, like];
+  const params: (string | number)[] = [like, like, like, like];
   let sql = `
-    SELECT id, type, name, file_path, summary
+    SELECT id, type, name, file_path, summary, documentation
     FROM nodes
-    WHERE (LOWER(name) LIKE ? OR LOWER(summary) LIKE ? OR LOWER(tags) LIKE ?)`;
+    WHERE (LOWER(name) LIKE ? OR LOWER(summary) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(documentation) LIKE ?)`;
   if (typeFilter) {
     sql += ` AND type = ?`;
     params.push(typeFilter);
@@ -194,4 +216,14 @@ function likeSearch(db: Database, keyword: string, typeFilter?: string): SearchR
   const stmt = db.prepare(sql);
   const rows = stmt.all(...params) as NodeRow[];
   return rows.map(rowToResult);
+}
+
+function parseDocumentation(raw: string | null | undefined): NodeDocumentation | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as NodeDocumentation;
+    return parsed && parsed.version === 1 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }

@@ -1,7 +1,7 @@
 import { Database } from "bun:sqlite";
 import { readFileSync, existsSync, statSync } from "fs";
 import { searchNodes } from "./search";
-import { getStaleFiles, getProjectRoot } from "./meta";
+import { getMetadata, getStaleFiles, getProjectRoot } from "./meta";
 import { toRelativePath } from "./paths";
 import {
   type ExploreArgs,
@@ -36,9 +36,12 @@ interface ExploreOptions {
 }
 
 /**
- * Run a single `explore` query. Returns either text or JSON output
- * depending on the `json` flag, plus a `ExitCode` for the process
- * supervisor.
+ * Run a single `explore` query.
+ *
+ * @param db Graph database to search.
+ * @param query Search term used to select graph nodes.
+ * @param options Traversal, source, and output options.
+ * @returns Structured text or JSON output with the process exit code.
  */
 export function runExplore(
   db: Database,
@@ -105,8 +108,10 @@ export function runExplore(
 }
 
 /**
- * Build the human-readable text output. The format is deliberately
- * compact and ordered by relevance.
+ * Build compact human-readable explore output.
+ *
+ * @param result Structured explore output.
+ * @returns Formatted command output.
  */
 export function formatExploreText(result: ExploreOutput): string {
   const lines: string[] = [];
@@ -236,7 +241,15 @@ function expandRelationships(
  * generated files. */
 const MAX_SNIPPET_FILE_BYTES = 10 * 1024 * 1024; // 10 MiB
 
-function buildSnippet(
+/**
+ * Build a bounded source excerpt for a persisted node.
+ *
+ * @param db Graph database containing the node.
+ * @param match Persisted node identity and source location.
+ * @param projectRoot Optional root used to relativize the source path.
+ * @returns A bounded source snippet, or `null` when source is unavailable.
+ */
+export function buildSnippet(
   db: Database,
   match: { id: string; filePath: string; type: string; name: string },
   projectRoot?: string
@@ -289,9 +302,10 @@ function toAbsolute(path: string, root: string): string {
 function buildFreshnessBlock(db: Database, projectRoot?: string): FreshnessBlock {
   const stale = getStaleFiles(db);
   const rel = (p: string) => (projectRoot ? toRelativePath(p, projectRoot) : p);
+  const checkedAt = getMetadata(db)?.lastIndexedAt ?? 0;
   return {
     stale: stale.map((s) => rel(s.path)).sort(),
     missing: stale.filter((s) => s.reason === "deleted").map((s) => rel(s.path)).sort(),
-    checkedAt: 0,
+    checkedAt,
   };
 }

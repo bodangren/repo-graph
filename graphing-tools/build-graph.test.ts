@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createProject } from "./build-graph";
+import { createProject } from "./repo-graph";
 
 describe("createProject", () => {
   it("falls back to globbing when root tsconfig has empty include", async () => {

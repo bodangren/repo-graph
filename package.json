@@ -2,16 +2,25 @@
   "name": "repo-graph",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "repo-graph": "bin/repo-graph"
+  },
   "scripts": {
     "lint": "eslint graphing-tools/",
     "doctor": "./measure/doctor.sh",
     "generate": "./measure/generate.sh",
-    "build": "bun build --compile ./graphing-tools/build-graph.ts --outfile ./bin/build-graph"
+    "build": "bun build --compile ./graphing-tools/repo-graph.ts --outfile ./bin/repo-graph",
+    "typecheck": "tsc --noEmit",
+    "typecheck:compat": "tsc6 --noEmit",
+    "test": "bun test",
+    "check": "bun run typecheck && bun run typecheck:compat && bun run lint && bun run build && bun run generate && bun run doctor"
   },
   "devDependencies": {
+    "@typescript/typescript6": "6.0.2",
     "bun-types": "^1.3.14",
     "eslint": "^9.0.0",
-    "eslint-plugin-boundaries": "^5.0.0"
+    "eslint-plugin-boundaries": "^5.0.0",
+    "typescript": "7.0.2"
   },
   "dependencies": {
     "ts-morph": "^28.0.0"

@@ -10,7 +10,7 @@ import { scanProject } from "./scanner";
 import { dirname, basename } from "path";
 import { runQuery, formatTable, formatJson } from "./query";
 import { searchNodes } from "./search";
-import { updateFiles, runUpdate } from "./update";
+import { runUpdate } from "./update";
 import { runDeps, runCallers, runPath, runStats, runFiles, runInspect } from "./commands";
 import { runAudit } from "./audit";
 import { runExplore } from "./explore";
@@ -21,12 +21,13 @@ import { installHooks } from "./hooks";
 import { ExitCode, type BuildGraphConfig, type CustomEdgeDef } from "./contract";
 import { loadConfig, applyCustomEdges } from "./config";
 import { discoverIncludeFiles } from "./include";
+import { persistSnapshotAtomically, type GraphSnapshot } from "./persistence";
 
 const VERSION = "0.1.0";
 
 function printHelp(subcommand?: string): void {
   if (subcommand === "scan") {
-    console.log("Usage: build-graph scan <project-dir> <output.db> [--config <path>] [--include <glob>]");
+    console.log("Usage: repo-graph scan <project-dir> <output.db> [--config <path>] [--include <glob>]");
     console.log("  Scan a TypeScript project and build a knowledge graph database.");
     console.log("  --config <path>     Path to build-graph.config.json (default: auto-discover in project root)");
     console.log("  --include <glob>    Additional glob pattern for non-TS files (repeatable)");
@@ -59,64 +60,69 @@ function printHelp(subcommand?: string): void {
     console.log("  Detected automatically during scan. No config needed.");
     console.log("");
     console.log("Example:");
-    console.log("  build-graph scan ./ ./graph.db --config ./build-graph.config.json");
-    console.log("  build-graph scan ./ ./graph.db --include 'supabase/seed/**/*.json'");
+    console.log("  repo-graph scan ./ ./graph.db --config ./build-graph.config.json");
+    console.log("  repo-graph scan ./ ./graph.db --include 'supabase/seed/**/*.json'");
   } else if (subcommand === "update") {
-    console.log("Usage: build-graph update <db> [<file> ...] [--json]");
+    console.log("Usage: repo-graph update <db> [<file> ...] [--json]");
     console.log("  Incrementally update the graph for changed files.");
     console.log("  --json    Emit a JSON RunUpdateResult to stdout");
   } else if (subcommand === "install-hooks") {
-    console.log("Usage: build-graph install-hooks [--path <git-dir>] [--force] [--json]");
+    console.log("Usage: repo-graph install-hooks [--path <git-dir>] [--force] [--json]");
     console.log("  Install pre-commit and post-checkout git hooks into <git-dir>/hooks/.");
     console.log("  --path    Path to the .git directory (default: ./.git)");
     console.log("  --force   Overwrite non-repo-graph hooks without warning");
     console.log("  --json    Emit a JSON InstallHooksResult to stdout");
   } else if (subcommand === "query") {
-    console.log("Usage: build-graph query [--json] <db> <sql>");
+    console.log("Usage: repo-graph query [--json] <db> <sql>");
     console.log("  Execute a SQL query against the graph database.");
   } else if (subcommand === "search") {
-    console.log("Usage: build-graph search <db> <keyword>");
+    console.log("Usage: repo-graph search <db> <keyword>");
     console.log("  Search for nodes by keyword.");
   } else if (subcommand === "deps") {
-    console.log("Usage: build-graph deps <db> <node-name> [--downstream]");
+    console.log("Usage: repo-graph deps <db> <node-name> [--downstream]");
     console.log("  Find nodes that depend on the target (--downstream for reverse).");
   } else if (subcommand === "callers") {
-    console.log("Usage: build-graph callers <db> <function-name>");
+    console.log("Usage: repo-graph callers <db> <function-name>");
     console.log("  Find functions/files that reference the target function.");
   } else if (subcommand === "path") {
-    console.log("Usage: build-graph path <db> <from> <to>");
+    console.log("Usage: repo-graph path <db> <from> <to>");
     console.log("  Trace shortest dependency path between two nodes.");
   } else if (subcommand === "stats") {
-    console.log("Usage: build-graph stats <db>");
+    console.log("Usage: repo-graph stats <db>");
     console.log("  Print a summary dashboard of the codebase.");
   } else if (subcommand === "files") {
-    console.log("Usage: build-graph files <db> [pattern]");
+    console.log("Usage: repo-graph files <db> [pattern]");
     console.log("  List files with entity counts.");
   } else if (subcommand === "init") {
-    console.log("Usage: build-graph init <db>");
+    console.log("Usage: repo-graph init <db>");
     console.log("  Create a new graph database with schema and indexes.");
   } else if (subcommand === "inspect") {
-    console.log("Usage: build-graph inspect <db> <node-id-or-name> [--json]");
+    console.log("Usage: repo-graph inspect <db> <node-id-or-name> [--json]");
     console.log("  Show detailed information about a node and its relationships.");
   } else if (subcommand === "audit") {
-    console.log("Usage: build-graph audit <db> [--json]");
+    console.log("Usage: repo-graph audit <db> [--json] [--docs] [--include-internal]");
     console.log("  Cross-reference the graph against source files to detect stale nodes,");
-    console.log("  missing files, orphan edges, and duplicate nodes.");
+    console.log("  missing files, orphan edges, duplicate nodes, and documentation issues.");
+    console.log("  --docs              Audit exported/public JSDoc contracts.");
+    console.log("  --include-internal  Include non-exported/internal nodes in docs audit.");
   } else if (subcommand === "explore") {
-    console.log("Usage: build-graph explore <db> <query> [--json] [--limit N] [--depth N] [--include-source]");
+    console.log("Usage: repo-graph explore <db> <query> [--json] [--limit N] [--depth N] [--include-source]");
     console.log("  Single high-signal graph query for Measure agents.");
     console.log("  --include-source  Include bounded source snippets with stable line numbers.");
   } else if (subcommand === "affected") {
-    console.log("Usage: build-graph affected <db> [file ...] [--stdin] [--json] [--depth N] [--tests-only] [--filter <glob>]");
+    console.log("Usage: repo-graph affected <db> [file ...] [--stdin] [--json] [--depth N] [--tests-only] [--filter <glob>]");
     console.log("  Walk reverse dependency edges from changed files to surface downstream");
     console.log("  tests, routes, components, data-access, and other affected files.");
   } else if (subcommand === "impact") {
-    console.log("Usage: build-graph impact <db> <node-or-file> [--json] [--depth N] [--edge-type T] [--include-source]");
+    console.log("Usage: repo-graph impact <db> <node-or-file> [--json] [--depth N] [--edge-type T] [--include-source] [--from-package=P] [--to-package=P]");
     console.log("  Show the bidirectional blast radius of a single node or file.");
+  } else if (subcommand === "version") {
+    console.log("Usage: repo-graph version");
+    console.log("  Print the canonical executable version.");
   } else {
-    console.log("build-graph — Knowledge graph builder for TypeScript codebases");
+    console.log("repo-graph — Knowledge graph builder for TypeScript codebases");
     console.log("");
-    console.log("Usage: build-graph <command> [options]");
+    console.log("Usage: repo-graph <command> [options]");
     console.log("");
     console.log("Commands:");
     console.log("  init     <db>                         Create a new graph database");
@@ -136,6 +142,7 @@ function printHelp(subcommand?: string): void {
     console.log("  explore  <db> <query> [--json]        Agent graph query with relationships + snippets");
     console.log("  affected <db> [file...] [--stdin]     Downstream impact from changed files");
     console.log("  impact   <db> <node-or-file> [--json] Bidirectional blast radius of a symbol");
+    console.log("  version                               Print the executable version");
     console.log("  help     [command]                    Show help for a command");
     console.log("");
     console.log("Options:");
@@ -183,7 +190,14 @@ function discoverTsConfigs(root: string): string[] {
   return results;
 }
 
-function getPackageIdForFile(filePath: string, tsConfigPaths: string[]): string {
+/**
+ * Resolve the package identifier owning a source file.
+ *
+ * @param filePath Source file path.
+ * @param tsConfigPaths Candidate tsconfig paths.
+ * @returns The deepest owning package name, or `root`.
+ */
+export function getPackageIdForFile(filePath: string, tsConfigPaths: string[]): string {
   let best: string | undefined;
   let bestDepth = -1;
   const dir = dirname(filePath);
@@ -203,6 +217,12 @@ function getPackageIdForFile(filePath: string, tsConfigPaths: string[]): string 
   return "root";
 }
 
+/**
+ * Create a ts-morph project and discover its tsconfig boundaries.
+ *
+ * @param projectDir Project directory to load.
+ * @returns The project and discovered tsconfig paths.
+ */
 export async function createProject(projectDir: string): Promise<{ project: Project; tsConfigPaths: string[] }> {
   const rootConfig = join(projectDir, "tsconfig.json");
 
@@ -254,97 +274,36 @@ export async function createProject(projectDir: string): Promise<{ project: Proj
 
 async function handleScan(projectDir: string, dbPath: string, configPath?: string, includePatterns?: string[]): Promise<void> {
   const start = performance.now();
-  const db = new Database(dbPath);
   const absProjectDir = resolve(projectDir);
-
-  try {
-    createSchema(db);
-    createIndexes(db);
-    setMeta(db, "project_root", absProjectDir);
-
-    const { project, tsConfigPaths } = await createProject(absProjectDir);
-    const packageMap = new Map<string, string>();
-    for (const sf of project.getSourceFiles()) {
-      const fp = sf.getFilePath();
-      packageMap.set(fp, getPackageIdForFile(fp, tsConfigPaths));
-    }
-    const { nodes, edges } = scanProject(project, packageMap);
-
-    // Load config and apply custom edges
-    const config = loadConfig(absProjectDir, configPath);
-    if (config?.customEdges) {
-      const importEdges = edges.filter((e) => e.type === "imports");
-      const customEdges = applyCustomEdges(nodes, config.customEdges, importEdges);
-      edges.push(...customEdges);
-      console.error(`Applied ${customEdges.length} custom edge(s) from config`);
-    }
-
-    // Discover include pattern files (non-TS)
-    if (includePatterns && includePatterns.length > 0) {
-      const includeFiles = discoverIncludeFiles(absProjectDir, includePatterns);
-      const existingIds = new Set(nodes.map((n) => n.id));
-      let added = 0;
-      for (const filePath of includeFiles) {
-        const nodeId = `file:${filePath}`;
-        if (!existingIds.has(nodeId)) {
-          nodes.push({
-            id: nodeId,
-            type: "file",
-            name: filePath.split("/").pop()!,
-            filePath,
-            lineStart: 1,
-            lineEnd: 1,
-          });
-          existingIds.add(nodeId);
-          added++;
-        }
-      }
-      console.error(`Included ${added} file(s) from --include patterns`);
-    }
-
-    const insertNode = db.prepare(`
-      INSERT INTO nodes (id, type, name, file_path, line_start, line_end, summary, tags, complexity, layer_id, package_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const insertEdge = db.prepare(`
-      INSERT INTO edges (source, target, type, direction, weight, metadata)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    const seenNodes = new Set<string>();
-    const skippedNodes: string[] = [];
-
-    db.transaction(() => {
-      for (const n of nodes) {
-        if (seenNodes.has(n.id)) {
-          skippedNodes.push(n.id);
-          continue;
-        }
-        seenNodes.add(n.id);
-        insertNode.run(
-          n.id, n.type, n.name, n.filePath,
-          n.lineStart ?? null, n.lineEnd ?? null,
-          n.summary ?? null,
-          n.tags ? JSON.stringify(n.tags) : null,
-          n.complexity ?? null,
-          n.layerId ?? null,
-          n.packageId ?? null
-        );
-      }
-      for (const e of edges) {
-        insertEdge.run(e.source, e.target, e.type, e.direction, e.weight ?? 0.5, e.metadata ?? null);
-      }
-    })();
-
-    if (skippedNodes.length > 0) {
-      console.error(`Warning: skipped ${skippedNodes.length} duplicate node(s): ${skippedNodes.slice(0, 5).join(", ")}${skippedNodes.length > 5 ? "..." : ""}`);
-    }
-
-    const elapsed = Math.round(performance.now() - start);
-    console.error(`Scanned ${nodes.length} nodes, ${edges.length} edges in ${elapsed}ms`);
-  } finally {
-    db.close();
+  const { project, tsConfigPaths } = await createProject(absProjectDir);
+  const packageMap = new Map<string, string>();
+  for (const sourceFile of project.getSourceFiles()) {
+    packageMap.set(sourceFile.getFilePath(), getPackageIdForFile(sourceFile.getFilePath(), tsConfigPaths));
   }
+  const snapshot = scanProject(project, packageMap) as GraphSnapshot;
+  const config = loadConfig(absProjectDir, configPath);
+  if (config?.customEdges) {
+    const customEdges = applyCustomEdges(snapshot.nodes, config.customEdges, snapshot.edges.filter((edge) => edge.type === "imports"));
+    snapshot.edges.push(...customEdges);
+    console.error(`Applied ${customEdges.length} custom edge(s) from config`);
+  }
+
+  const extraFiles: string[] = [];
+  if (includePatterns && includePatterns.length > 0) {
+    const includeFiles = discoverIncludeFiles(absProjectDir, includePatterns);
+    const existingIds = new Set(snapshot.nodes.map((node) => node.id));
+    for (const filePath of includeFiles) {
+      if (existingIds.has(`file:${filePath}`)) continue;
+      snapshot.nodes.push({ id: `file:${filePath}`, type: "file", name: filePath.split("/").pop() ?? filePath, filePath, lineStart: 1, lineEnd: 1, packageId: "root" });
+      extraFiles.push(filePath);
+      existingIds.add(`file:${filePath}`);
+    }
+    console.error(`Included ${extraFiles.length} file(s) from --include patterns`);
+  }
+
+  persistSnapshotAtomically(dbPath, snapshot, project, { projectRoot: absProjectDir, packageMap, extraFiles });
+  const elapsed = Math.round(performance.now() - start);
+  console.error(`Scanned ${snapshot.nodes.length} nodes, ${snapshot.edges.length} edges in ${elapsed}ms`);
 }
 
 async function handleQuery(dbPath: string, sql: string, json: boolean): Promise<void> {
@@ -397,8 +356,17 @@ async function handleUpdate(dbPath: string, filePaths: string[], json?: boolean)
       return ".";
     }
   })();
-  const { project } = await createProject(projectRootFromMeta);
-  const result = runUpdate(dbPath, project, filePaths);
+  const { project, tsConfigPaths } = await createProject(resolve(projectRootFromMeta));
+  const packageMap = new Map<string, string>();
+  for (const sourceFile of project.getSourceFiles()) {
+    packageMap.set(sourceFile.getFilePath(), getPackageIdForFile(sourceFile.getFilePath(), tsConfigPaths));
+  }
+  const config = loadConfig(resolve(projectRootFromMeta));
+  const result = runUpdate(dbPath, project, filePaths, {
+    projectRoot: resolve(projectRootFromMeta),
+    packageMap,
+    customEdgeDefs: config?.customEdges,
+  });
 
   if (json) {
     console.log(JSON.stringify(result, null, 2));
@@ -496,10 +464,10 @@ async function handleInspect(dbPath: string, name: string, json: boolean): Promi
   }
 }
 
-async function handleAudit(dbPath: string, json: boolean): Promise<number> {
+async function handleAudit(dbPath: string, json: boolean, docs?: boolean, includeInternal?: boolean): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const { output, exitCode } = runAudit(db, { json });
+    const { output, exitCode } = runAudit(db, { json, docs, includeInternal });
     if (output) console.log(output);
     return exitCode;
   } finally {
@@ -579,11 +547,13 @@ async function handleImpact(
   json: boolean,
   depth?: number,
   edgeType?: string,
-  includeSource?: boolean
+  includeSource?: boolean,
+  fromPackage?: string,
+  toPackage?: string
 ): Promise<number> {
   const db = new Database(dbPath);
   try {
-    const result = runImpact(db, nodeOrFile, { json, depth, edgeType, includeSource });
+    const result = runImpact(db, nodeOrFile, { json, depth, edgeType, includeSource, fromPackage, toPackage });
     if (result.output) console.log(result.output);
     return result.exitCode;
   } finally {
@@ -591,6 +561,12 @@ async function handleImpact(
   }
 }
 
+/**
+ * Dispatch a repo-graph command.
+ *
+ * @param argv Process argument vector.
+ * @returns The command exit code.
+ */
 export async function main(argv: string[]): Promise<number> {
   const parsed = parseArgs(argv);
 
@@ -625,13 +601,13 @@ export async function main(argv: string[]): Promise<number> {
     case "inspect":
       return await handleInspect(parsed.args.dbPath, parsed.args.name, parsed.args.json ?? false);
     case "audit":
-      return await handleAudit(parsed.args.dbPath, parsed.args.json ?? false);
+      return await handleAudit(parsed.args.dbPath, parsed.args.json ?? false, parsed.args.docs, parsed.args.includeInternal);
     case "explore":
       return await handleExplore(parsed.args.dbPath, parsed.args.query, parsed.args.json ?? false, parsed.args.limit, parsed.args.depth, parsed.args.includeSource);
     case "affected":
       return await handleAffected(parsed.args.dbPath, parsed.args.files, parsed.args.json ?? false, parsed.args.depth, parsed.args.testsOnly, parsed.args.filter, parsed.args.stdin);
     case "impact":
-      return await handleImpact(parsed.args.dbPath, parsed.args.nodeOrFile, parsed.args.json ?? false, parsed.args.depth, parsed.args.edgeType, parsed.args.includeSource);
+      return await handleImpact(parsed.args.dbPath, parsed.args.nodeOrFile, parsed.args.json ?? false, parsed.args.depth, parsed.args.edgeType, parsed.args.includeSource, parsed.args.fromPackage, parsed.args.toPackage);
     case "help":
       printHelp(parsed.args.subcommand);
       break;

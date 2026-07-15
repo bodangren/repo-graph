@@ -207,6 +207,14 @@ describe("ImpactOutput", () => {
       affectedTests: [],
       freshness: { stale: [], missing: [], checkedAt: 0 },
       truncated: false,
+      upstream: [],
+      downstream: [],
+      routes: [],
+      components: [],
+      hooks: [],
+      schemas: [],
+      fields: [],
+      paramFlow: [],
     };
     expect(out.root).toBe("scienceLessons.id");
     expect(out.relationships).toEqual([]);

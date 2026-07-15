@@ -4,7 +4,7 @@
 
 Load the `measure` skill and read `measure/index.md` before starting work.
 
-This project includes `build-graph` — a CLI tool that builds a SQLite knowledge graph of the TypeScript codebase. **Use it.** It is much faster and more accurate than grepping for structural questions.
+This project includes `repo-graph` — the canonical CLI tool that builds a SQLite knowledge graph of the TypeScript codebase. **Use it.** It is much faster and more accurate than grepping for structural questions.
 
 ## Documentation Standards
 
@@ -19,10 +19,10 @@ When you start working on this project, check if `graph.db` exists and is fresh 
 ```bash
 
 # If graph.db is missing or stale
-build-graph scan . ./graph.db
+repo-graph scan . ./graph.db
 
 # If graph.db exists and you only edited a few files
-build-graph update ./graph.db src/file1.ts src/file2.ts
+repo-graph update ./graph.db src/file1.ts src/file2.ts
 ```
 
 ### 2. Query before you grep
@@ -31,10 +31,10 @@ For structural questions, **always query the graph first** instead of grepping:
 
 | Instead of... | Query the graph |
 |---------------|-----------------|
-| `grep -r "function foo"` | `build-graph search ./graph.db foo` |
-| "What uses this function?" | `build-graph callers ./graph.db foo` |
-| "What does this module import?" | `build-graph deps ./graph.db module.ts --downstream` |
-| "How are these files connected?" | `build-graph path ./graph.db A.ts B.ts` |
+| `grep -r "function foo"` | `repo-graph search ./graph.db foo` |
+| "What uses this function?" | `repo-graph callers ./graph.db foo` |
+| "What does this module import?" | `repo-graph deps ./graph.db module.ts --downstream` |
+| "How are these files connected?" | `repo-graph path ./graph.db A.ts B.ts` |
 
 ### 3. Inspect before editing exported symbols
 
@@ -43,13 +43,13 @@ Before modifying any **exported** function, class, interface, or schema, check i
 ```bash
 
 # See all callers and dependencies
-build-graph inspect ./graph.db SymbolName
+repo-graph inspect ./graph.db SymbolName
 
 # Or just callers
-build-graph callers ./graph.db SymbolName
+repo-graph callers ./graph.db SymbolName
 
 # Or just dependencies
-build-graph deps ./graph.db SymbolName
+repo-graph deps ./graph.db SymbolName
 ```
 
 > **Why:** This catches cross-file and cross-package dependencies that grep misses.
@@ -61,13 +61,13 @@ This repo may contain multiple packages (e.g. `frontend/`, `convex/`). When quer
 ```bash
 
 # Only show frontend callers
-build-graph callers ./graph.db myHook --from-package=frontend
+repo-graph callers ./graph.db myHook --from-package=frontend
 
 # Only show convex dependencies
-build-graph deps ./graph.db myFunc --to-package=convex
+repo-graph deps ./graph.db myFunc --to-package=convex
 
 # Cross-boundary analysis
-build-graph deps ./graph.db myFunc --from-package=frontend --to-package=convex
+repo-graph deps ./graph.db myFunc --from-package=frontend --to-package=convex
 ```
 
 ### 5. Update the graph after structural edits
@@ -83,10 +83,10 @@ Update the graph so the next agent (or your next session) has accurate context:
 ```bash
 
 # After editing files
-build-graph update ./graph.db src/auth.ts src/schema.ts
+repo-graph update ./graph.db src/auth.ts src/schema.ts
 
 # Or re-scan if you changed many files across packages
-build-graph scan . ./graph.db
+repo-graph scan . ./graph.db
 ```
 
 > **When NOT to update:** Purely internal changes inside a single function body (no signature changes, no new imports/exports, no JSX changes).

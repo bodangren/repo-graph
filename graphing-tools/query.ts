@@ -1,5 +1,12 @@
 import { Database } from "bun:sqlite";
 
+/**
+ * Execute a read-only SQL query and normalize its result.
+ *
+ * @param db Graph database to query.
+ * @param sql SQL statement to execute.
+ * @returns Column names and row values.
+ */
 export function runQuery(db: Database, sql: string): { columns: string[]; rows: unknown[][] } {
   const stmt = db.prepare(sql);
   const result = stmt.all() as Record<string, unknown>[];
@@ -13,6 +20,13 @@ export function runQuery(db: Database, sql: string): { columns: string[]; rows: 
   return { columns, rows };
 }
 
+/**
+ * Format tabular values for terminal output.
+ *
+ * @param columns Column headings.
+ * @param rows Row values.
+ * @returns An aligned text table.
+ */
 export function formatTable(columns: string[], rows: unknown[][]): string {
   if (columns.length === 0) return "(no results)";
 
@@ -37,6 +51,13 @@ export function formatTable(columns: string[], rows: unknown[][]): string {
   return lines.join("\n");
 }
 
+/**
+ * Format query values as a JSON array of objects.
+ *
+ * @param columns Column names used as object keys.
+ * @param rows Row values.
+ * @returns Serialized JSON output.
+ */
 export function formatJson(columns: string[], rows: unknown[][]): string {
   const objects = rows.map((row) => {
     const obj: Record<string, unknown> = {};

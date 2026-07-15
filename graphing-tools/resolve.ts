@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import type { SearchResult } from "./contract";
 
+/** Minimal node identity returned by name resolution. */
 export interface ResolvedNode {
   id: string;
   type: string;
@@ -8,11 +9,19 @@ export interface ResolvedNode {
   filePath: string;
 }
 
+/** Possible outcomes of node resolution. */
 export type ResolveResult =
   | { kind: "single"; node: ResolvedNode }
   | { kind: "ambiguous"; matches: SearchResult[] }
   | { kind: "none" };
 
+/**
+ * Resolve a node by id, exact name, or unique partial name.
+ *
+ * @param db Graph database to search.
+ * @param name Node id or name supplied by the caller.
+ * @returns A single match, an ambiguity result, or no match.
+ */
 export function resolveNode(db: Database, name: string): ResolveResult {
   // Try exact ID match first
   const byId = db.prepare("SELECT id, type, name, file_path FROM nodes WHERE id = ?").get(name) as

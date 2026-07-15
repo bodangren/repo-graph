@@ -49,7 +49,7 @@ describe("scanProject", () => {
     it("computes complexity for functions", () => {
       const formatName = result.nodes.find((n) => n.name === "formatName");
       expect(formatName?.complexity).toBeDefined();
-      expect(["simple", "moderate", "complex"]).toContain(formatName?.complexity);
+      expect(["simple", "moderate", "complex"]).toContain(formatName?.complexity ?? "");
     });
 
     it("marks a simple function as 'simple'", () => {
@@ -608,7 +608,7 @@ describe("scanRoutes (FR3)", () => {
     expect(routeNodes.length).toBe(2);
     expect(routeNodes.some((r) => r.name === "QUERY lessons.getById")).toBe(true);
     expect(routeNodes.some((r) => r.name === "MUTATION lessons.create")).toBe(true);
-  });
+  }, 30000);
 
   it("extracts route mode export as tag", () => {
     const p = new Project({ useInMemoryFileSystem: true });

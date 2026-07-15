@@ -1,5 +1,11 @@
 import { Database } from "bun:sqlite";
 
+/**
+ * Create indexes required by graph traversal and lookup queries.
+ *
+ * @param db Graph database to update.
+ * @returns Nothing.
+ */
 export function createIndexes(db: Database): void {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_nodes_type      ON nodes(type);

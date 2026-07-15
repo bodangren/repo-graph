@@ -6,8 +6,10 @@ const MAX_DEPTH = 20;
 
 /**
  * Discover files matching custom glob patterns relative to the project root.
- * Simple glob implementation: supports **, *, and ?.
- * Files inside SKIP_DIRS are excluded.
+ *
+ * @param projectDir Root directory to search.
+ * @param patterns Glob patterns to expand.
+ * @returns Unique absolute paths in deterministic discovery order.
  */
 export function discoverIncludeFiles(projectDir: string, patterns: string[]): string[] {
   const results: string[] = [];

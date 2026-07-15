@@ -6,24 +6,24 @@ Knowledge graph builder for TypeScript codebases. Scans your project, extracts f
 
 ```bash
 bun run build
-# Produces ./bin/build-graph — a standalone executable
-cp ./bin/build-graph ~/.local/bin/
+# Produces ./bin/repo-graph — a standalone executable
+cp ./bin/repo-graph ~/.local/bin/
 ```
 
 ## Quick Start
 
 ```bash
 # Scan a project
-build-graph scan ./my-project graph.db
+repo-graph scan ./my-project graph.db
 
 # Search for a node
-build-graph search graph.db "auth"
+repo-graph search graph.db "auth"
 
 # Run raw SQL
-build-graph query graph.db "SELECT * FROM nodes WHERE type = 'class'"
+repo-graph query graph.db "SELECT * FROM nodes WHERE type = 'class'"
 
 # See stats
-build-graph stats graph.db
+repo-graph stats graph.db
 ```
 
 ## Commands
@@ -32,22 +32,22 @@ build-graph stats graph.db
 
 | Command | Usage | Description |
 |---------|-------|-------------|
-| `init` | `build-graph init <db>` | Create a new graph database with schema and indexes |
-| `scan` | `build-graph scan <project-dir> <db>` | Scan a TypeScript project and populate the database |
-| `update` | `build-graph update <db> <file...>` | Incrementally update changed files |
+| `init` | `repo-graph init <db>` | Create a new graph database with schema and indexes |
+| `scan` | `repo-graph scan <project-dir> <db>` | Scan a TypeScript project and populate the database |
+| `update` | `repo-graph update <db> <file...>` | Incrementally update changed files |
 
 ### Querying
 
 | Command | Usage | Description |
 |---------|-------|-------------|
-| `query` | `build-graph query [--json] <db> <sql>` | Execute raw SQL against the database |
-| `search` | `build-graph search <db> <keyword> [--json] [--limit N] [--type=T]` | Fuzzy search nodes by name, summary, or tags |
-| `deps` | `build-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find who depends on a node (or who it depends on) |
-| `callers` | `build-graph callers <db> <function> [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find functions/files that reference a function |
-| `path` | `build-graph path <db> <from> <to> [--json]` | Trace shortest dependency path between two nodes |
-| `stats` | `build-graph stats <db> [--json]` | Print a codebase dashboard with totals, charts, and top lists |
-| `files` | `build-graph files <db> [pattern] [--json] [--limit N]` | List files with entity counts, optionally filtered by pattern |
-| `inspect` | `build-graph inspect <db> <node> [--json]` | Show full profile of a node (metadata + all edges) |
+| `query` | `repo-graph query [--json] <db> <sql>` | Execute raw SQL against the database |
+| `search` | `repo-graph search <db> <keyword> [--json] [--limit N] [--type=T]` | Fuzzy search nodes by name, summary, or tags |
+| `deps` | `repo-graph deps <db> <node> [--downstream] [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find who depends on a node (or who it depends on) |
+| `callers` | `repo-graph callers <db> <function> [--json] [--limit N] [--depth N] [--from-package=P] [--to-package=P]` | Find functions/files that reference a function |
+| `path` | `repo-graph path <db> <from> <to> [--json]` | Trace shortest dependency path between two nodes |
+| `stats` | `repo-graph stats <db> [--json]` | Print a codebase dashboard with totals, charts, and top lists |
+| `files` | `repo-graph files <db> [pattern] [--json] [--limit N]` | List files with entity counts, optionally filtered by pattern |
+| `inspect` | `repo-graph inspect <db> <node> [--json]` | Show full profile of a node (metadata + all edges) |
 
 ### Exit Codes
 
@@ -72,28 +72,28 @@ build-graph stats graph.db
 
 ```bash
 # Who imports the User class?
-build-graph deps graph.db User
+repo-graph deps graph.db User
 
 # What does the auth module depend on?
-build-graph deps graph.db auth.ts --downstream
+repo-graph deps graph.db auth.ts --downstream
 
 # Who calls the validateToken function?
-build-graph callers graph.db validateToken
+repo-graph callers graph.db validateToken
 
 # Trace a path from auth.ts to utils.ts
-build-graph path graph.db auth.ts utils.ts
+repo-graph path graph.db auth.ts utils.ts
 
 # Show a dashboard
-build-graph stats graph.db
+repo-graph stats graph.db
 
 # List files matching "auth"
-build-graph files graph.db auth
+repo-graph files graph.db auth
 
 # Search only route nodes
-build-graph search graph.db "/api" --type=route
+repo-graph search graph.db "/api" --type=route
 
 # Find all fetch calls to /api/lessons
-build-graph query graph.db "SELECT * FROM edges WHERE metadata LIKE '%/api/lessons%'"
+repo-graph query graph.db "SELECT * FROM edges WHERE metadata LIKE '%/api/lessons%'"
 ```
 
 ## Output
@@ -104,7 +104,7 @@ All commands print relative paths (e.g., `./src/auth.ts`) rather than absolute p
 
 The SQLite database contains four tables:
 
-- **`nodes`** — files, functions, classes, interfaces, type aliases, schemas, fields, routes, params
+- **`nodes`** — files, functions, classes, interfaces, type aliases, schemas, fields, routes, params, and structured JSDoc
 - **`edges`** — relationships: `contains`, `imports`, `extends`, `implements`, `has_field`, `references`, `renders`, `uses_hook`, `queries`, `mutates`, `param_flow`, `calls`
 - **`edge metadata`** — JSON blob storing string literals (URLs, column refs, query templates) captured at call sites
 - **`layers`** — logical groupings of nodes
@@ -114,6 +114,8 @@ The SQLite database contains four tables:
 
 ```bash
 bun test --coverage
+bun run typecheck
+bun run typecheck:compat
 ```
 
 ## Development
@@ -122,5 +124,5 @@ bun test --coverage
 bun run lint      # ESLint with boundary checks
 bun run doctor    # Full project health check
 bun run generate  # Regenerate generated docs
-bun run build     # Compile standalone executable
+bun run build     # Compile ./bin/repo-graph
 ```

@@ -31,4 +31,4 @@
 ## Brand
 
 - Internal tooling. No public branding requirements.
-- Naming is functional and descriptive, not clever. Prefer `build-graph-db` over `graphinator`.
+- Naming is functional and descriptive, not clever. Use the canonical `repo-graph` executable.

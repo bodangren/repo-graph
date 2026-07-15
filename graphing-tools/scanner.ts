@@ -1,278 +1,15 @@
 import { Project, SyntaxKind, type SourceFile } from "ts-morph";
 import type { GraphNode, GraphEdge, EdgeType } from "./contract";
 
-const BRANCH_KINDS = new Set([
-  SyntaxKind.IfStatement,
-  SyntaxKind.SwitchStatement,
-  SyntaxKind.ForStatement,
-  SyntaxKind.ForInStatement,
-  SyntaxKind.ForOfStatement,
-  SyntaxKind.WhileStatement,
-  SyntaxKind.DoStatement,
-  SyntaxKind.CatchClause,
-  SyntaxKind.ConditionalExpression,
-  SyntaxKind.BinaryExpression, // && and || counted below
-]);
-
-function computeComplexity(body: import("ts-morph").Node | undefined): "simple" | "moderate" | "complex" {
-  if (!body) return "simple";
-  let count = 0;
-  for (const desc of body.getDescendants()) {
-    const kind = desc.getKind();
-    if (BRANCH_KINDS.has(kind)) {
-      if (kind === SyntaxKind.BinaryExpression) {
-        const op = desc.asKind(SyntaxKind.BinaryExpression)!.getOperatorToken().getKind();
-        if (op !== SyntaxKind.AmpersandAmpersandToken && op !== SyntaxKind.BarBarToken) continue;
-      }
-      count++;
-    }
-  }
-  if (count >= 16) return "complex";
-  if (count >= 6) return "moderate";
-  return "simple";
-}
-
-export function scanProject(
-  project: Project,
-  packageMap?: Map<string, string>
-): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = [];
-  const edges: GraphEdge[] = [];
-
-  function addNode(node: GraphNode): void {
-    nodes.push(node);
-  }
-
-  function addEdge(source: string, target: string, type: EdgeType): void {
-    edges.push({ source, target, type, direction: "forward", weight: 1.0 });
-  }
-
-  for (const sourceFile of project.getSourceFiles()) {
-    const filePath = sourceFile.getFilePath();
-    const fileNodeId = `file:${filePath}`;
-    const packageId = packageMap?.get(filePath) ?? "root";
-
-    addNode({
-      id: fileNodeId,
-      type: "file",
-      name: filePath.split("/").pop()!,
-      filePath,
-      lineStart: 1,
-      lineEnd: sourceFile.getEndLineNumber(),
-      packageId,
-    });
-
-    // Functions
-    let anonFuncIndex = 0;
-    for (const func of sourceFile.getFunctions()) {
-      const rawName = func.getName();
-      const name = rawName || `anonymous${++anonFuncIndex}`;
-      const id = `function:${filePath}:${name}`;
-      const structure = func.getStructure();
-      const summary = structure.docs && structure.docs.length > 0
-        ? structure.docs[0].description
-        : undefined;
-
-      addNode({
-        id,
-        type: "function",
-        name,
-        filePath,
-        lineStart: func.getStartLineNumber(),
-        lineEnd: func.getEndLineNumber(),
-        summary,
-        tags: func.isExported() ? ["exported"] : undefined,
-        complexity: computeComplexity(func.getBody()),
-        packageId,
-      });
-      addEdge(fileNodeId, id, "contains");
-    }
-
-    // Arrow functions in variable declarations
-    for (const stmt of sourceFile.getVariableStatements()) {
-      for (const decl of stmt.getDeclarations()) {
-        const init = decl.getInitializer();
-        if (init?.getKind() === SyntaxKind.ArrowFunction) {
-          const arrow = init.asKind(SyntaxKind.ArrowFunction)!;
-          const name = decl.getName();
-          const id = `function:${filePath}:${name}`;
-          addNode({
-            id,
-            type: "function",
-            name,
-            filePath,
-            lineStart: decl.getStartLineNumber(),
-            lineEnd: decl.getEndLineNumber(),
-            tags: stmt.isExported() ? ["exported"] : undefined,
-            complexity: computeComplexity(arrow.getBody()),
-            packageId,
-          });
-          addEdge(fileNodeId, id, "contains");
-        }
-      }
-    }
-
-    // Classes
-    for (const cls of sourceFile.getClasses()) {
-      const name = cls.getName() || "anonymous";
-      const id = `class:${filePath}:${name}`;
-
-      addNode({
-        id,
-        type: "class",
-        name,
-        filePath,
-        lineStart: cls.getStartLineNumber(),
-        lineEnd: cls.getEndLineNumber(),
-        tags: cls.isExported() ? ["exported"] : undefined,
-        packageId,
-      });
-      addEdge(fileNodeId, id, "contains");
-
-      // Class extends
-      const ext = cls.getExtends();
-      if (ext) {
-        const baseName = ext.getExpression().getText();
-        addEdge(id, `class:*:${baseName}`, "extends");
-      }
-
-      // Class implements
-      for (const impl of cls.getImplements()) {
-        const ifaceName = impl.getExpression().getText();
-        addEdge(id, `interface:*:${ifaceName}`, "implements");
-      }
-    }
-
-    // Interfaces
-    for (const iface of sourceFile.getInterfaces()) {
-      const name = iface.getName();
-      const id = `interface:${filePath}:${name}`;
-
-      addNode({
-        id,
-        type: "interface",
-        name,
-        filePath,
-        lineStart: iface.getStartLineNumber(),
-        lineEnd: iface.getEndLineNumber(),
-        tags: iface.isExported() ? ["exported"] : undefined,
-        packageId,
-      });
-      addEdge(fileNodeId, id, "contains");
-
-      // Interface extends
-      for (const ext of iface.getExtends()) {
-        const baseName = ext.getExpression().getText();
-        addEdge(id, `interface:*:${baseName}`, "extends");
-      }
-    }
-
-    // Type aliases
-    for (const alias of sourceFile.getTypeAliases()) {
-      const name = alias.getName();
-      const id = `type_alias:${filePath}:${name}`;
-
-      addNode({
-        id,
-        type: "type_alias",
-        name,
-        filePath,
-        lineStart: alias.getStartLineNumber(),
-        lineEnd: alias.getEndLineNumber(),
-        tags: alias.isExported() ? ["exported"] : undefined,
-        packageId,
-      });
-      addEdge(fileNodeId, id, "contains");
-    }
-
-    // Imports
-    for (const imp of sourceFile.getImportDeclarations()) {
-      const resolved = imp.getModuleSpecifierSourceFile();
-      if (resolved) {
-        const targetPath = resolved.getFilePath();
-        addEdge(fileNodeId, `file:${targetPath}`, "imports");
-      } else {
-        // Fallback: compute expected path from relative import specifier
-        const specifier = imp.getModuleSpecifierValue();
-        if (specifier && !specifier.startsWith(".") && !specifier.startsWith("/")) {
-          // Skip non-relative imports (node_modules, aliases)
-          continue;
-        }
-        if (specifier) {
-          const { resolve } = require("path");
-          const sourceDir = filePath.substring(0, filePath.lastIndexOf("/"));
-          const computedPath = resolve(sourceDir, specifier);
-          // Try common TS extensions
-          const extensions = ["", ".ts", ".tsx", ".js", ".jsx"];
-          const fs = require("fs");
-          for (const ext of extensions) {
-            try {
-              if (fs.statSync(computedPath + ext).isFile()) {
-                addEdge(fileNodeId, `file:${computedPath + ext}`, "imports");
-                break;
-              }
-            } catch { /* not found */ }
-          }
-          // Also try index files in directories
-          for (const index of ["/index.ts", "/index.tsx", "/index.js", "/index.jsx"]) {
-            try {
-              if (fs.statSync(computedPath + index).isFile()) {
-                addEdge(fileNodeId, `file:${computedPath + index}`, "imports");
-                break;
-              }
-            } catch { /* not found */ }
-          }
-        }
-      }
-    }
-  }
-
-  // Run additional scanner passes
-  const schemaResult = scanSchemas(project, packageMap);
-  nodes.push(...schemaResult.nodes);
-  edges.push(...schemaResult.edges);
-
-  const frameworkResult = scanFrameworkEdges(project, packageMap);
-  nodes.push(...frameworkResult.nodes);
-  edges.push(...frameworkResult.edges);
-
-  const stringResult = scanStringLiterals(project, packageMap);
-  nodes.push(...stringResult.nodes);
-  edges.push(...stringResult.edges);
-
-  const paramResult = scanParamFlow(project, packageMap);
-  nodes.push(...paramResult.nodes);
-  edges.push(...paramResult.edges);
-
-  const routeResult = scanRoutes(project, packageMap);
-  nodes.push(...routeResult.nodes);
-  edges.push(...routeResult.edges);
-
-  // Create placeholder nodes for dangling wildcard edge targets
-  const nodeIds = new Set(nodes.map((n) => n.id));
-  for (const edge of edges) {
-    if (!nodeIds.has(edge.target) && edge.target.includes(":*:")) {
-      const parts = edge.target.split(":");
-      if (parts.length >= 3) {
-        const type = parts[0] as GraphNode["type"];
-        const name = parts.slice(2).join(":");
-        nodes.push({
-          id: edge.target,
-          type,
-          name,
-          filePath: "",
-          tags: ["unresolved"],
-        });
-        nodeIds.add(edge.target);
-      }
-    }
-  }
-
-  return { nodes, edges };
-}
-
 // ── Runtime Schema Extraction Pass (S1) ────────────────────────────────────
 
+/**
+ * Extract runtime schema and field nodes from a TypeScript project.
+ *
+ * @param project Project to inspect.
+ * @param packageMap Optional file-to-package ownership map.
+ * @returns Schema nodes and their graph edges.
+ */
 export function scanSchemas(
   project: Project,
   packageMap?: Map<string, string>
@@ -433,6 +170,13 @@ export function scanSchemas(
 
 // ── Framework-Aware Edge Extraction Pass (S2) ──────────────────────────────
 
+/**
+ * Extract framework-specific relationships from a TypeScript project.
+ *
+ * @param project Project to inspect.
+ * @param packageMap Optional file-to-package ownership map.
+ * @returns Framework-derived graph edges.
+ */
 export function scanFrameworkEdges(
   project: Project,
   packageMap?: Map<string, string>
@@ -525,6 +269,13 @@ function isComponentName(tag: string): boolean {
 
 // ── String-Literal Tracking Pass (FR1) ─────────────────────────────────────
 
+/**
+ * Extract string-literal references and query-like relationships.
+ *
+ * @param project Project to inspect.
+ * @param packageMap Optional file-to-package ownership map.
+ * @returns String-derived graph edges.
+ */
 export function scanStringLiterals(
   project: Project,
   packageMap?: Map<string, string>
@@ -676,6 +427,13 @@ function extractApiFunctionTarget(call: import("ts-morph").CallExpression): stri
 
 // ── Param-Flow / Taint Extraction Pass (FR2) ───────────────────────────────
 
+/**
+ * Extract parameter-flow and taint relationships.
+ *
+ * @param project Project to inspect.
+ * @param packageMap Optional file-to-package ownership map.
+ * @returns Parameter nodes and their graph edges.
+ */
 export function scanParamFlow(
   project: Project,
   packageMap?: Map<string, string>
@@ -758,6 +516,13 @@ export function scanParamFlow(
 
 // ── Route Discovery Pass (FR3) ─────────────────────────────────────────────
 
+/**
+ * Discover route nodes and route-related relationships.
+ *
+ * @param project Project to inspect.
+ * @param packageMap Optional file-to-package ownership map.
+ * @returns Route nodes and their graph edges.
+ */
 export function scanRoutes(
   project: Project,
   packageMap?: Map<string, string>
@@ -944,3 +709,8 @@ export function scanRoutes(
 
   return { nodes, edges };
 }
+
+// The core scanner is kept in its own module so the two-pass identity and
+// call-resolution contract can evolve without duplicating the enrichment
+// passes below. The re-export preserves the public scanner API.
+export { scanProject } from "./scanner-core";

@@ -17,13 +17,13 @@ bun install
 Full scan from a project directory:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts scan <project-dir> <output.db>
+repo-graph scan <project-dir> <output.db>
 ```
 
 Example:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts scan ./ ./graph.db
+repo-graph scan ./ ./graph.db
 ```
 
 ### Update incrementally
@@ -31,13 +31,13 @@ bun run graphing-tools/build-graph-db.ts scan ./ ./graph.db
 Re-parse only changed files (for git hooks):
 
 ```bash
-bun run graphing-tools/build-graph-db.ts update <db> <file1> <file2> ...
+repo-graph update <db> <file1> <file2> ...
 ```
 
 Example:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts update ./graph.db src/auth.ts src/utils.ts
+repo-graph update ./graph.db src/auth.ts src/utils.ts
 ```
 
 ### Query the database
@@ -51,7 +51,7 @@ sqlite3 graph.db "SELECT id, name, type FROM nodes WHERE name LIKE '%auth%'"
 Or use the built-in query command:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts query <db> "<sql>"
+repo-graph query <db> "<sql>"
 ```
 
 ### Search nodes
@@ -59,7 +59,7 @@ bun run graphing-tools/build-graph-db.ts query <db> "<sql>"
 Fuzzy search across names and summaries:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts search <db> <keyword>
+repo-graph search <db> <keyword>
 ```
 
 ### Explore (agent graph query)
@@ -67,8 +67,8 @@ bun run graphing-tools/build-graph-db.ts search <db> <keyword>
 Single high-signal graph query for Measure agents. Returns matches, relationships, source snippets, and freshness metadata in one call:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts explore <db> "lesson route progress"
-bun run graphing-tools/build-graph-db.ts explore <db> "useLesson" --json --include-source
+repo-graph explore <db> "lesson route progress"
+repo-graph explore <db> "useLesson" --json --include-source
 ```
 
 Flags: `--json`, `--limit N`, `--depth N`, `--include-source`.
@@ -79,13 +79,13 @@ Walk reverse dependency edges from changed files to surface downstream tests, ro
 
 ```bash
 # From arguments
-bun run graphing-tools/build-graph-db.ts affected <db> src/auth.ts src/db/schema.ts
+repo-graph affected <db> src/auth.ts src/db/schema.ts
 
 # From stdin (pipe-friendly)
-git diff --name-only HEAD~1 HEAD | bun run graphing-tools/build-graph-db.ts affected <db> --stdin
+git diff --name-only HEAD~1 HEAD | repo-graph affected <db> --stdin
 
 # Tests only
-bun run graphing-tools/build-graph-db.ts affected <db> src/auth.ts --tests-only --json
+repo-graph affected <db> src/auth.ts --tests-only --json
 ```
 
 Flags: `--stdin`, `--json`, `--depth N`, `--tests-only`, `--filter <glob>`.
@@ -95,8 +95,8 @@ Flags: `--stdin`, `--json`, `--depth N`, `--tests-only`, `--filter <glob>`.
 Show the bidirectional blast radius of a single node or file, surfacing routes, components, hooks, schemas, fields, and affected tests:
 
 ```bash
-bun run graphing-tools/build-graph-db.ts impact <db> "schema:scienceLessons" --json
-bun run graphing-tools/build-graph-db.ts impact <db> src/db/schema.ts --depth 3
+repo-graph impact <db> "schema:scienceLessons" --json
+repo-graph impact <db> src/db/schema.ts --depth 3
 ```
 
 Flags: `--json`, `--depth N`, `--edge-type T`, `--include-source`.
@@ -142,6 +142,6 @@ Add to `.git/hooks/post-commit` for incremental updates:
 ```bash
 CHANGED=$(git diff --name-only --diff-filter=ACM HEAD~1 HEAD -- '*.ts' '*.tsx')
 if [ -n "$CHANGED" ]; then
-  bun run graphing-tools/build-graph-db.ts update ./graph.db $CHANGED
+  repo-graph update ./graph.db $CHANGED
 fi
 ```

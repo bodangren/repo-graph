@@ -1,14 +1,16 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
-import { getStaleFiles, getProjectRoot } from "./meta";
+import { getStaleFiles, getProjectRoot, getMetadata } from "./meta";
 import { toRelativePath } from "./paths";
 import { resolveNode, type ResolvedNode } from "./resolve";
+import { buildSnippet } from "./explore";
 import { TEST_FILE_PATTERNS } from "./contract";
 import {
   type ImpactOutput,
   type FreshnessBlock,
   type RelationshipEntry,
   type NodeType,
+  type SourceSnippet,
   ExitCode,
   IMPACT_TRAVERSAL_EDGE_TYPES,
   OutputLimits,
@@ -32,14 +34,17 @@ interface ImpactOptions {
   includeSource?: boolean;
   projectRoot?: string;
   json?: boolean;
+  fromPackage?: string;
+  toPackage?: string;
 }
 
 /**
- * Run the `impact` command for a single node-or-file root. Resolves
- * the root to one or more nodes via `resolveNode` and walks incoming
- * and outgoing edges up to `depth` hops, surfacing routes,
- * components, hooks, schemas/fields, and param-flow edges
- * prominently.
+ * Run the `impact` command for a single node-or-file root.
+ *
+ * @param db Graph database to traverse.
+ * @param target Node name, node id, or file path to resolve.
+ * @param options Traversal, package-filter, source, and output options.
+ * @returns Structured blast-radius output with the process exit code.
  */
 export function runImpact(
   db: Database,
@@ -84,7 +89,9 @@ export function runImpact(
     node.id,
     depth,
     onlyEdgeType,
-    limit
+    limit,
+    options.fromPackage,
+    options.toPackage,
   );
   const {
     relationships,
@@ -94,6 +101,7 @@ export function runImpact(
     schemas,
     routes,
     paramFlow,
+    truncated: walkTruncated,
   } = walk;
 
   // All output paths are relative to projectRoot when available,
@@ -118,6 +126,7 @@ export function runImpact(
   // Freshness: include the file(s) of the root node plus any
   // relationships' file paths.
   const freshness = buildFreshnessBlock(db, projectRoot);
+  const sourceSnippets = includeSource ? collectSourceSnippets(db, node.id, relationships, projectRoot) : undefined;
 
   const output: ImpactOutput = {
     root: node.type === "file"
@@ -134,7 +143,8 @@ export function runImpact(
     paramFlow,
     affectedTests: affectedTests.map(rel),
     freshness,
-    truncated: relationships.length >= limit,
+    truncated: walkTruncated,
+    ...(sourceSnippets ? { sourceSnippets } : {}),
   };
 
   if (options.json) {
@@ -166,7 +176,13 @@ function relBucket(label: string, projectRoot: string | undefined): string {
   return `${head}  ${toRelativePath(filePath, projectRoot)}`;
 }
 
-/** Format the impact output as human-readable text. */
+/**
+ * Format impact results as human-readable text.
+ *
+ * @param result Structured impact output.
+ * @param projectRoot Optional root used to relativize displayed paths.
+ * @returns Formatted command output.
+ */
 export function formatImpactText(result: ImpactOutput, projectRoot?: string): string {
   const lines: string[] = [];
   lines.push(`Impact: ${result.root}`);
@@ -216,6 +232,14 @@ export function formatImpactText(result: ImpactOutput, projectRoot?: string): st
     lines.push("Affected tests:");
     for (const t of result.affectedTests) lines.push(`  ${t}`);
   }
+  if (result.sourceSnippets && result.sourceSnippets.length > 0) {
+    lines.push("");
+    lines.push("Source snippets:");
+    for (const snippet of result.sourceSnippets) {
+      lines.push(`  ${snippet.filePath}:${snippet.lineStart}-${snippet.lineEnd}`);
+      for (const line of snippet.content.split("\n")) lines.push(`    ${line}`);
+    }
+  }
   if (result.freshness.stale.length > 0) {
     lines.push("");
     lines.push("Stale files (re-scan recommended):");
@@ -237,24 +261,12 @@ function resolveRoot(db: Database, target: string, projectRoot?: string): RootRe
   const toAbs = (p: string) =>
     projectRoot && !p.startsWith("/") ? join(projectRoot, p) : p;
 
-  // 1a) File node id (e.g. `file:/path/to/file.ts`). Prefer a
-  //     non-file child so the impact walk surfaces the symbol's
-  //     edges, not the (often empty) edges of the file node.
+  // 1a) File node id (e.g. `file:/path/to/file.ts`). Keep the file as
+  //     the root; walkImpact expands it to every contained symbol.
   const fileNode = db
     .prepare("SELECT id, type, name, file_path FROM nodes WHERE id = ? AND type = 'file'")
     .get(`file:${toAbs(target)}`) as { id: string; type: string; name: string; file_path: string } | undefined;
   if (fileNode) {
-    const child = db
-      .prepare(
-        "SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type LIMIT 1"
-      )
-      .get(fileNode.file_path) as { id: string; type: string; name: string; file_path: string } | undefined;
-    if (child) {
-      return {
-        kind: "single",
-        node: { id: child.id, type: child.type, name: child.name, filePath: child.file_path },
-      };
-    }
     return {
       kind: "single",
       node: { id: fileNode.id, type: fileNode.type, name: fileNode.name, filePath: fileNode.file_path },
@@ -266,20 +278,6 @@ function resolveRoot(db: Database, target: string, projectRoot?: string): RootRe
     .prepare("SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type = 'file'")
     .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
   if (byFilePath) {
-    // Prefer a non-file symbol inside the file (schema, function, etc.)
-    // so the impact walk surfaces the symbol's incoming and outgoing
-    // edges, not only the (often empty) edges of the file node.
-    const child = db
-      .prepare(
-        "SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type LIMIT 1"
-      )
-      .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
-    if (child) {
-      return {
-        kind: "single",
-        node: { id: child.id, type: child.type, name: child.name, filePath: child.file_path },
-      };
-    }
     return {
       kind: "single",
       node: { id: byFilePath.id, type: byFilePath.type, name: byFilePath.name, filePath: byFilePath.file_path },
@@ -294,20 +292,8 @@ function resolveRoot(db: Database, target: string, projectRoot?: string): RootRe
   //    extension) — those are handled by the next branch.
   const looksLikeFilePath = /\/[^/]+\.(?:ts|tsx|js|jsx|json|sql)$/.test(absTarget);
   if (looksLikeFilePath) {
-    const symbolInFile = db
-      .prepare(
-        "SELECT id, type, name, file_path FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type LIMIT 1"
-      )
-      .get(absTarget) as { id: string; type: string; name: string; file_path: string } | undefined;
-    if (symbolInFile) {
-      return {
-        kind: "single",
-        node: { id: symbolInFile.id, type: symbolInFile.type, name: symbolInFile.name, filePath: symbolInFile.file_path },
-      };
-    }
-    // Even with no symbol, return a synthetic file node so the
-    // caller's exit code is Success and they can see the path in the
-    // output.
+    // Even with no persisted node, return a synthetic file root so the
+    // caller receives a stable not-yet-indexed result.
     return {
       kind: "single",
       node: { id: `file:${absTarget}`, type: "file", name: absTarget.split("/").pop() ?? absTarget, filePath: absTarget },
@@ -354,6 +340,7 @@ interface WalkResult {
   schemas: string[];
   routes: string[];
   paramFlow: Array<{ source: string; target: string; tainted: boolean }>;
+  truncated: boolean;
 }
 
 function walkImpact(
@@ -361,23 +348,18 @@ function walkImpact(
   rootId: string,
   depth: number,
   onlyEdgeType: string | undefined,
-  limit: number
+  limit: number,
+  fromPackage?: string,
+  toPackage?: string
 ): WalkResult {
-  // Impact walks BOTH directions and a broader set of edges than
-  // `affected` because callers want to see the full neighbourhood of
-  // a symbol. `IMPACT_TRAVERSAL_EDGE_TYPES` covers reverse impact;
-  // for forward/structural edges (contains, has_field) we add them
-  // here.
-  const EXTENDED_EDGE_TYPES: readonly string[] = [
-    ...IMPACT_TRAVERSAL_EDGE_TYPES,
-    "has_field",
-    "contains",
-  ];
+  // The traversal is deliberately implemented in TypeScript rather than a
+  // recursive SQL projection. That keeps the persisted edge endpoints and
+  // direction intact for every hop and makes cycle handling explicit.
   const edgeFilter = onlyEdgeType
     ? [onlyEdgeType]
-    : Array.from(EXTENDED_EDGE_TYPES);
+    : [...IMPACT_TRAVERSAL_EDGE_TYPES, "has_field", "contains"];
   const placeholders = edgeFilter.map(() => "?").join(",");
-
+  const maxDepth = Math.max(0, depth);
   const relationships: RelationshipEntry[] = [];
   const fields = new Set<string>();
   const components = new Set<string>();
@@ -386,138 +368,124 @@ function walkImpact(
   const routes = new Set<string>();
   const paramFlow: Array<{ source: string; target: string; tainted: boolean }> = [];
   const seenParamFlow = new Set<string>();
+  const seenEdges = new Set<string>();
+  const visited = new Set<string>();
+  let truncated = false;
 
-  function pushRel(
-    sourceId: string,
-    targetId: string,
-    edgeType: string,
-    direction: "forward" | "backward",
-    targetName: string,
-    targetFilePath: string,
-    targetType: string
-  ): void {
-    if (sourceId === targetId) return;
-    relationships.push({
-      sourceId,
-      targetId,
-      edgeType: edgeType as RelationshipEntry["edgeType"],
-      direction,
-      targetName,
-      targetFilePath,
-      targetType: targetType as NodeType,
-    });
-    bucketize(targetType, targetName, targetFilePath, {
-      fields,
-      components,
-      hooks,
-      schemas,
-      routes,
-    });
-    if (edgeType === "param_flow") {
-      const key = `${sourceId}->${targetId}`;
-      if (!seenParamFlow.has(key)) {
-        seenParamFlow.add(key);
-        paramFlow.push({ source: sourceId, target: targetId, tainted: true });
+  const rootRow = db
+    .prepare("SELECT id, type, file_path FROM nodes WHERE id = ?")
+    .get(rootId) as { id: string; type: string; file_path: string } | undefined;
+  const seeds: Array<{ id: string; path: string[] }> = [{ id: rootId, path: [rootId] }];
+  if (rootRow?.type === "file") {
+    const contained = db
+      .prepare("SELECT target FROM edges WHERE source = ? AND type = 'contains' ORDER BY target")
+      .all(rootId) as Array<{ target: string }>;
+    const symbolIds = contained.length > 0
+      ? contained.map((row) => row.target)
+      : (db
+          .prepare("SELECT id FROM nodes WHERE file_path = ? AND type != 'file' ORDER BY type, name, id")
+          .all(rootRow.file_path) as Array<{ id: string }>).map((row) => row.id);
+    for (const symbolId of symbolIds) {
+      seeds.push({ id: symbolId, path: [rootId, symbolId] });
+    }
+  }
+  for (const seed of seeds) visited.add(seed.id);
+
+  type FrontierItem = { id: string; depth: number; path: string[] };
+  let frontier: FrontierItem[] = seeds.map((seed) => ({ ...seed, depth: 0 }));
+
+  while (frontier.length > 0 && maxDepth > 0 && !truncated) {
+    const next: FrontierItem[] = [];
+    for (const current of frontier) {
+      const rows = db
+        .prepare(
+          `SELECT e.id AS edge_id, e.source, e.target, e.type AS edge_type,
+                  ns.name AS source_name, ns.type AS source_type,
+                  ns.file_path AS source_file_path,
+                  nt.name AS target_name, nt.type AS target_type,
+                  nt.file_path AS target_file_path
+           FROM edges e
+           JOIN nodes ns ON ns.id = e.source
+           JOIN nodes nt ON nt.id = e.target
+           WHERE (e.source = ? OR e.target = ?)
+             AND e.type IN (${placeholders})
+             AND (? IS NULL OR ns.package_id = ?)
+             AND (? IS NULL OR nt.package_id = ?)
+           ORDER BY e.type, e.source, e.target, e.id`
+        )
+        .all(current.id, current.id, ...edgeFilter, fromPackage ?? null, fromPackage ?? null, toPackage ?? null, toPackage ?? null) as Array<{
+        edge_id: number;
+        source: string;
+        target: string;
+        edge_type: string;
+        source_name: string;
+        source_type: string;
+        source_file_path: string;
+        target_name: string;
+        target_type: string;
+        target_file_path: string;
+      }>;
+
+      for (const row of rows) {
+        const isForward = row.source === current.id;
+        const neighborId = isForward ? row.target : row.source;
+        if (neighborId === current.id) continue;
+        const direction: "forward" | "backward" = isForward ? "forward" : "backward";
+        const edgeKey = `${row.edge_id}:${direction}`;
+        if (seenEdges.has(edgeKey)) continue;
+        seenEdges.add(edgeKey);
+
+        if (relationships.length >= limit) {
+          truncated = true;
+          break;
+        }
+
+        const targetName = isForward ? row.target_name : row.source_name;
+        const targetFilePath = isForward ? row.target_file_path : row.source_file_path;
+        const targetType = isForward ? row.target_type : row.source_type;
+        relationships.push({
+          sourceId: row.source,
+          targetId: row.target,
+          edgeType: row.edge_type,
+          direction,
+          targetName,
+          targetFilePath,
+          targetType: targetType as NodeType,
+          depth: current.depth + 1,
+          path: [...current.path, neighborId],
+        });
+        bucketize(targetType, targetName, targetFilePath, {
+          fields,
+          components,
+          hooks,
+          schemas,
+          routes,
+        });
+        if (row.edge_type === "param_flow") {
+          const key = `${row.source}->${row.target}`;
+          if (!seenParamFlow.has(key)) {
+            seenParamFlow.add(key);
+            paramFlow.push({ source: row.source, target: row.target, tainted: true });
+          }
+        }
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          if (current.depth + 1 < maxDepth) {
+            next.push({ id: neighborId, depth: current.depth + 1, path: [...current.path, neighborId] });
+          }
+        }
       }
+      if (truncated) break;
     }
+    frontier = next;
   }
 
-  if (depth <= 1) {
-    // Single-hop: outgoing + incoming
-    const outgoing = db
-      .prepare(
-        `SELECT e.type AS edge_type, e.target AS target_id, n.type AS target_type,
-                n.name AS target_name, n.file_path AS target_file_path
-         FROM edges e
-         JOIN nodes n ON n.id = e.target
-         WHERE e.source = ?
-           AND e.type IN (${placeholders})
-         ORDER BY e.type, n.name
-         LIMIT ?`
-      )
-      .all(rootId, ...edgeFilter, limit) as Array<{
-      edge_type: string;
-      target_id: string;
-      target_type: string;
-      target_name: string;
-      target_file_path: string;
-    }>;
-    for (const o of outgoing) {
-      pushRel(rootId, o.target_id, o.edge_type, "forward", o.target_name, o.target_file_path, o.target_type);
-    }
-    const incoming = db
-      .prepare(
-        `SELECT e.type AS edge_type, e.source AS source_id, n.type AS source_type,
-                n.name AS source_name, n.file_path AS source_file_path
-         FROM edges e
-         JOIN nodes n ON n.id = e.source
-         WHERE e.target = ?
-           AND e.type IN (${placeholders})
-         ORDER BY e.type, n.name
-         LIMIT ?`
-      )
-      .all(rootId, ...edgeFilter, limit) as Array<{
-      edge_type: string;
-      source_id: string;
-      source_type: string;
-      source_name: string;
-      source_file_path: string;
-    }>;
-    for (const i of incoming) {
-      pushRel(i.source_id, rootId, i.edge_type, "backward", i.source_name, i.source_file_path, i.source_type);
-    }
-  } else {
-    // Multi-hop: recursive CTE that walks both directions up to
-    // `depth` hops. Each non-root node is reported as a relationship
-    // to its parent in the walk; the direction reflects whether the
-    // source or target of the underlying edge is closer to the root.
-    const sql = `
-      WITH RECURSIVE walk(id, parent_id, parent_dir, depth, edge_type, path) AS (
-        SELECT ?, NULL, NULL, 0, NULL, ' → ' || ? || ' → '
-        UNION ALL
-        SELECT
-          CASE WHEN e.source = w.id THEN e.target ELSE e.source END,
-          w.id,
-          CASE WHEN e.source = w.id THEN 'forward' ELSE 'backward' END,
-          w.depth + 1,
-          e.type,
-          w.path || CASE WHEN e.source = w.id THEN e.target ELSE e.source END || ' → '
-        FROM walk w
-        JOIN edges e ON (e.source = w.id OR e.target = w.id)
-                       AND e.type IN (${placeholders})
-        WHERE w.depth < ?
-          AND INSTR(w.path, ' → ' || CASE WHEN e.source = w.id THEN e.target ELSE e.source END || ' → ') = 0
-      )
-      SELECT DISTINCT w.id, w.parent_id, w.parent_dir, w.edge_type,
-             n.name AS node_name, n.type AS node_type, n.file_path AS node_file_path
-      FROM walk w
-      JOIN nodes n ON n.id = w.id
-      WHERE w.depth > 0
-      LIMIT ?
-    `;
-    const rows = db.prepare(sql).all(rootId, rootId, ...edgeFilter, depth, limit) as Array<{
-      id: string;
-      parent_id: string;
-      parent_dir: "forward" | "backward" | null;
-      edge_type: string;
-      node_name: string;
-      node_type: string;
-      node_file_path: string;
-    }>;
-    for (const r of rows) {
-      const direction: "forward" | "backward" =
-        r.parent_dir === "forward" ? "backward" : "forward";
-      pushRel(
-        direction === "forward" ? rootId : r.id,
-        direction === "forward" ? r.id : rootId,
-        r.edge_type,
-        direction,
-        r.node_name,
-        r.node_file_path,
-        r.node_type
-      );
-    }
-  }
+  relationships.sort((a, b) =>
+    (a.depth ?? 0) - (b.depth ?? 0) ||
+    a.edgeType.localeCompare(b.edgeType) ||
+    a.sourceId.localeCompare(b.sourceId) ||
+    a.targetId.localeCompare(b.targetId)
+  );
 
   return {
     relationships,
@@ -529,7 +497,34 @@ function walkImpact(
     paramFlow: paramFlow.sort((a, b) =>
       a.source === b.source ? a.target.localeCompare(b.target) : a.source.localeCompare(b.source)
     ),
+    truncated,
   };
+}
+
+function collectSourceSnippets(
+  db: Database,
+  rootId: string,
+  relationships: RelationshipEntry[],
+  projectRoot?: string
+): SourceSnippet[] {
+  const ids = [rootId, ...relationships.flatMap((relationship) => [relationship.sourceId, relationship.targetId])];
+  const seen = new Set<string>();
+  const snippets: SourceSnippet[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const row = db.prepare("SELECT id, file_path AS filePath, type, name FROM nodes WHERE id = ?").get(id) as {
+      id: string;
+      filePath: string;
+      type: string;
+      name: string;
+    } | undefined;
+    if (!row) continue;
+    const snippet = buildSnippet(db, row, projectRoot);
+    if (snippet) snippets.push(snippet);
+    if (snippets.length >= 10) break;
+  }
+  return snippets;
 }
 
 function bucketize(
@@ -561,6 +556,23 @@ function collectAffectedTests(db: Database, rootId: string): string[] {
   const MAX_HOPS = 6;
   const reached = new Set<string>([rootId]);
   let frontier: string[] = [rootId];
+  const root = db
+    .prepare("SELECT type, file_path FROM nodes WHERE id = ?")
+    .get(rootId) as { type: string; file_path: string } | undefined;
+  if (root?.type === "file") {
+    const contained = db
+      .prepare("SELECT target FROM edges WHERE source = ? AND type = 'contains'")
+      .all(rootId) as Array<{ target: string }>;
+    const symbols = contained.length > 0
+      ? contained.map((row) => row.target)
+      : (db
+          .prepare("SELECT id FROM nodes WHERE file_path = ? AND type != 'file'")
+          .all(root.file_path) as Array<{ id: string }>).map((row) => row.id);
+    for (const id of symbols) {
+      reached.add(id);
+      frontier.push(id);
+    }
+  }
   const testFileIds = new Set<string>();
   // Pre-collect test file node ids for fast membership check
   const testFileNodeRows = db
@@ -579,9 +591,10 @@ function collectAffectedTests(db: Database, rootId: string): string[] {
       .prepare(
         `SELECT DISTINCT CASE WHEN e.source IN (${placeholders}) THEN e.target ELSE e.source END AS other
          FROM edges e
-         WHERE e.source IN (${placeholders}) OR e.target IN (${placeholders})`
+         WHERE (e.source IN (${placeholders}) OR e.target IN (${placeholders}))
+           AND e.type IN (${IMPACT_TRAVERSAL_EDGE_TYPES.map(() => "?").join(",")})`
       )
-      .all(...frontier, ...frontier, ...frontier) as Array<{ other: string }>;
+      .all(...frontier, ...frontier, ...frontier, ...IMPACT_TRAVERSAL_EDGE_TYPES) as Array<{ other: string }>;
     const newFrontier: string[] = [];
     for (const { other } of next) {
       if (reached.has(other)) continue;
@@ -623,10 +636,14 @@ function patternToRegex(pat: string): RegExp {
 function buildFreshnessBlock(db: Database, projectRoot?: string): FreshnessBlock {
   const stale = getStaleFiles(db);
   const rel = (p: string) => (projectRoot ? toRelativePath(p, projectRoot) : p);
+  const indexedRows = db
+    .prepare("SELECT MAX(indexed_at) AS indexed_at FROM files")
+    .get() as { indexed_at: number | null };
+  const checkedAt = getMetadata(db)?.lastIndexedAt ?? indexedRows.indexed_at ?? 0;
   return {
     stale: stale.map((s) => rel(s.path)).sort(),
     missing: stale.filter((s) => s.reason === "deleted").map((s) => rel(s.path)).sort(),
-    checkedAt: 0,
+    checkedAt,
   };
 }
 

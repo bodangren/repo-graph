@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { loadConfig, applyCustomEdges } from "./config";
-import type { GraphNode, CustomEdgeDef } from "./contract";
+import type { GraphNode, GraphEdge, CustomEdgeDef } from "./contract";
 
 const TMP_DIR = join(import.meta.dir, "__tmp_config_test");
 

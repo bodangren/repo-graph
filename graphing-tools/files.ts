@@ -14,9 +14,10 @@ export interface FileMetadataRecord {
 }
 
 /**
- * Compute SHA-256 content hash for a file. Returns a `sha256:<hex>`
- * prefix for parity with conventional git-style hashes. Returns
- * `null` if the file cannot be read.
+ * Compute a SHA-256 content hash for a file.
+ *
+ * @param filePath File to read.
+ * @returns A `sha256:<hex>` value, or `null` when the file cannot be read.
  */
 export function hashFile(filePath: string): string | null {
   try {
@@ -28,15 +29,19 @@ export function hashFile(filePath: string): string | null {
 }
 
 /**
- * Record (or refresh) a single file's metadata row in the `files`
- * table. Captures content hash, size, mtime, indexed time, and the
- * number of nodes for that file.
+ * Record or refresh a single file's metadata row.
+ *
+ * @param db Graph database receiving the metadata.
+ * @param _projectRoot Project root retained for the persistence contract.
+ * @param filePath File whose metadata is recorded.
+ * @param _sourceFile Parsed source file retained for the persistence contract.
+ * @returns The recorded metadata, or `null` when the file cannot be read.
  */
 export function recordFileMetadata(
   db: Database,
   _projectRoot: string | undefined,
   filePath: string,
-  sourceFile: { getLineCount?: () => number } | null
+  _sourceFile: unknown
 ): FileMetadataRecord | null {
   let stat;
   try {
@@ -80,13 +85,16 @@ export function recordFileMetadata(
 }
 
 /**
- * Remove a file's `files` row, its `nodes` rows, and any edges
- * referencing those nodes. Returns counts of deleted rows.
+ * Remove a file's metadata and graph rows, including referencing edges.
  *
  * `filesDeleted` is a logical count (1 when this function is invoked
  * for a path) so that callers can count "files removed" even when no
  * `files` table row exists. `nodesDeleted` and `edgesDeleted` are
  * the actual row counts from the SQL DELETE statements.
+ *
+ * @param db Graph database to update.
+ * @param filePath File path whose rows are removed.
+ * @returns Counts of deleted files, nodes, and edges.
  */
 export function deleteFileData(
   db: Database,
@@ -113,7 +121,12 @@ export function deleteFileData(
   return { nodesDeleted, edgesDeleted, filesDeleted: 1 };
 }
 
-/** Convenience: check whether a file path exists on disk. */
+/**
+ * Check whether a file path exists on disk.
+ *
+ * @param p File path to check.
+ * @returns Whether the path currently exists.
+ */
 export function fileExists(p: string): boolean {
   try {
     return existsSync(p);

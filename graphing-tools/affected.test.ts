@@ -102,7 +102,7 @@ describe("runAffected (A4)", () => {
     const parsed = JSON.parse(result.output);
     const groups = new Set(parsed.affected.map((f: { group: string }) => f.group));
     for (const g of groups) {
-      expect(["tests", "routes", "components", "dataAccess", "other"]).toContain(g);
+      expect(["tests", "routes", "components", "dataAccess", "other"]).toContain(String(g));
     }
   });
 

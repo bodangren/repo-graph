@@ -1,14 +1,14 @@
 {
   "track_id": "graph_correctness_jsdoc_ts7_20260715",
   "type": "chore",
-  "status": "new",
+  "status": "complete",
   "priority": "critical",
   "created_at": "2026-07-15T08:46:20Z",
-  "updated_at": "2026-07-15T08:46:20Z",
+  "updated_at": "2026-07-15T10:56:26Z",
   "description": "Foundational correctness release for deterministic full and incremental graph construction, real call and impact relationships, freshness and audit accuracy, structured JSDoc extraction and missing-documentation reporting, comprehensive tests, TypeScript 7 type-checking, canonical CLI/help/skill documentation, and verified local artifact installation.",
   "estimated_tasks": 37,
-  "actual_tasks": null,
-  "deviation_notes": "",
+  "actual_tasks": 37,
+  "deviation_notes": "Canonical persistence now uses atomic deterministic full snapshots for both scan and update paths so normalized full/incremental state is equivalent. Dead legacy JSON scanner/ingest workers and their obsolete tests were removed; documentation audit uses one cached ts-morph Project per source path. Final verification ran 441 tests with 95.18% line coverage overall; the lower count versus baseline reflects retired legacy-ingest tests.",
   "depends_on": [],
   "supersedes": [
     "binary_scanner_unification_20260627"

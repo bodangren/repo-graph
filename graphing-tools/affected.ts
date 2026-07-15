@@ -56,8 +56,12 @@ function normalizeInputPath(raw: string, projectRoot: string): string | null {
 }
 
 /**
- * Run the `affected` command over the given changed files. Returns a
- * structured `AffectedResult` containing either text or JSON output.
+ * Run the `affected` command over the given changed files.
+ *
+ * @param db Graph database to traverse.
+ * @param files Changed file paths or stdin-derived paths.
+ * @param options Traversal, filtering, and output options.
+ * @returns Structured text or JSON output with the process exit code.
  */
 export function runAffected(
   db: Database,
@@ -131,7 +135,12 @@ export function runAffected(
   };
 }
 
-/** Format the affected output as human-readable text. */
+/**
+ * Format affected-file results as human-readable text.
+ *
+ * @param result Structured affected-file output.
+ * @returns Formatted command output.
+ */
 export function formatAffectedText(result: AffectedOutput): string {
   const lines: string[] = [];
   lines.push("Affected files");
@@ -288,9 +297,10 @@ function makeAffectedEntry(
 }
 
 /**
- * Classify a file into one of the `AffectedGroup` buckets. Test
- * classification uses path-anchored globs (anti-pattern A7) and never
- * matches a bare English word.
+ * Classify a file into one of the affected-file buckets.
+ *
+ * @param filePath File path to classify.
+ * @returns The matching affected-file group.
  */
 export function classifyFile(filePath: string): AffectedGroup {
   if (isTestFile(filePath)) return "tests";
@@ -300,25 +310,45 @@ export function classifyFile(filePath: string): AffectedGroup {
   return "other";
 }
 
-/** Path-anchored test-file classifier (per anti-pattern A7). */
+/**
+ * Classify a path as a test file using anchored directory and suffix rules.
+ *
+ * @param filePath File path to inspect.
+ * @returns Whether the path identifies a test file.
+ */
 export function isTestFile(filePath: string): boolean {
   return /(?:^|\/)(?:__tests__|e2e|playwright)\//.test(filePath) ||
     /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(filePath);
 }
 
-/** App-router / pages-router route file classifier. */
+/**
+ * Classify a path as an application route file.
+ *
+ * @param filePath File path to inspect.
+ * @returns Whether the path identifies a route file.
+ */
 export function isRouteFile(filePath: string): boolean {
   return /\/app\/.*\/(?:page|layout|route|loading|error|not-found)\.[jt]sx?$/.test(filePath) ||
     /\/pages\/.*\.[jt]sx?$/.test(filePath) ||
     /\/api\/.*\.(?:ts|tsx|js|jsx)$/.test(filePath);
 }
 
-/** React component file classifier. */
+/**
+ * Classify a path as a React component file.
+ *
+ * @param filePath File path to inspect.
+ * @returns Whether the path identifies a component file.
+ */
 export function isComponentFile(filePath: string): boolean {
   return /\/components?\//.test(filePath) && /\.[jt]sx?$/.test(filePath);
 }
 
-/** Database / data-access classifier. */
+/**
+ * Classify a path as a database or data-access file.
+ *
+ * @param filePath File path to inspect.
+ * @returns Whether the path identifies a data-access file.
+ */
 export function isDataAccessFile(filePath: string): boolean {
   return /\/db\//.test(filePath) ||
     /\/models?\//.test(filePath) ||

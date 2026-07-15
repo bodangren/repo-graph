@@ -1,5 +1,5 @@
 /**
- * CLI Contract — Type definitions for the build-graph command-line interface.
+ * CLI Contract — Type definitions for the repo-graph command-line interface.
  *
  * These types are the source of truth for argument shapes, exit codes,
  * and output formats across all subcommands.
@@ -7,14 +7,17 @@
 
 // ── Subcommands ────────────────────────────────────────────────────────────
 
+/** Supported repo-graph subcommands. */
 export type Subcommand = "init" | "scan" | "update" | "query" | "search" | "deps" | "callers" | "path" | "stats" | "files" | "help" | "version" | "inspect" | "audit" | "config" | "explore" | "affected" | "impact" | "install-hooks";
 
 // ── Per-subcommand argument shapes ─────────────────────────────────────────
 
+/** Arguments for graph initialization. */
 export interface InitArgs {
   dbPath: string;
 }
 
+/** Arguments for a full source scan. */
 export interface ScanArgs {
   projectDir: string;
   dbPath: string;
@@ -22,24 +25,28 @@ export interface ScanArgs {
   includePatterns?: string[];
 }
 
+/** Arguments for a graph update. */
 export interface UpdateArgs {
   dbPath: string;
   filePaths: string[];
   json?: boolean;
 }
 
+/** Arguments for hook installation. */
 export interface InstallHooksArgs {
   path?: string;
   force?: boolean;
   json?: boolean;
 }
 
+/** Arguments for a raw SQL query. */
 export interface QueryArgs {
   dbPath: string;
   sql: string;
   json?: boolean;
 }
 
+/** Arguments for dependency traversal. */
 export interface DepsArgs {
   dbPath: string;
   name: string;
@@ -51,6 +58,7 @@ export interface DepsArgs {
   toPackage?: string;
 }
 
+/** Arguments for caller traversal. */
 export interface CallersArgs {
   dbPath: string;
   name: string;
@@ -61,6 +69,7 @@ export interface CallersArgs {
   toPackage?: string;
 }
 
+/** Arguments for shortest-path lookup. */
 export interface PathArgs {
   dbPath: string;
   from: string;
@@ -68,11 +77,13 @@ export interface PathArgs {
   json?: boolean;
 }
 
+/** Arguments for graph statistics. */
 export interface StatsArgs {
   dbPath: string;
   json?: boolean;
 }
 
+/** Arguments for file listing. */
 export interface FilesArgs {
   dbPath: string;
   pattern?: string;
@@ -80,6 +91,7 @@ export interface FilesArgs {
   limit?: number;
 }
 
+/** Arguments for node search. */
 export interface SearchArgs {
   dbPath: string;
   keyword: string;
@@ -88,25 +100,32 @@ export interface SearchArgs {
   type?: string;
 }
 
+/** Arguments for help output. */
 export interface HelpArgs {
   subcommand?: Subcommand;
 }
 
+/** Arguments for version output. */
 export interface VersionArgs {}
 
+/** Arguments for node inspection. */
 export interface InspectArgs {
   dbPath: string;
   name: string;
   json?: boolean;
 }
 
+/** Arguments for graph and documentation audits. */
 export interface AuditArgs {
   dbPath: string;
   json?: boolean;
+  docs?: boolean;
+  includeInternal?: boolean;
 }
 
 // ── Explore / Affected / Impact argument shapes ─────────────────────────────
 
+/** Arguments for high-signal graph exploration. */
 export interface ExploreArgs {
   dbPath: string;
   query: string;
@@ -116,6 +135,7 @@ export interface ExploreArgs {
   includeSource?: boolean;
 }
 
+/** Arguments for affected-file traversal. */
 export interface AffectedArgs {
   dbPath: string;
   files: string[];
@@ -126,6 +146,7 @@ export interface AffectedArgs {
   filter?: string;
 }
 
+/** Arguments for blast-radius traversal. */
 export interface ImpactArgs {
   dbPath: string;
   nodeOrFile: string;
@@ -133,30 +154,36 @@ export interface ImpactArgs {
   depth?: number;
   edgeType?: string;
   includeSource?: boolean;
+  fromPackage?: string;
+  toPackage?: string;
 }
 
 // ── Union of all possible parsed argument sets ─────────────────────────────
 
+type ParsedArgsHints = Partial<InitArgs & ScanArgs & UpdateArgs & InstallHooksArgs & QueryArgs & DepsArgs & CallersArgs & PathArgs & StatsArgs & FilesArgs & SearchArgs & HelpArgs & InspectArgs & AuditArgs & ExploreArgs & AffectedArgs & ImpactArgs>;
+type ParsedArgsFor<T> = T & ParsedArgsHints;
+
+/** Discriminated union produced by CLI argument parsing. */
 export type ParsedArgs =
-  | { subcommand: "init"; args: InitArgs }
-  | { subcommand: "scan"; args: ScanArgs }
-  | { subcommand: "update"; args: UpdateArgs }
-  | { subcommand: "query"; args: QueryArgs }
-  | { subcommand: "search"; args: SearchArgs }
-  | { subcommand: "deps"; args: DepsArgs }
-  | { subcommand: "callers"; args: CallersArgs }
-  | { subcommand: "path"; args: PathArgs }
-  | { subcommand: "stats"; args: StatsArgs }
-  | { subcommand: "files"; args: FilesArgs }
-  | { subcommand: "help"; args: HelpArgs }
-  | { subcommand: "version"; args: VersionArgs }
-  | { subcommand: "inspect"; args: InspectArgs }
-  | { subcommand: "audit"; args: AuditArgs }
-  | { subcommand: "explore"; args: ExploreArgs }
-  | { subcommand: "affected"; args: AffectedArgs }
-  | { subcommand: "impact"; args: ImpactArgs }
-  | { subcommand: "install-hooks"; args: InstallHooksArgs }
-  | { subcommand: "config"; args: {} };
+  | { subcommand: "init"; args: ParsedArgsFor<InitArgs> }
+  | { subcommand: "scan"; args: ParsedArgsFor<ScanArgs> }
+  | { subcommand: "update"; args: ParsedArgsFor<UpdateArgs> }
+  | { subcommand: "query"; args: ParsedArgsFor<QueryArgs> }
+  | { subcommand: "search"; args: ParsedArgsFor<SearchArgs> }
+  | { subcommand: "deps"; args: ParsedArgsFor<DepsArgs> }
+  | { subcommand: "callers"; args: ParsedArgsFor<CallersArgs> }
+  | { subcommand: "path"; args: ParsedArgsFor<PathArgs> }
+  | { subcommand: "stats"; args: ParsedArgsFor<StatsArgs> }
+  | { subcommand: "files"; args: ParsedArgsFor<FilesArgs> }
+  | { subcommand: "help"; args: ParsedArgsFor<HelpArgs> }
+  | { subcommand: "version"; args: ParsedArgsFor<VersionArgs> }
+  | { subcommand: "inspect"; args: ParsedArgsFor<InspectArgs> }
+  | { subcommand: "audit"; args: ParsedArgsFor<AuditArgs> }
+  | { subcommand: "explore"; args: ParsedArgsFor<ExploreArgs> }
+  | { subcommand: "affected"; args: ParsedArgsFor<AffectedArgs> }
+  | { subcommand: "impact"; args: ParsedArgsFor<ImpactArgs> }
+  | { subcommand: "install-hooks"; args: ParsedArgsFor<InstallHooksArgs> }
+  | { subcommand: "config"; args: ParsedArgsFor<{}> };
 
 // ── Exit codes ─────────────────────────────────────────────────────────────
 
@@ -168,10 +195,12 @@ export const ExitCode = {
   RuntimeError: 4,
 } as const;
 
+/** Numeric process exit-code value. */
 export type ExitCodeValue = (typeof ExitCode)[keyof typeof ExitCode];
 
 // ── Progress output (stderr) ───────────────────────────────────────────────
 
+/** Progress payload for a source scan. */
 export interface ScanProgress {
   filesScanned: number;
   nodesExtracted: number;
@@ -179,6 +208,7 @@ export interface ScanProgress {
   elapsedMs: number;
 }
 
+/** Progress payload for an update. */
 export interface UpdateProgress {
   filesUpdated: number;
   nodesDeleted: number;
@@ -195,6 +225,31 @@ export interface UpdateProgress {
  */
 export type NodeId = string;
 
+/** A normalized JSDoc tag stored with a graph node. */
+export interface DocumentationTag {
+  name: string;
+  text: string;
+  subject?: string;
+}
+
+/** A structured parameter description extracted from a JSDoc block. */
+export interface DocumentationParam {
+  name: string;
+  description: string;
+}
+
+/** Versioned documentation payload persisted with supported public nodes. */
+export interface NodeDocumentation {
+  version: 1;
+  hasJsDoc: boolean;
+  description: string;
+  params: DocumentationParam[];
+  returns?: string;
+  tags: DocumentationTag[];
+  declarationForm?: string;
+}
+
+/** Persisted graph node contract. */
 export interface GraphNode {
   id: NodeId;
   type: NodeType;
@@ -203,6 +258,7 @@ export interface GraphNode {
   lineStart?: number;
   lineEnd?: number;
   summary?: string;
+  documentation?: NodeDocumentation;
   tags?: string[];
   complexity?: "simple" | "moderate" | "complex";
   languageNotes?: string;
@@ -210,6 +266,7 @@ export interface GraphNode {
   packageId?: string;
 }
 
+/** Persisted node categories. */
 export type NodeType =
   | "file"
   | "function"
@@ -224,15 +281,17 @@ export type NodeType =
   | "route"
   | "param";
 
+/** Persisted graph edge contract. */
 export interface GraphEdge {
   source: NodeId;
   target: NodeId;
-  type: EdgeType;
+  type: EdgeType | string;
   direction: "forward" | "backward" | "bidirectional";
   weight?: number;
   metadata?: string;
 }
 
+/** Built-in graph edge categories. */
 export type EdgeType =
   | "contains"
   | "imports"
@@ -252,6 +311,7 @@ export type EdgeType =
 
 // ── Config types ──────────────────────────────────────────────────────────
 
+/** Configuration for one custom graph edge type. */
 export interface CustomEdgeDef {
   type: string;
   description?: string;
@@ -264,28 +324,33 @@ export interface CustomEdgeDef {
   scope?: "same-file" | "imported" | "all";
 }
 
+/** Project configuration consumed by the scanner. */
 export interface BuildGraphConfig {
   customEdges?: CustomEdgeDef[];
 }
 
 // ── Query/Search output contract ───────────────────────────────────────────
 
+/** A rendered table column descriptor. */
 export interface TableColumn {
   name: string;
   width: number;
 }
 
+/** Normalized raw-query output. */
 export interface QueryResult {
   columns: string[];
   rows: (string | number | null)[][];
 }
 
+/** Search result for one persisted graph node. */
 export interface SearchResult {
   id: string;
   type: NodeType;
   name: string;
   filePath: string;
   summary?: string;
+  documentation?: NodeDocumentation;
 }
 
 // ── Explore / Affected / Impact output types ────────────────────────────────
@@ -309,11 +374,15 @@ export interface FreshnessBlock {
 export interface RelationshipEntry {
   sourceId: string;
   targetId: string;
-  edgeType: EdgeType;
+  edgeType: EdgeType | string;
   direction: "forward" | "backward";
   targetName: string;
   targetFilePath: string;
   targetType: NodeType;
+  /** Number of persisted edges from the resolved root to this relationship. */
+  depth?: number;
+  /** Persisted node IDs visited from the resolved root, in traversal order. */
+  path?: string[];
 }
 
 /** A bounded source-code excerpt with stable line numbers. */
@@ -336,7 +405,7 @@ export interface AffectedFileEntry {
   paths: string[][];
 }
 
-/** Top-level JSON output for `build-graph explore`. */
+/** Top-level JSON output for `repo-graph explore`. */
 export interface ExploreOutput {
   query: string;
   matches: SearchResult[];
@@ -347,7 +416,7 @@ export interface ExploreOutput {
   nextQuery?: string;
 }
 
-/** Top-level JSON output for `build-graph affected`. */
+/** Top-level JSON output for `repo-graph affected`. */
 export interface AffectedOutput {
   changedFiles: string[];
   affected: AffectedFileEntry[];
@@ -355,7 +424,7 @@ export interface AffectedOutput {
   testsOnly: boolean;
 }
 
-/** Top-level JSON output for `build-graph impact`. */
+/** Top-level JSON output for `repo-graph impact`. */
 export interface ImpactOutput {
   root: string;
   /** Combined incoming + outgoing relationships (alias for upstream + downstream). */
@@ -373,7 +442,29 @@ export interface ImpactOutput {
   affectedTests: string[];
   freshness: FreshnessBlock;
   truncated: boolean;
+  sourceSnippets?: SourceSnippet[];
   nextQuery?: string;
+}
+
+/** Category reported by the documentation audit. */
+export type DocumentationIssueCategory =
+  | "missing_jsdoc"
+  | "missing_description"
+  | "missing_param"
+  | "mismatched_param"
+  | "missing_returns"
+  | "duplicate_tag"
+  | "extra_tag"
+  | "unsupported_form";
+
+/** One documentation contract violation for a persisted public node. */
+export interface DocumentationIssue {
+  id: string;
+  type: NodeType;
+  name: string;
+  filePath: string;
+  category: DocumentationIssueCategory;
+  message: string;
 }
 
 // ── Ranking and output budgets ──────────────────────────────────────────────

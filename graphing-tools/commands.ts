@@ -1,9 +1,9 @@
 import { Database } from "bun:sqlite";
 import { formatTable } from "./query";
 import { toRelativePath } from "./paths";
-import { getProjectRoot, getStaleFiles } from "./meta";
+import { getMetadata, getProjectRoot, getStaleFiles } from "./meta";
 import { resolveNode, type ResolvedNode } from "./resolve";
-import { ExitCode, type SearchResult, type FreshnessBlock } from "./contract";
+import { ExitCode, type ExitCodeValue, type SearchResult, type FreshnessBlock, type NodeDocumentation } from "./contract";
 
 // ── Shared formatting ──────────────────────────────────────────────────────
 
@@ -22,6 +22,10 @@ function printDisambiguation(matches: SearchResult[], root: string | undefined):
  * Build a `FreshnessBlock` for JSON output, scoped to a set of
  * optional `watchPaths`. When `watchPaths` is provided, only files
  * matching those paths are surfaced (others are ignored).
+ *
+ * @param db Graph database containing stored file records.
+ * @param watchPaths Optional paths to include.
+ * @returns Deterministic freshness state.
  */
 function buildFreshnessBlock(db: Database, watchPaths?: string[]): FreshnessBlock {
   const stale = getStaleFiles(db);
@@ -35,18 +39,27 @@ function buildFreshnessBlock(db: Database, watchPaths?: string[]): FreshnessBloc
   return {
     stale: stalePaths,
     missing: missingPaths,
-    checkedAt: Date.now(),
+    checkedAt: getMetadata(db)?.lastIndexedAt ?? 0,
   };
 }
 
 // ── deps ───────────────────────────────────────────────────────────────────
 
+/**
+ * List direct or transitive dependencies of a resolved node.
+ *
+ * @param db Graph database to query.
+ * @param name Node id or name to resolve.
+ * @param downstream Whether to follow outgoing dependency edges.
+ * @param opts Traversal, package-filter, and output options.
+ * @returns Serialized results and the process exit code.
+ */
 export function runDeps(
   db: Database,
   name: string,
   downstream: boolean,
   opts?: { json?: boolean; limit?: number; depth?: number; fromPackage?: string; toPackage?: string }
-): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
+): { output: string; exitCode: ExitCodeValue } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
@@ -193,11 +206,19 @@ export function runDeps(
 
 // ── callers ────────────────────────────────────────────────────────────────
 
+/**
+ * List functions and files that call or depend on a resolved node.
+ *
+ * @param db Graph database to query.
+ * @param name Node id or name to resolve.
+ * @param opts Traversal, package-filter, and output options.
+ * @returns Serialized results and the process exit code.
+ */
 export function runCallers(
   db: Database,
   name: string,
   opts?: { json?: boolean; limit?: number; depth?: number; fromPackage?: string; toPackage?: string }
-): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
+): { output: string; exitCode: ExitCodeValue } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
@@ -305,12 +326,21 @@ export function runCallers(
 
 // ── path ───────────────────────────────────────────────────────────────────
 
+/**
+ * Find a dependency path between two resolved nodes.
+ *
+ * @param db Graph database to query.
+ * @param fromName Starting node id or name.
+ * @param toName Destination node id or name.
+ * @param opts Output options.
+ * @returns Serialized path output and the process exit code.
+ */
 export function runPath(
   db: Database,
   fromName: string,
   toName: string,
   opts?: { json?: boolean }
-): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
+): { output: string; exitCode: ExitCodeValue } {
   const root = getProjectRoot(db);
   const fromResolved = resolveNode(db, fromName);
   const toResolved = resolveNode(db, toName);
@@ -400,6 +430,13 @@ export function runPath(
 
 // ── stats ──────────────────────────────────────────────────────────────────
 
+/**
+ * Summarize graph size, node types, edge types, and packages.
+ *
+ * @param db Graph database to inspect.
+ * @param opts Output options.
+ * @returns Human-readable or JSON statistics.
+ */
 export function runStats(db: Database, opts?: { json?: boolean }): string {
   const root = getProjectRoot(db);
 
@@ -506,11 +543,19 @@ export function runStats(db: Database, opts?: { json?: boolean }): string {
 
 // ── inspect ────────────────────────────────────────────────────────────────
 
+/**
+ * Inspect a resolved node, its documentation, and direct relationships.
+ *
+ * @param db Graph database to inspect.
+ * @param name Node id or name to resolve.
+ * @param opts Output options.
+ * @returns Serialized inspection output and the process exit code.
+ */
 export function runInspect(
   db: Database,
   name: string,
   opts?: { json?: boolean }
-): { output: string; exitCode: ExitCode.Success | ExitCode.NotFound | ExitCode.Ambiguous } {
+): { output: string; exitCode: ExitCodeValue } {
   const root = getProjectRoot(db);
   const resolved = resolveNode(db, name);
 
@@ -525,8 +570,8 @@ export function runInspect(
   }
 
   const node = resolved.node;
-  const meta = db.prepare("SELECT line_start, line_end, summary, tags FROM nodes WHERE id = ?").get(node.id) as
-    | { line_start: number | null; line_end: number | null; summary: string | null; tags: string | null }
+  const meta = db.prepare("SELECT line_start, line_end, summary, documentation, tags FROM nodes WHERE id = ?").get(node.id) as
+    | { line_start: number | null; line_end: number | null; summary: string | null; documentation: string | null; tags: string | null }
     | undefined;
 
   const outgoing = db.prepare(`
@@ -564,6 +609,7 @@ export function runInspect(
         line_start: meta?.line_start ?? undefined,
         line_end: meta?.line_end ?? undefined,
         summary: meta?.summary ?? undefined,
+        documentation: parseDocumentation(meta?.documentation),
         tags: meta?.tags ? JSON.parse(meta.tags) : undefined,
       },
       outgoing: resolvedOutgoing.map((r) => ({
@@ -599,6 +645,12 @@ export function runInspect(
   lines.push(`${node.type}:${node.name}${location}`);
   if (meta?.tags) lines.push(`Tags: ${meta.tags}`);
   if (meta?.summary) lines.push(`Summary: ${meta.summary}`);
+  const documentation = parseDocumentation(meta?.documentation);
+  if (documentation) {
+    lines.push(`Documentation: ${documentation.description || "(no description)"}`);
+    if (documentation.params.length > 0) lines.push(`Documented params: ${documentation.params.map((param) => param.name).join(", ")}`);
+    if (documentation.returns) lines.push(`Returns: ${documentation.returns}`);
+  }
   lines.push("");
 
   lines.push(`Outgoing edges (${resolvedOutgoing.length}):`);
@@ -625,8 +677,26 @@ export function runInspect(
   return { output: lines.join("\n"), exitCode: ExitCode.Success };
 }
 
+function parseDocumentation(raw: string | null | undefined): NodeDocumentation | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as NodeDocumentation;
+    return parsed.version === 1 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // ── files ──────────────────────────────────────────────────────────────────
 
+/**
+ * List graph file nodes and their entity counts.
+ *
+ * @param db Graph database to inspect.
+ * @param pattern Optional path pattern.
+ * @param opts Output and result-limit options.
+ * @returns Human-readable or JSON file listing.
+ */
 export function runFiles(db: Database, pattern?: string, opts?: { json?: boolean; limit?: number }): string {
   const root = getProjectRoot(db);
 

@@ -4,7 +4,7 @@ import { Database } from "bun:sqlite";
  * Schema version constant used for conflict detection.
  * Increment this when the database schema changes in a backward-incompatible way.
  */
-export const SCHEMA_VERSION = "1.0.0";
+export const SCHEMA_VERSION = "2.0.0";
 
 /**
  * Key used in the `meta` table to store structured graph metadata
@@ -32,6 +32,7 @@ export const FTS5_CREATE_SQL = `
     name,
     file_path,
     summary,
+    documentation,
     tags,
     content='nodes',
     content_rowid='rowid'
@@ -44,13 +45,13 @@ export const FTS5_CREATE_SQL = `
  * remains the single source of truth for FTS5 DDL.
  */
 export const FTS5_INSERT_NODE_SQL = `
-  INSERT INTO nodes_fts(rowid, id, name, file_path, summary, tags)
-  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?tags);
+  INSERT INTO nodes_fts(rowid, id, name, file_path, summary, documentation, tags)
+  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?documentation, ?tags);
 `;
 
 export const FTS5_DELETE_NODE_SQL = `
-  INSERT INTO nodes_fts('delete', rowid, id, name, file_path, summary, tags)
-  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?tags);
+  INSERT INTO nodes_fts('delete', rowid, id, name, file_path, summary, documentation, tags)
+  VALUES (?rowid, ?id, ?name, ?file_path, ?summary, ?documentation, ?tags);
 `;
 
 /**
@@ -88,6 +89,12 @@ export const EDGE_TRAVERSAL_INDEX_SQL = `
   CREATE INDEX IF NOT EXISTS idx_edges_type ON edges(type);
 `;
 
+/**
+ * Create or migrate the graph database schema.
+ *
+ * @param db Graph database to initialize.
+ * @returns Nothing.
+ */
 export function createSchema(db: Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS nodes (
@@ -98,6 +105,7 @@ export function createSchema(db: Database): void {
       line_start INTEGER,
       line_end INTEGER,
       summary TEXT,
+      documentation TEXT,
       tags TEXT,
       complexity TEXT,
       language_notes TEXT,
@@ -135,6 +143,13 @@ export function createSchema(db: Database): void {
   db.exec(FILES_TABLE_SQL);
   db.exec(FILES_INDEX_SQL);
 
+  // Add the structured documentation column to databases created by v1.
+  try {
+    db.exec(`ALTER TABLE nodes ADD COLUMN documentation TEXT`);
+  } catch {
+    // Column already exists.
+  }
+
   // Edge traversal indexes (additive)
   db.exec(EDGE_TRAVERSAL_INDEX_SQL);
 
@@ -144,6 +159,12 @@ export function createSchema(db: Database): void {
   // writes and break update-path row counts. Phase 3 keeps `nodes_fts` in
   // sync via `syncNodeFts` from application code.
   try {
+    const ftsColumns = db.prepare("PRAGMA table_info(nodes_fts)").all() as Array<{ name: string }>;
+    if (ftsColumns.length > 0 && !ftsColumns.some((column) => column.name === "documentation")) {
+      // FTS is derived state, so rebuilding it is safe and makes the schema
+      // migration deterministic for existing databases.
+      db.exec("DROP TABLE nodes_fts");
+    }
     db.exec(FTS5_CREATE_SQL);
   } catch {
     // FTS5 not available in this SQLite build — search will fall back to LIKE

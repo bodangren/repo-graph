@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { Database } from "bun:sqlite";
+import { mkdtempSync, rmSync, statSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { createSchema } from "./schema";
 import { setMeta, getMeta, getProjectRoot } from "./meta";
+import { hashFile } from "./files";
 
 describe("meta helpers", () => {
   let db: Database;
@@ -54,16 +58,19 @@ describe("meta helpers", () => {
 
 describe("file freshness helpers (A2)", () => {
   let db: Database;
+  let tempDir: string;
   const ROOT = "/project";
 
   beforeEach(() => {
     db = new Database(":memory:");
     createSchema(db);
     setMeta(db, "project_root", ROOT);
+    tempDir = mkdtempSync(join(tmpdir(), "repo-graph-meta-"));
   });
 
   afterEach(() => {
     db.close();
+    rmSync(tempDir, { recursive: true, force: true });
   });
 
   it("isFileStale returns 'current' when file has not changed since indexing", async () => {
@@ -79,12 +86,14 @@ describe("file freshness helpers (A2)", () => {
 
   it("isFileStale returns 'stale' when file's mtime is newer than indexed_at", async () => {
     const { isFileStale } = await import("./meta");
-    const now = Date.now();
+    const filePath = join(tempDir, "app.ts");
+    writeFileSync(filePath, "export const app = 1;\n");
+    const stat = statSync(filePath);
     db.run(
       "INSERT INTO files (path, content_hash, size, modified_at, indexed_at, node_count) VALUES (?, ?, ?, ?, ?, ?)",
-      [`${ROOT}/src/app.ts`, "abc123", 1024, now + 100_000, now, 5]
+      [filePath, hashFile(filePath), stat.size, 0, Date.now(), 5]
     );
-    const status = isFileStale(db, `${ROOT}/src/app.ts`);
+    const status = isFileStale(db, filePath);
     expect(status).toBe("stale");
   });
 
@@ -96,29 +105,36 @@ describe("file freshness helpers (A2)", () => {
 
   it("getStaleFiles returns files where modified_at > indexed_at", async () => {
     const { getStaleFiles } = await import("./meta");
-    const now = Date.now();
+    const currentPath = join(tempDir, "current.ts");
+    const stalePath = join(tempDir, "stale.ts");
+    writeFileSync(currentPath, "export const current = 1;\n");
+    writeFileSync(stalePath, "export const stale = 1;\n");
+    const currentStat = statSync(currentPath);
+    const staleStat = statSync(stalePath);
     db.run(
       "INSERT INTO files (path, content_hash, size, modified_at, indexed_at, node_count) VALUES (?, ?, ?, ?, ?, ?)",
-      [`${ROOT}/src/current.ts`, "hash1", 500, now, now, 3]
+      [currentPath, hashFile(currentPath), currentStat.size, Math.floor(currentStat.mtimeMs), Date.now(), 3]
     );
     db.run(
       "INSERT INTO files (path, content_hash, size, modified_at, indexed_at, node_count) VALUES (?, ?, ?, ?, ?, ?)",
-      [`${ROOT}/src/stale.ts`, "hash2", 800, now + 100_000, now, 2]
+      [stalePath, hashFile(stalePath), staleStat.size, 0, Date.now(), 2]
     );
 
     const staleFiles = getStaleFiles(db);
     expect(Array.isArray(staleFiles)).toBe(true);
     const stalePaths = staleFiles.map((f: { path: string }) => f.path);
-    expect(stalePaths).toContain(`${ROOT}/src/stale.ts`);
-    expect(stalePaths).not.toContain(`${ROOT}/src/current.ts`);
+    expect(stalePaths).toContain(stalePath);
+    expect(stalePaths).not.toContain(currentPath);
   });
 
   it("getStaleFiles returns empty array when all files are current", async () => {
     const { getStaleFiles } = await import("./meta");
-    const now = Date.now();
+    const filePath = join(tempDir, "app.ts");
+    writeFileSync(filePath, "export const app = 1;\n");
+    const stat = statSync(filePath);
     db.run(
       "INSERT INTO files (path, content_hash, size, modified_at, indexed_at, node_count) VALUES (?, ?, ?, ?, ?, ?)",
-      [`${ROOT}/src/app.ts`, "hash", 500, now, now, 3]
+      [filePath, hashFile(filePath), stat.size, Math.floor(stat.mtimeMs), Date.now(), 3]
     );
     const staleFiles = getStaleFiles(db);
     expect(staleFiles).toEqual([]);

@@ -3,7 +3,7 @@ import { parseArgs } from "./cli";
 
 describe("parseArgs", () => {
   // Helper: simulate process.argv shape
-  const argv = (args: string[]) => ["bun", "build-graph.ts", ...args];
+  const argv = (args: string[]) => ["bun", "repo-graph.ts", ...args];
 
   describe("init", () => {
     it("parses init <db>", () => {
@@ -13,7 +13,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing db path", () => {
-      expect(() => parseArgs(argv(["init"]))).toThrow("Usage: build-graph init <db>");
+      expect(() => parseArgs(argv(["init"]))).toThrow("Usage: repo-graph init <db>");
     });
   });
 
@@ -26,8 +26,8 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["scan"]))).toThrow("Usage: build-graph scan <project-dir> <db>");
-      expect(() => parseArgs(argv(["scan", "./"]))).toThrow("Usage: build-graph scan <project-dir> <db>");
+      expect(() => parseArgs(argv(["scan"]))).toThrow("Usage: repo-graph scan <project-dir> <db>");
+      expect(() => parseArgs(argv(["scan", "./"]))).toThrow("Usage: repo-graph scan <project-dir> <db>");
     });
 
     it("parses scan with --config flag", () => {
@@ -92,8 +92,8 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["query"]))).toThrow("Usage: build-graph query <db> <sql>");
-      expect(() => parseArgs(argv(["query", "./graph.db"]))).toThrow("Usage: build-graph query <db> <sql>");
+      expect(() => parseArgs(argv(["query"]))).toThrow("Usage: repo-graph query <db> <sql>");
+      expect(() => parseArgs(argv(["query", "./graph.db"]))).toThrow("Usage: repo-graph query <db> <sql>");
     });
   });
 
@@ -106,8 +106,8 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["search"]))).toThrow("Usage: build-graph search <db> <keyword>");
-      expect(() => parseArgs(argv(["search", "./graph.db"]))).toThrow("Usage: build-graph search <db> <keyword>");
+      expect(() => parseArgs(argv(["search"]))).toThrow("Usage: repo-graph search <db> <keyword>");
+      expect(() => parseArgs(argv(["search", "./graph.db"]))).toThrow("Usage: repo-graph search <db> <keyword>");
     });
   });
 
@@ -151,11 +151,11 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["deps"]))).toThrow("Usage: build-graph deps");
+      expect(() => parseArgs(argv(["deps"]))).toThrow("Usage: repo-graph deps");
     });
 
     it("throws when node name is missing with --downstream", () => {
-      expect(() => parseArgs(argv(["deps", "./graph.db", "--downstream"]))).toThrow("Usage: build-graph deps");
+      expect(() => parseArgs(argv(["deps", "./graph.db", "--downstream"]))).toThrow("Usage: repo-graph deps");
     });
   });
 
@@ -168,7 +168,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["callers"]))).toThrow("Usage: build-graph callers");
+      expect(() => parseArgs(argv(["callers"]))).toThrow("Usage: repo-graph callers");
     });
   });
 
@@ -182,7 +182,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing args", () => {
-      expect(() => parseArgs(argv(["path"]))).toThrow("Usage: build-graph path");
+      expect(() => parseArgs(argv(["path"]))).toThrow("Usage: repo-graph path");
     });
   });
 
@@ -194,7 +194,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing db", () => {
-      expect(() => parseArgs(argv(["stats"]))).toThrow("Usage: build-graph stats");
+      expect(() => parseArgs(argv(["stats"]))).toThrow("Usage: repo-graph stats");
     });
   });
 
@@ -239,7 +239,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on missing db", () => {
-      expect(() => parseArgs(argv(["audit"]))).toThrow("Usage: build-graph audit");
+      expect(() => parseArgs(argv(["audit"]))).toThrow("Usage: repo-graph audit");
     });
   });
 
@@ -320,7 +320,7 @@ describe("parseArgs", () => {
     });
 
     it("throws on empty args", () => {
-      expect(() => parseArgs(argv([]))).toThrow("Usage: build-graph <command> [options]");
+      expect(() => parseArgs(argv([]))).toThrow("Usage: repo-graph <command> [options]");
     });
   });
 

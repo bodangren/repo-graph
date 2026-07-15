@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T16:28:01.190Z",
+  "generated_at": "2026-07-15T10:58:09.847Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -8,19 +8,19 @@
         "type": "file",
         "path": "index.ts",
         "extension": "ts",
-        "size": 203
+        "size": 202
       },
       {
         "type": "file",
         "path": "search.ts",
         "extension": "ts",
-        "size": 6215
+        "size": 7201
       },
       {
         "type": "file",
         "path": "paths.ts",
         "extension": "ts",
-        "size": 265
+        "size": 504
       },
       {
         "type": "file",
@@ -30,27 +30,39 @@
       },
       {
         "type": "file",
-        "path": "ingest.ts",
-        "extension": "ts",
-        "size": 2675
-      },
-      {
-        "type": "file",
         "path": "schema.ts",
         "extension": "ts",
-        "size": 5259
+        "size": 6058
       },
       {
         "type": "file",
         "path": "monorepo.test.ts",
         "extension": "ts",
-        "size": 1596
+        "size": 1595
+      },
+      {
+        "type": "file",
+        "path": "persistence.test.ts",
+        "extension": "ts",
+        "size": 4588
+      },
+      {
+        "type": "file",
+        "path": "scanner-core.ts",
+        "extension": "ts",
+        "size": 16935
+      },
+      {
+        "type": "file",
+        "path": "repo-graph.test.ts",
+        "extension": "ts",
+        "size": 2726
       },
       {
         "type": "file",
         "path": "affected.ts",
         "extension": "ts",
-        "size": 10525
+        "size": 11213
       },
       {
         "type": "file",
@@ -86,19 +98,19 @@
                     "type": "file",
                     "path": "fixtures/sample-project/src/types.ts",
                     "extension": "ts",
-                    "size": 243
+                    "size": 375
                   },
                   {
                     "type": "file",
                     "path": "fixtures/sample-project/src/utils.ts",
                     "extension": "ts",
-                    "size": 327
+                    "size": 440
                   },
                   {
                     "type": "file",
                     "path": "fixtures/sample-project/src/auth.ts",
                     "extension": "ts",
-                    "size": 414
+                    "size": 962
                   }
                 ]
               }
@@ -126,7 +138,7 @@
                         "type": "file",
                         "path": "fixtures/monorepo/frontend/src/app.ts",
                         "extension": "ts",
-                        "size": 102
+                        "size": 191
                       }
                     ]
                   }
@@ -176,7 +188,7 @@
                     "type": "file",
                     "path": "fixtures/empty-include/src/app.ts",
                     "extension": "ts",
-                    "size": 69
+                    "size": 192
                   }
                 ]
               }
@@ -194,37 +206,31 @@
         "type": "file",
         "path": "query.ts",
         "extension": "ts",
-        "size": 1487
+        "size": 2007
       },
       {
         "type": "file",
         "path": "scanner.ts",
         "extension": "ts",
-        "size": 33624
+        "size": 26492
       },
       {
         "type": "file",
         "path": "contract.ts",
         "extension": "ts",
-        "size": 12320
-      },
-      {
-        "type": "file",
-        "path": "build-graph-db.test.ts",
-        "extension": "ts",
-        "size": 2185
+        "size": 15751
       },
       {
         "type": "file",
         "path": "explore.ts",
         "extension": "ts",
-        "size": 9228
+        "size": 9764
       },
       {
         "type": "file",
         "path": "config.ts",
         "extension": "ts",
-        "size": 4829
+        "size": 5199
       },
       {
         "type": "file",
@@ -236,7 +242,7 @@
         "type": "file",
         "path": "build-graph.test.ts",
         "extension": "ts",
-        "size": 877
+        "size": 876
       },
       {
         "type": "file",
@@ -248,31 +254,37 @@
         "type": "file",
         "path": "meta.ts",
         "extension": "ts",
-        "size": 4541
+        "size": 5715
       },
       {
         "type": "file",
         "path": "audit.ts",
         "extension": "ts",
-        "size": 11261
+        "size": 19472
       },
       {
         "type": "file",
         "path": "indexes.ts",
         "extension": "ts",
-        "size": 594
+        "size": 731
       },
       {
         "type": "file",
         "path": "config.test.ts",
         "extension": "ts",
-        "size": 6317
+        "size": 6328
       },
       {
         "type": "file",
         "path": "paths.test.ts",
         "extension": "ts",
         "size": 681
+      },
+      {
+        "type": "file",
+        "path": "repo-graph.ts",
+        "extension": "ts",
+        "size": 25575
       },
       {
         "type": "file",
@@ -296,13 +308,19 @@
         "type": "file",
         "path": "search.test.ts",
         "extension": "ts",
-        "size": 10107
+        "size": 11124
       },
       {
         "type": "file",
         "path": "files.ts",
         "extension": "ts",
-        "size": 3742
+        "size": 4089
+      },
+      {
+        "type": "file",
+        "path": "persistence.ts",
+        "extension": "ts",
+        "size": 7337
       },
       {
         "type": "file",
@@ -314,19 +332,19 @@
         "type": "file",
         "path": "affected.test.ts",
         "extension": "ts",
-        "size": 10471
+        "size": 10479
       },
       {
         "type": "file",
         "path": "resolve.ts",
         "extension": "ts",
-        "size": 2150
+        "size": 2481
       },
       {
         "type": "file",
         "path": "update.ts",
         "extension": "ts",
-        "size": 10924
+        "size": 13629
       },
       {
         "type": "file",
@@ -338,7 +356,7 @@
         "type": "file",
         "path": "include.ts",
         "extension": "ts",
-        "size": 2819
+        "size": 2887
       },
       {
         "type": "directory",
@@ -374,19 +392,13 @@
         "type": "file",
         "path": "cli.test.ts",
         "extension": "ts",
-        "size": 19232
+        "size": 19333
       },
       {
         "type": "file",
         "path": "commands.ts",
         "extension": "ts",
-        "size": 25830
-      },
-      {
-        "type": "file",
-        "path": "build-graph.ts",
-        "extension": "ts",
-        "size": 25338
+        "size": 28280
       },
       {
         "type": "file",
@@ -398,61 +410,49 @@
         "type": "file",
         "path": "meta.test.ts",
         "extension": "ts",
-        "size": 11305
+        "size": 12163
       },
       {
         "type": "file",
         "path": "cli.ts",
         "extension": "ts",
-        "size": 9136
+        "size": 10019
       },
       {
         "type": "file",
         "path": "impact.ts",
         "extension": "ts",
-        "size": 22405
+        "size": 23645
       },
       {
         "type": "file",
         "path": "scanner.test.ts",
         "extension": "ts",
-        "size": 25545
+        "size": 25558
       },
       {
         "type": "file",
         "path": "README.md",
         "extension": "md",
-        "size": 3825
+        "size": 3405
       },
       {
         "type": "file",
         "path": "hooks.ts",
         "extension": "ts",
-        "size": 6164
+        "size": 6345
       },
       {
         "type": "file",
         "path": "contract.test.ts",
         "extension": "ts",
-        "size": 12402
+        "size": 12559
       },
       {
         "type": "file",
         "path": "audit.test.ts",
         "extension": "ts",
-        "size": 19603
-      },
-      {
-        "type": "file",
-        "path": "ingest.test.ts",
-        "extension": "ts",
-        "size": 6049
-      },
-      {
-        "type": "file",
-        "path": "build-graph-db.ts",
-        "extension": "ts",
-        "size": 2846
+        "size": 21343
       }
     ],
     "measure": [
@@ -642,6 +642,42 @@
           },
           {
             "type": "directory",
+            "path": "archive/git_hook_incremental_updates_20260528",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/git_hook_incremental_updates_20260528/plan.md",
+                "extension": "md",
+                "size": 17532
+              },
+              {
+                "type": "file",
+                "path": "archive/git_hook_incremental_updates_20260528/metadata.json",
+                "extension": "json",
+                "size": 1219
+              },
+              {
+                "type": "file",
+                "path": "archive/git_hook_incremental_updates_20260528/test-strategy.md",
+                "extension": "md",
+                "size": 23897
+              },
+              {
+                "type": "file",
+                "path": "archive/git_hook_incremental_updates_20260528/spec.md",
+                "extension": "md",
+                "size": 4138
+              },
+              {
+                "type": "file",
+                "path": "archive/git_hook_incremental_updates_20260528/automation-supervisor-closeout-manifest.json",
+                "extension": "json",
+                "size": 3102
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "path": "archive/scanner_20260525",
             "children": [
               {
@@ -820,13 +856,13 @@
         "type": "file",
         "path": "tech-stack.md",
         "extension": "md",
-        "size": 8724
+        "size": 9785
       },
       {
         "type": "file",
         "path": "lessons-learned.md",
         "extension": "md",
-        "size": 2042
+        "size": 3253
       },
       {
         "type": "directory",
@@ -856,13 +892,13 @@
         "type": "file",
         "path": "product-guidelines.md",
         "extension": "md",
-        "size": 1733
+        "size": 1732
       },
       {
         "type": "file",
         "path": "generate.sh",
         "extension": "sh",
-        "size": 2617
+        "size": 2785
       },
       {
         "type": "file",
@@ -890,13 +926,13 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 27095
+            "size": 30305
           },
           {
             "type": "file",
             "path": "generated/routes.md",
             "extension": "md",
-            "size": 1306
+            "size": 1474
           }
         ]
       },
@@ -910,13 +946,13 @@
         "type": "file",
         "path": "tech-debt.md",
         "extension": "md",
-        "size": 1887
+        "size": 1329
       },
       {
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 4031
+        "size": 5467
       },
       {
         "type": "file",
@@ -928,12 +964,42 @@
         "type": "file",
         "path": "automation-supervisor.py",
         "extension": "py",
-        "size": 86532
+        "size": 91334
       },
       {
         "type": "directory",
         "path": "tracks",
         "children": [
+          {
+            "type": "directory",
+            "path": "tracks/binary_scanner_unification_20260627",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/binary_scanner_unification_20260627/plan.md",
+                "extension": "md",
+                "size": 4175
+              },
+              {
+                "type": "file",
+                "path": "tracks/binary_scanner_unification_20260627/metadata.json",
+                "extension": "json",
+                "size": 1021
+              },
+              {
+                "type": "file",
+                "path": "tracks/binary_scanner_unification_20260627/spec.md",
+                "extension": "md",
+                "size": 5601
+              },
+              {
+                "type": "file",
+                "path": "tracks/binary_scanner_unification_20260627/review-2026-06-28.md",
+                "extension": "md",
+                "size": 5630
+              }
+            ]
+          },
           {
             "type": "directory",
             "path": "tracks/query_performance_benchmarks_20260528",
@@ -960,6 +1026,48 @@
           },
           {
             "type": "directory",
+            "path": "tracks/graph_correctness_jsdoc_ts7_20260715",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/plan.md",
+                "extension": "md",
+                "size": 19919
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/metadata.json",
+                "extension": "json",
+                "size": 1173
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/verification.md",
+                "extension": "md",
+                "size": 2655
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/spec.md",
+                "extension": "md",
+                "size": 16736
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/baseline.md",
+                "extension": "md",
+                "size": 2006
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/index.md",
+                "extension": "md",
+                "size": 148
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "path": "tracks/graph_visualization_export_20260528",
             "children": [
               {
@@ -979,36 +1087,6 @@
                 "path": "tracks/graph_visualization_export_20260528/spec.md",
                 "extension": "md",
                 "size": 4000
-              }
-            ]
-          },
-          {
-            "type": "directory",
-            "path": "tracks/git_hook_incremental_updates_20260528",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/git_hook_incremental_updates_20260528/plan.md",
-                "extension": "md",
-                "size": 12329
-              },
-              {
-                "type": "file",
-                "path": "tracks/git_hook_incremental_updates_20260528/metadata.json",
-                "extension": "json",
-                "size": 398
-              },
-              {
-                "type": "file",
-                "path": "tracks/git_hook_incremental_updates_20260528/test-strategy.md",
-                "extension": "md",
-                "size": 23897
-              },
-              {
-                "type": "file",
-                "path": "tracks/git_hook_incremental_updates_20260528/spec.md",
-                "extension": "md",
-                "size": 4138
               }
             ]
           },

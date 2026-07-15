@@ -374,6 +374,41 @@ describe("runAudit", () => {
     });
   });
 
+  describe("documentation audit", () => {
+    it("accepts complete public JSDoc and reports missing JSDoc", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_docs_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const filePath = `${tmpDir}/a.ts`;
+      fs.writeFileSync(filePath, `/** Add a value.\n * @param value Input value.\n * @returns The incremented value.\n */\nexport function add(value: number): number { return value + 1; }\n`);
+      const documentation = JSON.stringify({
+        version: 1,
+        hasJsDoc: true,
+        description: "Add a value.",
+        params: [{ name: "value", description: "Input value." }],
+        returns: "The incremented value.",
+        tags: [
+          { name: "param", text: "Input value.", subject: "value" },
+          { name: "returns", text: "The incremented value." },
+        ],
+        declarationForm: "function",
+      });
+      db.prepare("INSERT INTO nodes (id, type, name, file_path, line_start, line_end, documentation, tags) VALUES (?, 'function', 'add', ?, 5, 5, ?, ?)").run(
+        `function:${filePath}:add`, filePath, documentation, JSON.stringify(["exported"]),
+      );
+
+      const clean = runAudit(db, { json: true, docs: true });
+      expect(clean.exitCode).toBe(ExitCode.Success);
+      expect(JSON.parse(clean.output).documentationIssues).toEqual([]);
+
+      db.prepare("UPDATE nodes SET documentation = NULL WHERE name = 'add'").run();
+      const missing = runAudit(db, { json: true, docs: true });
+      expect(missing.exitCode).toBe(ExitCode.NotFound);
+      expect(JSON.parse(missing.output).documentationIssues[0].category).toBe("missing_jsdoc");
+      fs.rmSync(tmpDir, { recursive: true });
+    });
+  });
+
   describe("full audit integration", () => {
     it("reports all issue types in a single run", () => {
       const fs = require("fs");

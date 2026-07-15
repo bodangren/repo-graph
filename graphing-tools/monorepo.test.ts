@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createProject } from "./build-graph";
+import { createProject } from "./repo-graph";
 import { scanProject } from "./scanner";
 
 describe("createProject with multiple tsconfigs", () => {

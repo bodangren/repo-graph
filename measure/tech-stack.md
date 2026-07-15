@@ -26,7 +26,7 @@ programmatic API; replacing that API is intentionally deferred until
 TypeScript exposes a supported equivalent and `ts-morph` adopts it.
 
 The package uses Bun's side-by-side binary aliases (`tsc` for TypeScript 7 and
-`tsc-compat` for `@typescript/typescript6`). `bun run typecheck` runs the
+`tsc6` for `@typescript/typescript6`). `bun run typecheck` runs the
 primary compiler, `bun run typecheck:compat` runs the compatibility compiler,
 and `bun run check` runs type checks, lint, build, generated-fact validation,
 and the architecture doctor in that order. Release verification also checks
@@ -316,9 +316,8 @@ graphing-tools/
 ├── scanner.ts         -- ts-morph AST extraction → SQLite
 ├── schema.ts          -- CREATE TABLE + indexes
 ├── indexes.ts         -- Index creation
-├── ingest.ts          -- Batch insert helpers (shared between scan and update)
 ├── query.ts           -- Common query functions (agent-facing API)
-├── build-graph-db.ts  -- CLI entry point (scan, update, query, search)
+├── repo-graph.ts      -- canonical CLI entry point (scan, update, query, search)
 ├── README.md          -- Usage guide
 └── legacy/            -- Old Node.js/Python scripts (to be replaced)
 ```

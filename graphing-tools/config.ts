@@ -5,8 +5,11 @@ import type { BuildGraphConfig, CustomEdgeDef, GraphNode, GraphEdge, NodeType } 
 const CONFIG_FILENAME = "build-graph.config.json";
 
 /**
- * Load build-graph config from a JSON file.
- * Returns null if no config file exists. Throws on malformed JSON.
+ * Load custom-edge configuration from a JSON file.
+ *
+ * @param projectDir Project directory used for auto-discovery.
+ * @param configPath Optional explicit configuration path.
+ * @returns Validated configuration, `null` when absent, or throws when malformed.
  */
 export function loadConfig(projectDir: string, configPath?: string): BuildGraphConfig | null {
   const resolvedPath = configPath ?? join(projectDir, CONFIG_FILENAME);
@@ -73,6 +76,11 @@ export function loadConfig(projectDir: string, configPath?: string): BuildGraphC
  *   "same-file" (default) — only connect source/target in the same file
  *   "imported"            — connect if source file imports target file
  *   "all"                 — connect every matching pair (cartesian product)
+ *
+ * @param nodes Scanned graph nodes.
+ * @param customEdges Validated custom-edge definitions.
+ * @param importEdges Optional import edges used by imported scope.
+ * @returns Custom graph edges matching the definitions.
  */
 export function applyCustomEdges(
   nodes: GraphNode[],

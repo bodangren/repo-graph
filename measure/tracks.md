@@ -68,7 +68,7 @@ This file tracks all major tracks for the project.
 
 _Status (verified 2026-07-15): the critical correctness track below is the only unlocked implementation track. The three product tracks remain unstarted and are blocked until its scan, traversal, audit, binary, and test contracts are accepted._
 
-- [ ] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *created 2026-07-15*
+- [~] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *started 2026-07-15*
   *Link: [./tracks/graph_correctness_jsdoc_ts7_20260715/](./tracks/graph_correctness_jsdoc_ts7_20260715/)*
   *Status: new → 12 FRs, 37 top-level tasks | Priority: CRITICAL | Supersedes: `binary_scanner_unification_20260627`*
   *Scope: deterministic full/incremental scans, ordinary call edges, sound impact/affected traversal, live freshness/FTS, accurate integrity audit, structured JSDoc + `audit --docs`, comprehensive compiled-path tests, TS7/TS6 type gates, canonical help/skill, and verified executable/skill installation.*
@@ -84,4 +84,3 @@ _Status (verified 2026-07-15): the critical correctness track below is the only 
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
   *Blocked by: `graph_correctness_jsdoc_ts7_20260715`; CI publication requires idempotent scan/update, trustworthy impact, clean type checks, and a stable installed binary contract.*
-

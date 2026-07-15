@@ -7,12 +7,30 @@
 | Bun | 1.2+ | Single runtime for all scripts and tooling |
 | `bun:sqlite` | built-in | Native SQLite driver (no external dependency) |
 | `ts-morph` | 28.x | TypeScript AST parser and project manager |
-| TypeScript | 5.x+ | Compiler API (via ts-morph) |
+| TypeScript | 7.0.2 | Primary CLI and language-service type-check target |
+| `@typescript/typescript6` | 6.0.2 | Compatibility compiler for the embedded AST API boundary |
+| TypeScript 6 (embedded by `ts-morph`) | 6.0.2 | Programmatic compiler API used by `ts-morph` 28 |
 
 - **Module system:** ES modules (`.ts`)
 - **Package manager:** `bun` (built-in)
 - **No Python, no Node.js.** All tooling is unified under Bun.
 - **No external AI/LLM services.** Structure extraction is purely programmatic.
+
+### Compiler and AST boundary
+
+TypeScript 7 is the primary compiler and language-server target. The project
+also runs the official `@typescript/typescript6` compatibility binary so the
+source and tests remain valid across the current compiler transition. The
+scanner continues to use `ts-morph` 28 and its embedded TypeScript 6.0.2
+programmatic API; replacing that API is intentionally deferred until
+TypeScript exposes a supported equivalent and `ts-morph` adopts it.
+
+The package uses Bun's side-by-side binary aliases (`tsc` for TypeScript 7 and
+`tsc-compat` for `@typescript/typescript6`). `bun run typecheck` runs the
+primary compiler, `bun run typecheck:compat` runs the compatibility compiler,
+and `bun run check` runs type checks, lint, build, generated-fact validation,
+and the architecture doctor in that order. Release verification also checks
+that Bun resolves both binaries to the expected package versions.
 
 ---
 

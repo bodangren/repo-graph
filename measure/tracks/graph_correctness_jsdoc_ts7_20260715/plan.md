@@ -11,7 +11,7 @@ the Git note, then record the SHA. Do not modify
 
 _Blast radius: `scanProject` (0 recorded call edges; imported by `build-graph.ts`, `integration.test.ts`, `monorepo.test.ts`, `scanner.test.ts`, `update.ts`), `updateFiles` (0 recorded call edges; imported by `build-graph.ts`, `update.test.ts`), `runImpact` (0 recorded call edges; imported by `build-graph.ts`), `runAudit` (0 recorded call edges; imported by `audit.test.ts`, `build-graph.ts`). Zero caller counts are a verified graph defect and must not be interpreted as zero source usage._
 
-- [ ] Task: Record the implementation baseline and supersession boundary
+- [~] Task: Record the implementation baseline and supersession boundary
     - [ ] Save exact Red reproduction commands and normalized outputs for repeated scan, incremental/full mismatch, missing calls, impact direction, freshness, audit false positives, documentation population, compiler diagnostics, coverage, help, and installed artifacts.
     - [ ] Confirm `binary_scanner_unification_20260627` has zero completed tasks and is superseded rather than partially merged.
     - [ ] Record the current graph schema version, source/installed executable checksums, installed skill checksum, test count, and coverage by file.

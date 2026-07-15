@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-15T10:58:09.847Z",
+  "generated_at": "2026-07-15T10:59:16.109Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -926,7 +926,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 30305
+            "size": 30521
           },
           {
             "type": "file",
@@ -952,7 +952,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 5467
+        "size": 5495
       },
       {
         "type": "file",
@@ -1044,7 +1044,7 @@
                 "type": "file",
                 "path": "tracks/graph_correctness_jsdoc_ts7_20260715/verification.md",
                 "extension": "md",
-                "size": 2655
+                "size": 2740
               },
               {
                 "type": "file",

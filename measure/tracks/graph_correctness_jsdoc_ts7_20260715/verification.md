@@ -2,6 +2,8 @@
 
 Verified 2026-07-15 from `/home/daniel-bo/Desktop/repo-graph`.
 
+Implementation checkpoint: `9a1a602` (`feat: implement graph correctness release`).
+
 ## Quality gates
 
 - `bun run typecheck` — pass with TypeScript 7.0.2.

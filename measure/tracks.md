@@ -70,7 +70,7 @@ _Status (verified 2026-07-15): the critical correctness track below is complete.
 
 - [x] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *completed 2026-07-15*
   *Link: [./tracks/graph_correctness_jsdoc_ts7_20260715/](./tracks/graph_correctness_jsdoc_ts7_20260715/)*
-  *Status: complete → 12 FRs, 37/37 top-level tasks | Priority: CRITICAL | Supersedes: `binary_scanner_unification_20260627`*
+  *Status: complete → 12 FRs, 37/37 top-level tasks | Priority: CRITICAL | Implementation: `9a1a602` | Supersedes: `binary_scanner_unification_20260627`*
   *Scope: deterministic full/incremental scans, ordinary call edges, sound impact/affected traversal, live freshness/FTS, accurate integrity audit, structured JSDoc + `audit --docs`, comprehensive compiled-path tests, TS7/TS6 type gates, canonical help/skill, and verified executable/skill installation.*
 
 - [ ] **Track: Query Performance Optimization & Benchmarks**

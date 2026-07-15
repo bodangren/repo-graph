@@ -58,22 +58,30 @@ This file tracks all major tracks for the project.
 - [x] **Track: Git Hook Integration for Incremental Graph Updates**
   *Link: [./archive/git_hook_incremental_updates_20260528/](./archive/git_hook_incremental_updates_20260528/)* — Wire `repo-graph update` into git pre-commit and post-checkout hooks so the graph.db stays automatically synchronized with code changes.
 
+## Superseded Tracks
+
+- [x] **Track: Binary & Scanner Unification** — *superseded before implementation on 2026-07-15*
+  *Link: [./tracks/binary_scanner_unification_20260627/](./tracks/binary_scanner_unification_20260627/)*
+  *Superseded by: [graph_correctness_jsdoc_ts7_20260715](./tracks/graph_correctness_jsdoc_ts7_20260715/). All 8 planned tasks were unstarted and are absorbed into the comprehensive correctness release.*
+
 ## Upcoming Tracks
 
-_Status (verified 2026-06-21): all four below are genuinely not started — 0 plan tasks each, metadata `pending`, no implementation in `graphing-tools/`, and no `.github/workflows`. Registry is accurate._
+_Status (verified 2026-07-15): the critical correctness track below is the only unlocked implementation track. The three product tracks remain unstarted and are blocked until its scan, traversal, audit, binary, and test contracts are accepted._
+
+- [ ] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *created 2026-07-15*
+  *Link: [./tracks/graph_correctness_jsdoc_ts7_20260715/](./tracks/graph_correctness_jsdoc_ts7_20260715/)*
+  *Status: new → 12 FRs, 37 top-level tasks | Priority: CRITICAL | Supersedes: `binary_scanner_unification_20260627`*
+  *Scope: deterministic full/incremental scans, ordinary call edges, sound impact/affected traversal, live freshness/FTS, accurate integrity audit, structured JSDoc + `audit --docs`, comprehensive compiled-path tests, TS7/TS6 type gates, canonical help/skill, and verified executable/skill installation.*
 
 - [ ] **Track: Query Performance Optimization & Benchmarks**
   *Link: [./tracks/query_performance_benchmarks_20260528/](./tracks/query_performance_benchmarks_20260528/)* — Add composite SQLite indexes, query result caching, and a benchmark suite targeting sub-100ms dependency lookups on monorepos.
+  *Blocked by: `graph_correctness_jsdoc_ts7_20260715`; its stale schema identifiers, test counts, binary references, and task ordering must be reconciled during the foundation closeout before activation.*
 
 - [ ] **Track: Graph Visualization Export (DOT & HTML)**
   *Link: [./tracks/graph_visualization_export_20260528/](./tracks/graph_visualization_export_20260528/)* — Export the knowledge graph to Graphviz DOT format and an interactive HTML page with D3.js or Cytoscape.js.
-
-- [ ] **Track: Binary & Scanner Unification** — *created 2026-06-27*
-  *Link: [./tracks/binary_scanner_unification_20260627/](./tracks/binary_scanner_unification_20260627/)*
-  *Status: new → 7 ACs, 8 tasks in plan | Priority: MEDIUM*
-  *Note: Resolves two long-standing tech-debt items (both Open since 2026-05-24): (a) rename `graphing-tools/build-graph.ts` → `repo-graph.ts`, update build script + bin field + help banner so `./bin/repo-graph` is the single install target (removes the dual-name workaround from `git_hook_incremental_updates_20260528` Phase 4 closeout); (b) rewrite `build-graph-db.ts` from JSON-batch-insert to ts-morph-driven AST extraction matching the agent_explore_freshness_impact_20260622 schema, with `syncNodeFts` + `recordFileMetadata` wired into the scan path (closes the Phase 3 §A1/§A2 deferral). Includes an integration test that scans a real fixture repo and asserts node/edge counts + FTS-stays-current invariant. No regression in the agent_explore test suite.*
+  *Blocked by: `graph_correctness_jsdoc_ts7_20260715`; visualization must not encode fabricated or inverted relationships.*
 
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
-
+  *Blocked by: `graph_correctness_jsdoc_ts7_20260715`; CI publication requires idempotent scan/update, trustworthy impact, clean type checks, and a stable installed binary contract.*
 

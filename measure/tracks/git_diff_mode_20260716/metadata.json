@@ -1,0 +1,11 @@
+{
+  "track_id": "git_diff_mode_20260716",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-07-16T00:00:00Z",
+  "updated_at": "2026-07-16T00:00:00Z",
+  "description": "Git Diff Mode — `repo-graph diff` compares the graph against a git ref, reports changed nodes/edges, and computes blast radius via impact traversal",
+  "estimated_tasks": 10,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

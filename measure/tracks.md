@@ -84,3 +84,7 @@ _Status (verified 2026-07-15): the critical correctness track below is complete.
 - [ ] **Track: CI/CD Integration — GitHub Action**
   *Link: [./tracks/ci_cd_integration_20260528/](./tracks/ci_cd_integration_20260528/)* — Create a GitHub Action that runs `repo-graph scan` on PRs, generates a dependency impact report, and comments the report on the PR.
   *Unblocked after: `graph_correctness_jsdoc_ts7_20260715` completion and its idempotent scan/update, traversal, type-check, and artifact gates.*
+
+- [ ] **Track: Git Diff Mode — Changed Nodes/Edges and Blast Radius**
+  *Link: [./tracks/git_diff_mode_20260716/](./tracks/git_diff_mode_20260716/)* — Add `repo-graph diff <db> <git-ref>`: classify added/removed/modified files against git history, report per-node and per-edge deltas, and compute blast radius via impact traversal with a staleness guard. Implements feature request #6.
+  *Unblocked after: `graph_correctness_jsdoc_ts7_20260715` completion (sound `affected`/`impact` traversal and incremental update comparison).*

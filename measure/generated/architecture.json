@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-22T10:49:55.147Z",
+  "generated_at": "2026-07-22T10:51:21.831Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -486,6 +486,42 @@
         "children": [
           {
             "type": "directory",
+            "path": "archive/scanner_memory_scalability_20260722",
+            "children": [
+              {
+                "type": "file",
+                "path": "archive/scanner_memory_scalability_20260722/plan.md",
+                "extension": "md",
+                "size": 4980
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_memory_scalability_20260722/metadata.json",
+                "extension": "json",
+                "size": 1282
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_memory_scalability_20260722/verification.md",
+                "extension": "md",
+                "size": 9119
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_memory_scalability_20260722/independent-review-closure-20260722.md",
+                "extension": "md",
+                "size": 2137
+              },
+              {
+                "type": "file",
+                "path": "archive/scanner_memory_scalability_20260722/spec.md",
+                "extension": "md",
+                "size": 4843
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "path": "archive/buildgraph_20260524",
             "children": [
               {
@@ -950,7 +986,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 33021
+            "size": 33260
           },
           {
             "type": "file",
@@ -976,7 +1012,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 6524
+        "size": 6485
       },
       {
         "type": "file",
@@ -994,42 +1030,6 @@
         "type": "directory",
         "path": "tracks",
         "children": [
-          {
-            "type": "directory",
-            "path": "tracks/scanner_memory_scalability_20260722",
-            "children": [
-              {
-                "type": "file",
-                "path": "tracks/scanner_memory_scalability_20260722/plan.md",
-                "extension": "md",
-                "size": 4980
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_memory_scalability_20260722/metadata.json",
-                "extension": "json",
-                "size": 1282
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_memory_scalability_20260722/verification.md",
-                "extension": "md",
-                "size": 9119
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_memory_scalability_20260722/independent-review-closure-20260722.md",
-                "extension": "md",
-                "size": 2137
-              },
-              {
-                "type": "file",
-                "path": "tracks/scanner_memory_scalability_20260722/spec.md",
-                "extension": "md",
-                "size": 4843
-              }
-            ]
-          },
           {
             "type": "directory",
             "path": "tracks/binary_scanner_unification_20260627",

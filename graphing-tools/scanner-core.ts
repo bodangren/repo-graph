@@ -34,6 +34,12 @@ interface SymbolRecord {
   baseName: string;
 }
 
+interface SymbolIndexes {
+  byDeclaration: Map<string, SymbolRecord>;
+  byFileAndName: Map<string, SymbolRecord[]>;
+  nameFamilyCounts: Map<string, number>;
+}
+
 interface ScanResult {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -116,6 +122,44 @@ function declarationKey(declaration: TsMorphNode): string {
   return `${declaration.getSourceFile().getFilePath()}:${declaration.getStart()}`;
 }
 
+function fileAndNameKey(filePath: string, name: string): string {
+  return `${filePath}\u0000${name}`;
+}
+
+function nameFamilyKey(type: GraphNode["type"], filePath: string, name: string): string {
+  return `${type}\u0000${filePath}\u0000${name}`;
+}
+
+function nameFamilies(name: string): string[] {
+  const families = [name];
+  for (let index = name.indexOf("@"); index >= 0; index = name.indexOf("@", index + 1)) {
+    families.push(name.slice(0, index));
+  }
+  return Array.from(new Set(families));
+}
+
+function registerNameFamily(indexes: SymbolIndexes, type: GraphNode["type"], filePath: string, name: string): void {
+  for (const family of nameFamilies(name)) {
+    const key = nameFamilyKey(type, filePath, family);
+    indexes.nameFamilyCounts.set(key, (indexes.nameFamilyCounts.get(key) ?? 0) + 1);
+  }
+}
+
+function registerSymbolLookup(indexes: SymbolIndexes, record: SymbolRecord): void {
+  for (const name of new Set([record.baseName, record.node.name])) {
+    const key = fileAndNameKey(record.sourceFile.getFilePath(), name);
+    const records = indexes.byFileAndName.get(key);
+    if (records) records.push(record);
+    else indexes.byFileAndName.set(key, [record]);
+  }
+}
+
+function sortSymbolLookups(indexes: SymbolIndexes): void {
+  for (const records of indexes.byFileAndName.values()) {
+    records.sort((left, right) => left.node.id.localeCompare(right.node.id));
+  }
+}
+
 function isExportedDeclaration(declaration: TsMorphNode): boolean {
   const candidate = declaration as TsMorphNode & { isExported?: () => boolean };
   return candidate.isExported?.() ?? false;
@@ -161,7 +205,7 @@ function methodNodeName(cls: ClassDeclaration, method: MethodDeclaration): strin
 }
 
 function addSymbol(
-  symbols: Map<string, SymbolRecord>,
+  indexes: SymbolIndexes,
   nodes: GraphNode[],
   edges: GraphEdge[],
   declaration: TsMorphNode,
@@ -176,11 +220,7 @@ function addSymbol(
   extraTags: string[] = []
 ): GraphNode {
   const filePath = sourceFile.getFilePath();
-  const duplicateCount = nodes.filter((node) =>
-    node.type === type &&
-    node.filePath === filePath &&
-    (node.name === baseName || node.name.startsWith(`${baseName}@`))
-  ).length;
+  const duplicateCount = indexes.nameFamilyCounts.get(nameFamilyKey(type, filePath, baseName)) ?? 0;
   const name = duplicateCount === 0 ? baseName : `${baseName}@${declaration.getStartLineNumber()}`;
   const id = `${type}:${filePath}:${name}`;
   const node: GraphNode = {
@@ -196,28 +236,29 @@ function addSymbol(
   };
   addDocumentationNodeFields(node, declaration, form);
   nodes.push(node);
-  symbols.set(declarationKey(declaration), { declaration, node, sourceFile, baseName });
+  const record = { declaration, node, sourceFile, baseName };
+  indexes.byDeclaration.set(declarationKey(declaration), record);
+  registerNameFamily(indexes, type, filePath, name);
+  registerSymbolLookup(indexes, record);
   addEdge(edges, parentId, id, "contains");
   return node;
 }
 
-function findOwner(call: CallExpression, symbols: Map<string, SymbolRecord>): SymbolRecord | undefined {
+function findOwner(call: CallExpression, indexes: SymbolIndexes): SymbolRecord | undefined {
   let current: TsMorphNode | undefined = call.getParent();
   while (current) {
-    const record = symbols.get(declarationKey(current));
+    const record = indexes.byDeclaration.get(declarationKey(current));
     if (record) return record;
     current = current.getParent();
   }
   return undefined;
 }
 
-function recordsForFileAndName(symbols: Map<string, SymbolRecord>, filePath: string, name: string): SymbolRecord[] {
-  return Array.from(symbols.values())
-    .filter((record) => record.sourceFile.getFilePath() === filePath && (record.baseName === name || record.node.name === name))
-    .sort((a, b) => a.node.id.localeCompare(b.node.id));
+function recordsForFileAndName(indexes: SymbolIndexes, filePath: string, name: string): readonly SymbolRecord[] {
+  return indexes.byFileAndName.get(fileAndNameKey(filePath, name)) ?? [];
 }
 
-function resolveCallTarget(call: CallExpression, owner: SymbolRecord, symbols: Map<string, SymbolRecord>): SymbolRecord | undefined {
+function resolveCallTarget(call: CallExpression, owner: SymbolRecord, indexes: SymbolIndexes): SymbolRecord | undefined {
   const expression = call.getExpression().getText();
   const parts = expression.split(".");
   const calledName = parts.at(-1) ?? expression;
@@ -225,16 +266,16 @@ function resolveCallTarget(call: CallExpression, owner: SymbolRecord, symbols: M
   const sourceFile = owner.sourceFile;
 
   if (!qualifier || qualifier === "this") {
-    const local = recordsForFileAndName(symbols, sourceFile.getFilePath(), calledName);
+    const local = recordsForFileAndName(indexes, sourceFile.getFilePath(), calledName);
     if (local.length > 0) return local[0];
   }
 
   if (qualifier) {
-    const localMethod = recordsForFileAndName(symbols, sourceFile.getFilePath(), `${qualifier}.${calledName}`);
+    const localMethod = recordsForFileAndName(indexes, sourceFile.getFilePath(), `${qualifier}.${calledName}`);
     if (localMethod.length > 0) return localMethod[0];
     if (qualifier === "this" && owner.node.name.includes(".")) {
       const className = owner.node.name.split(".")[0];
-      const ownerMethod = recordsForFileAndName(symbols, sourceFile.getFilePath(), `${className}.${calledName}`);
+      const ownerMethod = recordsForFileAndName(indexes, sourceFile.getFilePath(), `${className}.${calledName}`);
       if (ownerMethod.length > 0) return ownerMethod[0];
     }
   }
@@ -244,23 +285,23 @@ function resolveCallTarget(call: CallExpression, owner: SymbolRecord, symbols: M
     if (!importedPath) continue;
     const named = declaration.getNamedImports().find((item) => item.getAliasNode()?.getText() === (qualifier ?? calledName) || item.getName() === (qualifier ?? calledName));
     if (named) {
-      return recordsForFileAndName(symbols, importedPath, named.getName())[0];
+      return recordsForFileAndName(indexes, importedPath, named.getName())[0];
     }
     const defaultImport = declaration.getDefaultImport()?.getText();
     if (defaultImport === (qualifier ?? calledName)) {
-      return recordsForFileAndName(symbols, importedPath, "default")[0] ?? recordsForFileAndName(symbols, importedPath, defaultImport)[0];
+      return recordsForFileAndName(indexes, importedPath, "default")[0] ?? recordsForFileAndName(indexes, importedPath, defaultImport)[0];
     }
   }
   return undefined;
 }
 
-function addCallEdges(sourceFiles: SourceFile[], symbols: Map<string, SymbolRecord>, nodes: GraphNode[], edges: GraphEdge[]): void {
+function addCallEdges(sourceFiles: SourceFile[], indexes: SymbolIndexes, nodes: GraphNode[], edges: GraphEdge[]): void {
   const unresolvedById = new Map<string, GraphNode>();
   for (const sourceFile of sourceFiles) {
     for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
-      const owner = findOwner(call, symbols);
+      const owner = findOwner(call, indexes);
       if (!owner) continue;
-      const target = resolveCallTarget(call, owner, symbols);
+      const target = resolveCallTarget(call, owner, indexes);
       if (target) {
         addEdge(edges, owner.node.id, target.node.id, "calls", {
           resolution: "resolved",
@@ -310,7 +351,6 @@ function deduplicateAndSort(result: ScanResult): ScanResult {
   return { nodes, edges };
 }
 
-/** Scan a TypeScript project into deterministic nodes and persisted relationships. */
 /**
  * Scan a TypeScript project into a deterministic graph snapshot.
  *
@@ -321,7 +361,11 @@ function deduplicateAndSort(result: ScanResult): ScanResult {
 export function scanProject(project: Project, packageMap?: Map<string, string>): ScanResult {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
-  const symbols = new Map<string, SymbolRecord>();
+  const indexes: SymbolIndexes = {
+    byDeclaration: new Map(),
+    byFileAndName: new Map(),
+    nameFamilyCounts: new Map(),
+  };
   const sourceFiles = [...project.getSourceFiles()].sort((a, b) => a.getFilePath().localeCompare(b.getFilePath()));
 
   for (const sourceFile of sourceFiles) {
@@ -340,7 +384,7 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
 
     for (const declaration of sourceFile.getFunctions()) {
       const functionName = declaration.getName() ?? (declaration.isDefaultExport() ? "default" : "anonymous");
-      addSymbol(symbols, nodes, edges, declaration, sourceFile, "function", functionName, packageId, declaration.isExported(), fileId, "function", declaration.getBody());
+      addSymbol(indexes, nodes, edges, declaration, sourceFile, "function", functionName, packageId, declaration.isExported(), fileId, "function", declaration.getBody());
     }
 
     for (const statement of sourceFile.getVariableStatements()) {
@@ -348,7 +392,7 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
         const initializer = declaration.getInitializer();
         if (!initializer || (initializer.getKind() !== SyntaxKind.ArrowFunction && initializer.getKind() !== SyntaxKind.FunctionExpression)) continue;
         const functionNode = addSymbol(
-          symbols,
+          indexes,
           nodes,
           edges,
           initializer,
@@ -368,24 +412,24 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
     }
 
     for (const cls of sourceFile.getClasses()) {
-      const classNode = addSymbol(symbols, nodes, edges, cls, sourceFile, "class", cls.getName() ?? "anonymous", packageId, cls.isExported(), fileId, "class");
+      const classNode = addSymbol(indexes, nodes, edges, cls, sourceFile, "class", cls.getName() ?? "anonymous", packageId, cls.isExported(), fileId, "class");
       const classExported = cls.isExported();
       for (const method of cls.getMethods()) {
-        const methodNode = addSymbol(symbols, nodes, edges, method, sourceFile, "function", methodNodeName(cls, method), packageId, classExported && isPublicMethod(method), classNode.id, "public_method", method.getBody(), isPublicMethod(method) ? ["public"] : ["internal"]);
+        const methodNode = addSymbol(indexes, nodes, edges, method, sourceFile, "function", methodNodeName(cls, method), packageId, classExported && isPublicMethod(method), classNode.id, "public_method", method.getBody(), isPublicMethod(method) ? ["public"] : ["internal"]);
         if (!getJsDocs(method).length && classExported && isPublicMethod(method)) methodNode.tags = Array.from(new Set([...(methodNode.tags ?? []), "public"]));
       }
       for (const ctor of cls.getConstructors()) {
-        addSymbol(symbols, nodes, edges, ctor, sourceFile, "function", `${cls.getName() ?? "anonymous"}.constructor`, packageId, classExported, classNode.id, "constructor", ctor.getBody(), ["constructor"]);
+        addSymbol(indexes, nodes, edges, ctor, sourceFile, "function", `${cls.getName() ?? "anonymous"}.constructor`, packageId, classExported, classNode.id, "constructor", ctor.getBody(), ["constructor"]);
       }
     }
 
     for (const iface of sourceFile.getInterfaces()) {
-      addSymbol(symbols, nodes, edges, iface, sourceFile, "interface", iface.getName(), packageId, iface.isExported(), fileId, "interface");
+      addSymbol(indexes, nodes, edges, iface, sourceFile, "interface", iface.getName(), packageId, iface.isExported(), fileId, "interface");
       for (const ext of iface.getExtends()) addEdge(edges, `interface:${filePath}:${iface.getName()}`, `interface:*:${ext.getExpression().getText()}`, "extends");
     }
 
     for (const alias of sourceFile.getTypeAliases()) {
-      addSymbol(symbols, nodes, edges, alias, sourceFile, "type_alias", alias.getName(), packageId, alias.isExported(), fileId, "type_alias");
+      addSymbol(indexes, nodes, edges, alias, sourceFile, "type_alias", alias.getName(), packageId, alias.isExported(), fileId, "type_alias");
     }
 
     for (const cls of sourceFile.getClasses()) {
@@ -401,7 +445,11 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
     }
   }
 
-  addCallEdges(sourceFiles, symbols, nodes, edges);
+  sortSymbolLookups(indexes);
+  addCallEdges(sourceFiles, indexes, nodes, edges);
+  indexes.byDeclaration.clear();
+  indexes.byFileAndName.clear();
+  indexes.nameFamilyCounts.clear();
   const packageIdFor = (filePath: string) => packageMap?.get(filePath) ?? "root";
   for (const pass of [
     scanSchemas(project, packageMap),

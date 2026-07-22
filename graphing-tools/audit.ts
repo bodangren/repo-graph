@@ -1,5 +1,5 @@
 import { Database } from "bun:sqlite";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { Project, SyntaxKind } from "ts-morph";
 import { formatTable } from "./query";
 import { ExitCode, type DocumentationIssue, type ExitCodeValue, type NodeDocumentation } from "./contract";
@@ -60,8 +60,14 @@ function findStaleSymbols(db: Database): Pick<AuditResult, "staleSymbols" | "una
 
   const stale: AuditResult["staleSymbols"] = [];
   const unaudited: AuditResult["unauditedSymbols"] = [];
+  const project = new Project({
+    useInMemoryFileSystem: true,
+    skipFileDependencyResolution: true,
+    skipLoadingLibFiles: true,
+  });
 
   for (const [filePath, nodes] of byFile) {
+    let sourceFile: import("ts-morph").SourceFile | undefined;
     if (!existsSync(filePath)) {
       // File is missing; all its symbols are stale
       for (const node of nodes) {
@@ -71,8 +77,7 @@ function findStaleSymbols(db: Database): Pick<AuditResult, "staleSymbols" | "una
     }
 
     try {
-      const project = new Project();
-      const sourceFile = project.addSourceFileAtPath(filePath);
+      sourceFile = project.createSourceFile(filePath, readFileSync(filePath, "utf8"), { overwrite: true });
 
       // Build sets of existing symbol names by type
       const existing = new Map<string, Set<string>>();
@@ -202,12 +207,14 @@ function findStaleSymbols(db: Database): Pick<AuditResult, "staleSymbols" | "una
         }
 
         const names = existing.get(node.type);
-        if (names && !names.has(node.name)) {
+        if (names && !names.has(node.name.replace(/@\d+$/, ""))) {
           stale.push(node);
         }
       }
     } catch {
       // If we can't parse the file, skip its symbols
+    } finally {
+      sourceFile?.forget();
     }
   }
 
@@ -247,12 +254,16 @@ function documentationIssues(db: Database, includeInternal: boolean): Documentat
   const rows = db.prepare("SELECT id, type, name, file_path, line_start, tags, documentation FROM nodes WHERE type IN ('function', 'class', 'interface', 'type_alias') AND file_path != '' ORDER BY id").all() as Array<{ id: string; type: string; name: string; file_path: string; line_start: number | null; tags: string | null; documentation: string | null }>;
   const issues: DocumentationIssue[] = [];
   const add = (row: typeof rows[number], category: DocumentationIssue["category"], message: string) => issues.push({ id: row.id, type: row.type as DocumentationIssue["type"], name: row.name, filePath: row.file_path, category, message });
-  const project = new Project();
+  const project = new Project({
+    useInMemoryFileSystem: true,
+    skipFileDependencyResolution: true,
+    skipLoadingLibFiles: true,
+  });
   const sourceFiles = new Map<string, import("ts-morph").SourceFile | undefined>();
   const sourceFileFor = (filePath: string): import("ts-morph").SourceFile | undefined => {
     if (sourceFiles.has(filePath)) return sourceFiles.get(filePath);
     try {
-      const sourceFile = project.addSourceFileAtPath(filePath);
+      const sourceFile = project.createSourceFile(filePath, readFileSync(filePath, "utf8"), { overwrite: true });
       sourceFiles.set(filePath, sourceFile);
       return sourceFile;
     } catch {

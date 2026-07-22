@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-15T10:59:16.109Z",
+  "generated_at": "2026-07-22T10:44:19.851Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -44,13 +44,13 @@
         "type": "file",
         "path": "persistence.test.ts",
         "extension": "ts",
-        "size": 4588
+        "size": 5738
       },
       {
         "type": "file",
         "path": "scanner-core.ts",
         "extension": "ts",
-        "size": 16935
+        "size": 28797
       },
       {
         "type": "file",
@@ -234,6 +234,12 @@
       },
       {
         "type": "file",
+        "path": "scanner-index-regression.test.ts",
+        "extension": "ts",
+        "size": 7507
+      },
+      {
+        "type": "file",
         "path": "schema.test.ts",
         "extension": "ts",
         "size": 14912
@@ -243,6 +249,12 @@
         "path": "build-graph.test.ts",
         "extension": "ts",
         "size": 876
+      },
+      {
+        "type": "file",
+        "path": "batched-scan.test.ts",
+        "extension": "ts",
+        "size": 8065
       },
       {
         "type": "file",
@@ -260,7 +272,7 @@
         "type": "file",
         "path": "audit.ts",
         "extension": "ts",
-        "size": 19472
+        "size": 19922
       },
       {
         "type": "file",
@@ -284,7 +296,7 @@
         "type": "file",
         "path": "repo-graph.ts",
         "extension": "ts",
-        "size": 25575
+        "size": 28298
       },
       {
         "type": "file",
@@ -320,7 +332,7 @@
         "type": "file",
         "path": "persistence.ts",
         "extension": "ts",
-        "size": 7337
+        "size": 8735
       },
       {
         "type": "file",
@@ -359,6 +371,12 @@
         "size": 2887
       },
       {
+        "type": "file",
+        "path": "batched-scan.ts",
+        "extension": "ts",
+        "size": 13668
+      },
+      {
         "type": "directory",
         "path": "legacy",
         "children": [
@@ -387,6 +405,12 @@
         "path": "integration.test.ts",
         "extension": "ts",
         "size": 2649
+      },
+      {
+        "type": "file",
+        "path": "batched-scan-independent.test.ts",
+        "extension": "ts",
+        "size": 12267
       },
       {
         "type": "file",
@@ -452,7 +476,7 @@
         "type": "file",
         "path": "audit.test.ts",
         "extension": "ts",
-        "size": 21343
+        "size": 22103
       }
     ],
     "measure": [
@@ -926,7 +950,7 @@
             "type": "file",
             "path": "generated/architecture.json",
             "extension": "json",
-            "size": 30521
+            "size": 33021
           },
           {
             "type": "file",
@@ -952,7 +976,7 @@
         "type": "file",
         "path": "tracks.md",
         "extension": "md",
-        "size": 5495
+        "size": 6524
       },
       {
         "type": "file",
@@ -970,6 +994,36 @@
         "type": "directory",
         "path": "tracks",
         "children": [
+          {
+            "type": "directory",
+            "path": "tracks/scanner_memory_scalability_20260722",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/scanner_memory_scalability_20260722/plan.md",
+                "extension": "md",
+                "size": 4931
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_memory_scalability_20260722/metadata.json",
+                "extension": "json",
+                "size": 916
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_memory_scalability_20260722/verification.md",
+                "extension": "md",
+                "size": 4810
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_memory_scalability_20260722/spec.md",
+                "extension": "md",
+                "size": 4843
+              }
+            ]
+          },
           {
             "type": "directory",
             "path": "tracks/binary_scanner_unification_20260627",
@@ -1063,6 +1117,12 @@
                 "path": "tracks/graph_correctness_jsdoc_ts7_20260715/index.md",
                 "extension": "md",
                 "size": 148
+              },
+              {
+                "type": "file",
+                "path": "tracks/graph_correctness_jsdoc_ts7_20260715/review-2026-07-16.md",
+                "extension": "md",
+                "size": 0
               }
             ]
           },
@@ -1111,6 +1171,30 @@
                 "path": "tracks/ci_cd_integration_20260528/spec.md",
                 "extension": "md",
                 "size": 4124
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "path": "tracks/git_diff_mode_20260716",
+            "children": [
+              {
+                "type": "file",
+                "path": "tracks/git_diff_mode_20260716/plan.md",
+                "extension": "md",
+                "size": 3296
+              },
+              {
+                "type": "file",
+                "path": "tracks/git_diff_mode_20260716/metadata.json",
+                "extension": "json",
+                "size": 411
+              },
+              {
+                "type": "file",
+                "path": "tracks/git_diff_mode_20260716/spec.md",
+                "extension": "md",
+                "size": 4275
               }
             ]
           }

@@ -179,6 +179,22 @@ describe("runAudit", () => {
       expect(output).not.toContain("stale_symbols");
     });
 
+    it("does not report line-disambiguated class methods that still exist", () => {
+      const fs = require("fs");
+      const tmpDir = "/tmp/audit_test_disambiguated_method_" + Date.now();
+      fs.mkdirSync(tmpDir, { recursive: true });
+      fs.writeFileSync(tmpDir + "/a.ts", "export class NextResponse { static json() { return 1; } }\n");
+
+      db.exec(`INSERT INTO nodes (id, type, name, file_path, line_start, line_end) VALUES
+        ('function:${tmpDir}/a.ts:NextResponse.json@1', 'function', 'NextResponse.json@1', '${tmpDir}/a.ts', 1, 1)`);
+
+      const { output, exitCode } = runAudit(db);
+      fs.rmSync(tmpDir, { recursive: true });
+
+      expect(exitCode).toBe(ExitCode.Success);
+      expect(output).not.toContain("stale_symbols");
+    });
+
     it("reports interface nodes that no longer exist", () => {
       const fs = require("fs");
       const tmpDir = "/tmp/audit_test_stale_iface_" + Date.now();

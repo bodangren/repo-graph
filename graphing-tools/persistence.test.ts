@@ -1,10 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import { Database } from "bun:sqlite";
-import { unlinkSync } from "fs";
+import { mkdtempSync, rmSync, unlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import { Project } from "ts-morph";
 import { createSchema } from "./schema";
 import { scanProject } from "./scanner";
-import { packageMapForProject, persistGraph, persistSnapshotAtomically, scanAndPersist, scanAndPersistAtomically } from "./persistence";
+import {
+  packageMapForProject,
+  persistGraph,
+  persistGraphFromFiles,
+  persistSnapshotFromFilesAtomically,
+  scanAndPersist,
+  scanAndPersistAtomically,
+} from "./persistence";
 import { searchNodes } from "./search";
 
 function makeProject(): Project {
@@ -63,24 +72,35 @@ describe("shared graph persistence", () => {
     const count = (db.prepare("SELECT COUNT(*) AS count FROM nodes").get() as { count: number }).count;
     expect(count).toBe(snapshot.nodes.length);
     db.close();
-  });
+  }, 15_000);
 
-  it("does not publish a failed atomic snapshot over a valid graph", () => {
+  it("does not publish a failed project-free atomic snapshot over a valid graph", () => {
     const project = makeProject();
     const path = `/tmp/repo-graph-atomic-${process.pid}.db`;
     const db = new Database(path);
     createSchema(db);
-    db.exec("INSERT INTO nodes (id, type, name, file_path) VALUES ('sentinel', 'file', 'sentinel.ts', '/project/sentinel.ts')");
+    db.exec(
+      "INSERT INTO nodes (id, type, name, file_path) VALUES ('sentinel', 'file', 'sentinel.ts', '/project/sentinel.ts')",
+    );
     db.close();
 
-    const duplicate = { id: "duplicate", type: "file" as const, name: "one.ts", filePath: "/project/one.ts" };
-    expect(() => persistSnapshotAtomically(path, {
-      nodes: [duplicate, { ...duplicate }],
-      edges: [],
-    }, project, { projectRoot: "/project" })).toThrow();
+    const duplicate = {
+      id: "duplicate",
+      type: "file" as const,
+      name: "one.ts",
+      filePath: "/project/one.ts",
+    };
+    expect(() => persistSnapshotFromFilesAtomically(
+      path,
+      { nodes: [duplicate, { ...duplicate }], edges: [] },
+      project.getSourceFiles().map((sourceFile) => sourceFile.getFilePath()),
+      { projectRoot: "/project" },
+    )).toThrow();
 
     const preserved = new Database(path);
-    expect(preserved.prepare("SELECT name FROM nodes WHERE id = 'sentinel'").get()).toEqual({ name: "sentinel.ts" });
+    expect(
+      preserved.prepare("SELECT name FROM nodes WHERE id = 'sentinel'").get(),
+    ).toEqual({ name: "sentinel.ts" });
     preserved.close();
     unlinkSync(path);
   });
@@ -101,5 +121,32 @@ describe("shared graph persistence", () => {
     const packageMap = packageMapForProject(project, new Map([[project.getSourceFiles()[0].getFilePath(), "lib"]]));
     expect(packageMap.get(project.getSourceFiles()[0].getFilePath())).toBe("lib");
     expect(packageMap.get(project.getSourceFiles()[1].getFilePath())).toBe("root");
+  }, 15_000);
+
+  it("records file metadata from explicit batched source paths", () => {
+    const root = mkdtempSync(join(tmpdir(), "repo-graph-file-paths-"));
+    const filePath = join(root, "source.ts");
+    try {
+      writeFileSync(filePath, "export const value = 1;\n");
+      const db = new Database(":memory:");
+      createSchema(db);
+      persistGraphFromFiles(db, {
+        nodes: [{
+          id: `file:${filePath}`,
+          type: "file",
+          name: "source.ts",
+          filePath,
+        }],
+        edges: [],
+      }, [filePath], { projectRoot: root });
+
+      const row = db.prepare(
+        "SELECT path, node_count FROM files WHERE path = ?",
+      ).get(filePath);
+      expect(row).toEqual({ path: filePath, node_count: 1 });
+      db.close();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

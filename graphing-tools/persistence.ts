@@ -22,6 +22,7 @@ export interface PersistGraphOptions {
   packageMap?: Map<string, string>;
   commitSha?: string | null;
   extraFiles?: string[];
+  sourceFilePaths?: string[];
   schemaVersion?: string;
 }
 
@@ -45,11 +46,11 @@ function clearDerivedState(db: Database): void {
  *
  * @param db Open database receiving the snapshot.
  * @param snapshot Deterministic nodes and edges to store.
- * @param project Project whose source files provide freshness metadata.
+ * @param filePaths Exact source paths providing freshness metadata.
  * @param options Project, package, commit, and schema metadata.
  * @returns Nothing; the database is updated in place.
  */
-export function persistGraph(db: Database, snapshot: GraphSnapshot, project: Project, options: PersistGraphOptions = {}): void {
+export function persistGraphFromFiles(db: Database, snapshot: GraphSnapshot, filePaths: readonly string[], options: PersistGraphOptions = {}): void {
   createSchema(db);
   createIndexes(db);
   const insertNode = db.prepare(`
@@ -97,8 +98,8 @@ export function persistGraph(db: Database, snapshot: GraphSnapshot, project: Pro
       insertEdge.run(edge.source, edge.target, edge.type, edge.direction, edge.weight ?? 0.5, edge.metadata ?? null);
     }
 
-    for (const sourceFile of project.getSourceFiles()) {
-      recordFileMetadata(db, options.projectRoot, sourceFile.getFilePath(), sourceFile);
+    for (const filePath of Array.from(new Set(filePaths)).sort()) {
+      recordFileMetadata(db, options.projectRoot, filePath, null);
     }
     for (const filePath of options.extraFiles ?? []) {
       recordFileMetadata(db, options.projectRoot, filePath, null);
@@ -109,6 +110,25 @@ export function persistGraph(db: Database, snapshot: GraphSnapshot, project: Pro
       lastIndexedAt: Date.now(),
     });
   })();
+}
+/**
+ * Persist a graph using source paths from an existing ts-morph Project.
+ *
+ * @param db Open database receiving the snapshot.
+ * @param snapshot Deterministic nodes and edges to store.
+ * @param project Project supplying source paths for compatibility callers.
+ * @param options Project, package, commit, and schema metadata.
+ * @returns Nothing; the database is updated in place.
+ */
+export function persistGraph(
+  db: Database,
+  snapshot: GraphSnapshot,
+  project: Project,
+  options: PersistGraphOptions = {},
+): void {
+  const filePaths = options.sourceFilePaths
+    ?? project.getSourceFiles().map((sourceFile) => sourceFile.getFilePath());
+  persistGraphFromFiles(db, snapshot, filePaths, options);
 }
 
 /**
@@ -155,15 +175,20 @@ export function scanAndPersistAtomically(dbPath: string, project: Project, optio
 }
 
 /**
- * Atomically promote a caller-supplied snapshot after persistence validation.
+ * Atomically persist a caller-supplied snapshot from exact source paths.
  *
  * @param dbPath Destination graph database path.
  * @param snapshot Nodes and edges to persist.
- * @param project Project supplying file metadata.
+ * @param filePaths Exact source paths providing freshness metadata.
  * @param options Persistence metadata and package ownership.
  * @returns Nothing; failed writes leave the previous destination untouched.
  */
-export function persistSnapshotAtomically(dbPath: string, snapshot: GraphSnapshot, project: Project, options: PersistGraphOptions = {}): void {
+export function persistSnapshotFromFilesAtomically(
+  dbPath: string,
+  snapshot: GraphSnapshot,
+  filePaths: readonly string[],
+  options: PersistGraphOptions = {},
+): void {
   const absolutePath = resolve(dbPath);
   const temporaryPath = `${absolutePath}.tmp.${process.pid}.${Date.now()}`;
   let db: Database | undefined;
@@ -171,20 +196,40 @@ export function persistSnapshotAtomically(dbPath: string, snapshot: GraphSnapsho
     db = new Database(temporaryPath);
     createSchema(db);
     createIndexes(db);
-    scanAndPersistSnapshot(db, snapshot, project, options);
+    persistGraphFromFiles(db, snapshot, filePaths, options);
+    if (options.projectRoot) setMeta(db, "project_root", resolve(options.projectRoot));
     db.close();
     db = undefined;
     renameSync(temporaryPath, absolutePath);
   } catch (error) {
     try { db?.close(); } catch { /* best effort */ }
-    try { if (existsSync(temporaryPath)) unlinkSync(temporaryPath); } catch { /* best effort */ }
+    try {
+      if (existsSync(temporaryPath)) unlinkSync(temporaryPath);
+    } catch {
+      /* best effort */
+    }
     throw error;
   }
 }
 
-function scanAndPersistSnapshot(db: Database, snapshot: GraphSnapshot, project: Project, options: PersistGraphOptions): void {
-  persistGraph(db, snapshot, project, options);
-  if (options.projectRoot) setMeta(db, "project_root", resolve(options.projectRoot));
+/**
+ * Atomically promote a caller-supplied snapshot using Project source paths.
+ *
+ * @param dbPath Destination graph database path.
+ * @param snapshot Nodes and edges to persist.
+ * @param project Project supplying file metadata for compatibility callers.
+ * @param options Persistence metadata and package ownership.
+ * @returns Nothing; failed writes leave the previous destination untouched.
+ */
+export function persistSnapshotAtomically(
+  dbPath: string,
+  snapshot: GraphSnapshot,
+  project: Project,
+  options: PersistGraphOptions = {},
+): void {
+  const filePaths = options.sourceFilePaths
+    ?? project.getSourceFiles().map((sourceFile) => sourceFile.getFilePath());
+  persistSnapshotFromFilesAtomically(dbPath, snapshot, filePaths, options);
 }
 
 /**

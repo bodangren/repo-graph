@@ -9,7 +9,7 @@ import {
   type Node as TsMorphNode,
   type SourceFile,
 } from "ts-morph";
-import { existsSync, statSync } from "fs";
+import { statSync } from "fs";
 import { dirname, resolve } from "path";
 import type {
   DocumentationParam,
@@ -44,6 +44,82 @@ interface ScanResult {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
+
+/** Named scanner lifecycle boundary emitted for performance diagnostics. */
+export type ScanStageName =
+  | "project_discovery"
+  | "primary_extraction"
+  | "schema_pass"
+  | "framework_pass"
+  | "string_literal_pass"
+  | "param_flow_pass"
+  | "route_pass"
+  | "call_resolution"
+  | "deduplication"
+  | "persistence";
+
+/** Timing and resident-memory sample for one scanner lifecycle boundary. */
+export interface ScanStageDiagnostic {
+  stage: ScanStageName;
+  elapsedMs: number;
+  rssBytes: number;
+}
+
+/** Observer receiving scanner diagnostics without changing graph output. */
+export type ScanStageObserver = (diagnostic: ScanStageDiagnostic) => void;
+
+function emitStage(
+  stage: ScanStageName,
+  startedAt: number,
+  observer?: ScanStageObserver,
+): void {
+  observer?.({
+    stage,
+    elapsedMs: Math.round(performance.now() - startedAt),
+    rssBytes: process.memoryUsage().rss,
+  });
+}
+
+/** Lightweight symbol lookup retained after a ts-morph Project is released. */
+export interface SymbolLookupEntry {
+  filePath: string;
+  lookupName: string;
+  targetId: string;
+}
+
+/** Import binding used by the AST-free global call resolver. */
+export interface ImportBinding {
+  sourceFilePath: string;
+  declarationOrder: number;
+  bindingOrder: number;
+  targetFilePath: string;
+  kind: "named" | "default";
+  localName: string;
+  importedName: string;
+}
+
+/** Call site whose target is resolved after all project batches are scanned. */
+export interface DeferredCallSite {
+  ownerId: string;
+  ownerName: string;
+  sourceFilePath: string;
+  callStart: number;
+  lineStart: number;
+  lineEnd: number;
+  expression: string;
+}
+
+/** AST-free graph fragment emitted by one project batch. */
+export interface ProjectGraphFragment {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  symbolLookups: SymbolLookupEntry[];
+  importBindings: ImportBinding[];
+  deferredCalls: DeferredCallSite[];
+}
+
+/** Resolve one module specifier to a source file path. */
+export type ModuleResolver = (sourceFilePath: string, specifier: string) => string | undefined;
 
 const BRANCH_KINDS = new Set([
   SyntaxKind.IfStatement,
@@ -254,82 +330,248 @@ function findOwner(call: CallExpression, indexes: SymbolIndexes): SymbolRecord |
   return undefined;
 }
 
-function recordsForFileAndName(indexes: SymbolIndexes, filePath: string, name: string): readonly SymbolRecord[] {
-  return indexes.byFileAndName.get(fileAndNameKey(filePath, name)) ?? [];
+function resolveImportedPath(
+  sourceFile: SourceFile,
+  specifier: string,
+  resolveModule?: ModuleResolver,
+): string | undefined {
+  if (resolveModule) {
+    return resolveModule(sourceFile.getFilePath(), specifier);
+  }
+  const declaration = sourceFile.getImportDeclarations().find(
+    (candidate) => candidate.getModuleSpecifierValue() === specifier,
+  );
+  return declaration?.getModuleSpecifierSourceFile()?.getFilePath()
+    ?? resolveImportPath(sourceFile, specifier);
 }
 
-function resolveCallTarget(call: CallExpression, owner: SymbolRecord, indexes: SymbolIndexes): SymbolRecord | undefined {
-  const expression = call.getExpression().getText();
-  const parts = expression.split(".");
-  const calledName = parts.at(-1) ?? expression;
-  const qualifier = parts.length > 1 ? parts.at(-2) : undefined;
-  const sourceFile = owner.sourceFile;
-
-  if (!qualifier || qualifier === "this") {
-    const local = recordsForFileAndName(indexes, sourceFile.getFilePath(), calledName);
-    if (local.length > 0) return local[0];
-  }
-
-  if (qualifier) {
-    const localMethod = recordsForFileAndName(indexes, sourceFile.getFilePath(), `${qualifier}.${calledName}`);
-    if (localMethod.length > 0) return localMethod[0];
-    if (qualifier === "this" && owner.node.name.includes(".")) {
-      const className = owner.node.name.split(".")[0];
-      const ownerMethod = recordsForFileAndName(indexes, sourceFile.getFilePath(), `${className}.${calledName}`);
-      if (ownerMethod.length > 0) return ownerMethod[0];
+function extractSymbolLookups(indexes: SymbolIndexes): SymbolLookupEntry[] {
+  const lookups: SymbolLookupEntry[] = [];
+  for (const [key, records] of indexes.byFileAndName) {
+    const separator = key.indexOf("\u0000");
+    const filePath = key.slice(0, separator);
+    const lookupName = key.slice(separator + 1);
+    for (const record of records) {
+      lookups.push({ filePath, lookupName, targetId: record.node.id });
     }
   }
-
-  for (const declaration of sourceFile.getImportDeclarations()) {
-    const importedPath = declaration.getModuleSpecifierSourceFile()?.getFilePath() ?? resolveImportPath(sourceFile, declaration.getModuleSpecifierValue());
-    if (!importedPath) continue;
-    const named = declaration.getNamedImports().find((item) => item.getAliasNode()?.getText() === (qualifier ?? calledName) || item.getName() === (qualifier ?? calledName));
-    if (named) {
-      return recordsForFileAndName(indexes, importedPath, named.getName())[0];
-    }
-    const defaultImport = declaration.getDefaultImport()?.getText();
-    if (defaultImport === (qualifier ?? calledName)) {
-      return recordsForFileAndName(indexes, importedPath, "default")[0] ?? recordsForFileAndName(indexes, importedPath, defaultImport)[0];
-    }
-  }
-  return undefined;
+  return lookups.sort((left, right) =>
+    left.filePath.localeCompare(right.filePath)
+    || left.lookupName.localeCompare(right.lookupName)
+    || left.targetId.localeCompare(right.targetId)
+  );
 }
 
-function addCallEdges(sourceFiles: SourceFile[], indexes: SymbolIndexes, nodes: GraphNode[], edges: GraphEdge[]): void {
-  const unresolvedById = new Map<string, GraphNode>();
+function extractImportBindings(
+  sourceFiles: readonly SourceFile[],
+  resolveModule?: ModuleResolver,
+): ImportBinding[] {
+  const bindings: ImportBinding[] = [];
+  for (const sourceFile of sourceFiles) {
+    sourceFile.getImportDeclarations().forEach((declaration, declarationOrder) => {
+      const targetFilePath = resolveImportedPath(
+        sourceFile,
+        declaration.getModuleSpecifierValue(),
+        resolveModule,
+      );
+      if (!targetFilePath) return;
+      const namedImports = declaration.getNamedImports();
+      namedImports.forEach((item, bindingOrder) => {
+        bindings.push({
+          sourceFilePath: sourceFile.getFilePath(),
+          declarationOrder,
+          bindingOrder,
+          targetFilePath,
+          kind: "named",
+          localName: item.getAliasNode()?.getText() ?? item.getName(),
+          importedName: item.getName(),
+        });
+      });
+      const defaultImport = declaration.getDefaultImport()?.getText();
+      if (defaultImport) {
+        bindings.push({
+          sourceFilePath: sourceFile.getFilePath(),
+          declarationOrder,
+          bindingOrder: namedImports.length,
+          targetFilePath,
+          kind: "default",
+          localName: defaultImport,
+          importedName: "default",
+        });
+      }
+    });
+  }
+  return bindings;
+}
+
+function extractDeferredCalls(
+  sourceFiles: readonly SourceFile[],
+  indexes: SymbolIndexes,
+): DeferredCallSite[] {
+  const calls: DeferredCallSite[] = [];
   for (const sourceFile of sourceFiles) {
     for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
       const owner = findOwner(call, indexes);
       if (!owner) continue;
-      const target = resolveCallTarget(call, owner, indexes);
-      if (target) {
-        addEdge(edges, owner.node.id, target.node.id, "calls", {
-          resolution: "resolved",
-          expression: call.getExpression().getText(),
-        });
-        continue;
-      }
-
-      const unresolvedId = `unresolved-call:${sourceFile.getFilePath()}:${call.getStart()}`;
-      if (!unresolvedById.has(unresolvedId)) {
-        const unresolved: GraphNode = {
-          id: unresolvedId,
-          type: "function",
-          name: call.getExpression().getText(),
-          filePath: "",
-          lineStart: call.getStartLineNumber(),
-          lineEnd: call.getEndLineNumber(),
-          tags: ["unresolved", "dynamic"],
-        };
-        unresolvedById.set(unresolvedId, unresolved);
-        nodes.push(unresolved);
-      }
-      addEdge(edges, owner.node.id, unresolvedId, "calls", {
-        resolution: "unresolved",
+      calls.push({
+        ownerId: owner.node.id,
+        ownerName: owner.node.name,
+        sourceFilePath: sourceFile.getFilePath(),
+        callStart: call.getStart(),
+        lineStart: call.getStartLineNumber(),
+        lineEnd: call.getEndLineNumber(),
         expression: call.getExpression().getText(),
       });
     }
   }
+  return calls;
+}
+
+function lookupTarget(
+  lookups: ReadonlyMap<string, readonly string[]>,
+  filePath: string,
+  name: string,
+): string | undefined {
+  return lookups.get(fileAndNameKey(filePath, name))?.[0];
+}
+
+function resolveDeferredCallTarget(
+  call: DeferredCallSite,
+  lookups: ReadonlyMap<string, readonly string[]>,
+  bindingsByFile: ReadonlyMap<string, readonly ImportBinding[]>,
+): string | undefined {
+  const parts = call.expression.split(".");
+  const calledName = parts.at(-1) ?? call.expression;
+  const qualifier = parts.length > 1 ? parts.at(-2) : undefined;
+
+  if (!qualifier || qualifier === "this") {
+    const local = lookupTarget(lookups, call.sourceFilePath, calledName);
+    if (local) return local;
+  }
+
+  if (qualifier) {
+    const localMethod = lookupTarget(
+      lookups,
+      call.sourceFilePath,
+      `${qualifier}.${calledName}`,
+    );
+    if (localMethod) return localMethod;
+    if (qualifier === "this" && call.ownerName.includes(".")) {
+      const className = call.ownerName.split(".")[0];
+      const ownerMethod = lookupTarget(
+        lookups,
+        call.sourceFilePath,
+        `${className}.${calledName}`,
+      );
+      if (ownerMethod) return ownerMethod;
+    }
+  }
+
+  const requestedName = qualifier ?? calledName;
+  const bindings = bindingsByFile.get(call.sourceFilePath) ?? [];
+  let declarationOrder = -1;
+  let declarationBindings: ImportBinding[] = [];
+  const declarationMatches = (): boolean => declarationBindings.some((candidate) =>
+    candidate.kind === "named"
+      ? candidate.localName === requestedName || candidate.importedName === requestedName
+      : candidate.localName === requestedName
+  );
+  const resolveDeclaration = (): string | undefined => {
+    const named = declarationBindings.find(
+      (binding) => binding.kind === "named"
+        && (binding.localName === requestedName || binding.importedName === requestedName),
+    );
+    if (named) {
+      return lookupTarget(lookups, named.targetFilePath, named.importedName);
+    }
+    const defaultBinding = declarationBindings.find(
+      (binding) => binding.kind === "default" && binding.localName === requestedName,
+    );
+    if (defaultBinding) {
+      return lookupTarget(lookups, defaultBinding.targetFilePath, "default")
+        ?? lookupTarget(lookups, defaultBinding.targetFilePath, defaultBinding.localName);
+    }
+    return undefined;
+  };
+
+  for (const binding of bindings) {
+    if (declarationOrder !== -1 && binding.declarationOrder !== declarationOrder) {
+      const target = resolveDeclaration();
+      if (target || declarationMatches()) return target;
+      declarationBindings = [];
+    }
+    declarationOrder = binding.declarationOrder;
+    declarationBindings.push(binding);
+  }
+  return resolveDeclaration();
+}
+
+/**
+ * Resolve deferred call sites against AST-free global symbol and import indexes.
+ *
+ * @param fragment Combined project fragments to resolve.
+ * @returns Resolved and unresolved call nodes and edges.
+ */
+export function resolveDeferredCalls(fragment: ProjectGraphFragment): ScanResult {
+  const lookups = new Map<string, string[]>();
+  for (const lookup of fragment.symbolLookups) {
+    const key = fileAndNameKey(lookup.filePath, lookup.lookupName);
+    const targets = lookups.get(key);
+    if (targets) targets.push(lookup.targetId);
+    else lookups.set(key, [lookup.targetId]);
+  }
+  for (const targets of lookups.values()) targets.sort();
+
+  const bindingsByFile = new Map<string, ImportBinding[]>();
+  for (const binding of fragment.importBindings) {
+    const bindings = bindingsByFile.get(binding.sourceFilePath);
+    if (bindings) bindings.push(binding);
+    else bindingsByFile.set(binding.sourceFilePath, [binding]);
+  }
+  for (const bindings of bindingsByFile.values()) {
+    bindings.sort((left, right) =>
+      left.declarationOrder - right.declarationOrder
+      || left.bindingOrder - right.bindingOrder
+      || left.kind.localeCompare(right.kind)
+    );
+  }
+
+  const nodes: GraphNode[] = [];
+  const edges: GraphEdge[] = [];
+  const unresolvedById = new Set<string>();
+  for (const call of [...fragment.deferredCalls].sort((left, right) =>
+    left.sourceFilePath.localeCompare(right.sourceFilePath)
+    || left.callStart - right.callStart
+    || left.ownerId.localeCompare(right.ownerId)
+  )) {
+    const targetId = resolveDeferredCallTarget(call, lookups, bindingsByFile);
+    if (targetId) {
+      addEdge(edges, call.ownerId, targetId, "calls", {
+        resolution: "resolved",
+        expression: call.expression,
+      });
+      continue;
+    }
+
+    const unresolvedId = `unresolved-call:${call.sourceFilePath}:${call.callStart}`;
+    if (!unresolvedById.has(unresolvedId)) {
+      nodes.push({
+        id: unresolvedId,
+        type: "function",
+        name: call.expression,
+        filePath: "",
+        lineStart: call.lineStart,
+        lineEnd: call.lineEnd,
+        tags: ["unresolved", "dynamic"],
+      });
+      unresolvedById.add(unresolvedId);
+    }
+    addEdge(edges, call.ownerId, unresolvedId, "calls", {
+      resolution: "unresolved",
+      expression: call.expression,
+    });
+  }
+  return { nodes, edges };
 }
 
 function deduplicateAndSort(result: ScanResult): ScanResult {
@@ -352,13 +594,21 @@ function deduplicateAndSort(result: ScanResult): ScanResult {
 }
 
 /**
- * Scan a TypeScript project into a deterministic graph snapshot.
+ * Extract an AST-free graph fragment from one TypeScript project.
  *
- * @param project Project whose source files are scanned.
+ * @param project Project whose currently loaded source files are scanned.
  * @param packageMap Optional file-to-package ownership map.
- * @returns Nodes and edges sorted and deduplicated for persistence.
+ * @param resolveModule Optional module resolver for files outside this Project.
+ * @param observeStage Optional timing and resident-memory observer.
+ * @returns A graph fragment containing no ts-morph objects.
  */
-export function scanProject(project: Project, packageMap?: Map<string, string>): ScanResult {
+export function extractProjectGraph(
+  project: Project,
+  packageMap?: Map<string, string>,
+  resolveModule?: ModuleResolver,
+  observeStage?: ScanStageObserver,
+): ProjectGraphFragment {
+  const primaryStarted = performance.now();
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   const indexes: SymbolIndexes = {
@@ -366,7 +616,9 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
     byFileAndName: new Map(),
     nameFamilyCounts: new Map(),
   };
-  const sourceFiles = [...project.getSourceFiles()].sort((a, b) => a.getFilePath().localeCompare(b.getFilePath()));
+  const sourceFiles = [...project.getSourceFiles()].sort(
+    (left, right) => left.getFilePath().localeCompare(right.getFilePath()),
+  );
 
   for (const sourceFile of sourceFiles) {
     const filePath = sourceFile.getFilePath();
@@ -383,14 +635,34 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
     });
 
     for (const declaration of sourceFile.getFunctions()) {
-      const functionName = declaration.getName() ?? (declaration.isDefaultExport() ? "default" : "anonymous");
-      addSymbol(indexes, nodes, edges, declaration, sourceFile, "function", functionName, packageId, declaration.isExported(), fileId, "function", declaration.getBody());
+      const functionName = declaration.getName()
+        ?? (declaration.isDefaultExport() ? "default" : "anonymous");
+      addSymbol(
+        indexes,
+        nodes,
+        edges,
+        declaration,
+        sourceFile,
+        "function",
+        functionName,
+        packageId,
+        declaration.isExported(),
+        fileId,
+        "function",
+        declaration.getBody(),
+      );
     }
 
     for (const statement of sourceFile.getVariableStatements()) {
       for (const declaration of statement.getDeclarations()) {
         const initializer = declaration.getInitializer();
-        if (!initializer || (initializer.getKind() !== SyntaxKind.ArrowFunction && initializer.getKind() !== SyntaxKind.FunctionExpression)) continue;
+        if (
+          !initializer
+          || (
+            initializer.getKind() !== SyntaxKind.ArrowFunction
+            && initializer.getKind() !== SyntaxKind.FunctionExpression
+          )
+        ) continue;
         const functionNode = addSymbol(
           indexes,
           nodes,
@@ -402,7 +674,9 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
           packageId,
           statement.isExported(),
           fileId,
-          initializer.getKind() === SyntaxKind.ArrowFunction ? "arrow_function" : "function_expression",
+          initializer.getKind() === SyntaxKind.ArrowFunction
+            ? "arrow_function"
+            : "function_expression",
           initializer,
         );
         if (!getJsDocs(initializer).length && getJsDocs(statement).length) {
@@ -412,63 +686,216 @@ export function scanProject(project: Project, packageMap?: Map<string, string>):
     }
 
     for (const cls of sourceFile.getClasses()) {
-      const classNode = addSymbol(indexes, nodes, edges, cls, sourceFile, "class", cls.getName() ?? "anonymous", packageId, cls.isExported(), fileId, "class");
+      const classNode = addSymbol(
+        indexes,
+        nodes,
+        edges,
+        cls,
+        sourceFile,
+        "class",
+        cls.getName() ?? "anonymous",
+        packageId,
+        cls.isExported(),
+        fileId,
+        "class",
+      );
       const classExported = cls.isExported();
       for (const method of cls.getMethods()) {
-        const methodNode = addSymbol(indexes, nodes, edges, method, sourceFile, "function", methodNodeName(cls, method), packageId, classExported && isPublicMethod(method), classNode.id, "public_method", method.getBody(), isPublicMethod(method) ? ["public"] : ["internal"]);
-        if (!getJsDocs(method).length && classExported && isPublicMethod(method)) methodNode.tags = Array.from(new Set([...(methodNode.tags ?? []), "public"]));
+        const methodNode = addSymbol(
+          indexes,
+          nodes,
+          edges,
+          method,
+          sourceFile,
+          "function",
+          methodNodeName(cls, method),
+          packageId,
+          classExported && isPublicMethod(method),
+          classNode.id,
+          "public_method",
+          method.getBody(),
+          isPublicMethod(method) ? ["public"] : ["internal"],
+        );
+        if (!getJsDocs(method).length && classExported && isPublicMethod(method)) {
+          methodNode.tags = Array.from(new Set([...(methodNode.tags ?? []), "public"]));
+        }
       }
       for (const ctor of cls.getConstructors()) {
-        addSymbol(indexes, nodes, edges, ctor, sourceFile, "function", `${cls.getName() ?? "anonymous"}.constructor`, packageId, classExported, classNode.id, "constructor", ctor.getBody(), ["constructor"]);
+        addSymbol(
+          indexes,
+          nodes,
+          edges,
+          ctor,
+          sourceFile,
+          "function",
+          `${cls.getName() ?? "anonymous"}.constructor`,
+          packageId,
+          classExported,
+          classNode.id,
+          "constructor",
+          ctor.getBody(),
+          ["constructor"],
+        );
       }
     }
 
     for (const iface of sourceFile.getInterfaces()) {
-      addSymbol(indexes, nodes, edges, iface, sourceFile, "interface", iface.getName(), packageId, iface.isExported(), fileId, "interface");
-      for (const ext of iface.getExtends()) addEdge(edges, `interface:${filePath}:${iface.getName()}`, `interface:*:${ext.getExpression().getText()}`, "extends");
+      addSymbol(
+        indexes,
+        nodes,
+        edges,
+        iface,
+        sourceFile,
+        "interface",
+        iface.getName(),
+        packageId,
+        iface.isExported(),
+        fileId,
+        "interface",
+      );
+      for (const ext of iface.getExtends()) {
+        addEdge(
+          edges,
+          `interface:${filePath}:${iface.getName()}`,
+          `interface:*:${ext.getExpression().getText()}`,
+          "extends",
+        );
+      }
     }
 
     for (const alias of sourceFile.getTypeAliases()) {
-      addSymbol(indexes, nodes, edges, alias, sourceFile, "type_alias", alias.getName(), packageId, alias.isExported(), fileId, "type_alias");
+      addSymbol(
+        indexes,
+        nodes,
+        edges,
+        alias,
+        sourceFile,
+        "type_alias",
+        alias.getName(),
+        packageId,
+        alias.isExported(),
+        fileId,
+        "type_alias",
+      );
     }
 
     for (const cls of sourceFile.getClasses()) {
       const classId = `class:${filePath}:${cls.getName() ?? "anonymous"}`;
       const ext = cls.getExtends();
-      if (ext) addEdge(edges, classId, `class:*:${ext.getExpression().getText()}`, "extends");
-      for (const impl of cls.getImplements()) addEdge(edges, classId, `interface:*:${impl.getExpression().getText()}`, "implements");
+      if (ext) {
+        addEdge(
+          edges,
+          classId,
+          `class:*:${ext.getExpression().getText()}`,
+          "extends",
+        );
+      }
+      for (const impl of cls.getImplements()) {
+        addEdge(
+          edges,
+          classId,
+          `interface:*:${impl.getExpression().getText()}`,
+          "implements",
+        );
+      }
     }
 
     for (const declaration of sourceFile.getImportDeclarations()) {
-      const resolved = declaration.getModuleSpecifierSourceFile()?.getFilePath() ?? resolveImportPath(sourceFile, declaration.getModuleSpecifierValue());
+      const resolved = resolveImportedPath(
+        sourceFile,
+        declaration.getModuleSpecifierValue(),
+        resolveModule,
+      );
       if (resolved) addEdge(edges, fileId, `file:${resolved}`, "imports");
     }
   }
 
   sortSymbolLookups(indexes);
-  addCallEdges(sourceFiles, indexes, nodes, edges);
+  const symbolLookups = extractSymbolLookups(indexes);
+  const importBindings = extractImportBindings(sourceFiles, resolveModule);
+  const deferredCalls = extractDeferredCalls(sourceFiles, indexes);
   indexes.byDeclaration.clear();
   indexes.byFileAndName.clear();
   indexes.nameFamilyCounts.clear();
-  const packageIdFor = (filePath: string) => packageMap?.get(filePath) ?? "root";
-  for (const pass of [
-    scanSchemas(project, packageMap),
-    scanFrameworkEdges(project, packageMap),
-    scanStringLiterals(project, packageMap),
-    scanParamFlow(project, packageMap),
-    scanRoutes(project, packageMap),
-  ]) {
-    nodes.push(...pass.nodes.map((node) => ({ ...node, packageId: node.packageId ?? (node.filePath ? packageIdFor(node.filePath) : undefined) })));
-    edges.push(...pass.edges);
-  }
+  emitStage("primary_extraction", primaryStarted, observeStage);
 
+  const packageIdFor = (filePath: string) => packageMap?.get(filePath) ?? "root";
+  const appendPass = (pass: ScanResult): void => {
+    nodes.push(...pass.nodes.map((node) => ({
+      ...node,
+      packageId: node.packageId
+        ?? (node.filePath ? packageIdFor(node.filePath) : undefined),
+    })));
+    edges.push(...pass.edges);
+  };
+  const runPass = (
+    stage: ScanStageName,
+    pass: () => ScanResult,
+  ): void => {
+    const startedAt = performance.now();
+    appendPass(pass());
+    emitStage(stage, startedAt, observeStage);
+  };
+  runPass("schema_pass", () => scanSchemas(project, packageMap));
+  runPass("framework_pass", () => scanFrameworkEdges(project, packageMap));
+  runPass("string_literal_pass", () => scanStringLiterals(project, packageMap));
+  runPass("param_flow_pass", () => scanParamFlow(project, packageMap));
+  runPass("route_pass", () => scanRoutes(project, packageMap));
+
+  return { nodes, edges, symbolLookups, importBindings, deferredCalls };
+}
+
+/**
+ * Resolve and normalize one or more combined AST-free project fragments.
+ *
+ * @param fragment Combined fragment data from every project batch.
+ * @param observeStage Optional timing and resident-memory observer.
+ * @returns Nodes and edges sorted and deduplicated for persistence.
+ */
+export function finalizeProjectGraph(
+  fragment: ProjectGraphFragment,
+  observeStage?: ScanStageObserver,
+): ScanResult {
+  const callStarted = performance.now();
+  const calls = resolveDeferredCalls(fragment);
+  emitStage("call_resolution", callStarted, observeStage);
+  const nodes = [...fragment.nodes, ...calls.nodes];
+  const edges = [...fragment.edges, ...calls.edges];
   const knownIds = new Set(nodes.map((node) => node.id));
   for (const edge of edges) {
     if (knownIds.has(edge.target) || !edge.target.includes(":*:")) continue;
     const [type, , ...nameParts] = edge.target.split(":");
-    const placeholder: GraphNode = { id: edge.target, type: type as GraphNode["type"], name: nameParts.join(":"), filePath: "", tags: ["unresolved"] };
+    const placeholder: GraphNode = {
+      id: edge.target,
+      type: type as GraphNode["type"],
+      name: nameParts.join(":"),
+      filePath: "",
+      tags: ["unresolved"],
+    };
     nodes.push(placeholder);
     knownIds.add(placeholder.id);
   }
-  return deduplicateAndSort({ nodes, edges });
+  const deduplicationStarted = performance.now();
+  const result = deduplicateAndSort({ nodes, edges });
+  emitStage("deduplication", deduplicationStarted, observeStage);
+  return result;
+}
+
+/**
+ * Scan a TypeScript project into a deterministic graph snapshot.
+ *
+ * @param project Project whose source files are scanned.
+ * @param packageMap Optional file-to-package ownership map.
+ * @param observeStage Optional timing and resident-memory observer.
+ * @returns Nodes and edges sorted and deduplicated for persistence.
+ */
+export function scanProject(
+  project: Project,
+  packageMap?: Map<string, string>,
+  observeStage?: ScanStageObserver,
+): ScanResult {
+  return finalizeProjectGraph(
+    extractProjectGraph(project, packageMap, undefined, observeStage),
+    observeStage,
+  );
 }

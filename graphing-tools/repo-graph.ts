@@ -21,9 +21,26 @@ import { installHooks } from "./hooks";
 import { ExitCode, type BuildGraphConfig, type CustomEdgeDef } from "./contract";
 import { loadConfig, applyCustomEdges } from "./config";
 import { discoverIncludeFiles } from "./include";
-import { persistSnapshotAtomically, type GraphSnapshot } from "./persistence";
+import {
+  persistSnapshotFromFilesAtomically,
+  type GraphSnapshot,
+} from "./persistence";
+import { scanProjectBatches } from "./batched-scan";
+import type { ScanStageDiagnostic } from "./scanner-core";
+export { scanProjectBatches } from "./batched-scan";
 
 const VERSION = "0.1.0";
+
+function writeScanDiagnostic(
+  diagnostic: ScanStageDiagnostic,
+  scope?: string,
+): void {
+  console.error(
+    `Stage ${diagnostic.stage}${scope ? ` [${scope}]` : ""}: `
+      + `${diagnostic.elapsedMs}ms; RSS `
+      + `${Math.round(diagnostic.rssBytes / 1024 / 1024)} MiB`,
+  );
+}
 
 function printHelp(subcommand?: string): void {
   if (subcommand === "scan") {
@@ -271,19 +288,80 @@ export async function createProject(projectDir: string): Promise<{ project: Proj
   }
   return { project, tsConfigPaths: [] };
 }
-
-async function handleScan(projectDir: string, dbPath: string, configPath?: string, includePatterns?: string[]): Promise<void> {
+async function handleScan(
+  projectDir: string,
+  dbPath: string,
+  configPath?: string,
+  includePatterns?: string[],
+): Promise<void> {
   const start = performance.now();
   const absProjectDir = resolve(projectDir);
-  const { project, tsConfigPaths } = await createProject(absProjectDir);
-  const packageMap = new Map<string, string>();
-  for (const sourceFile of project.getSourceFiles()) {
-    packageMap.set(sourceFile.getFilePath(), getPackageIdForFile(sourceFile.getFilePath(), tsConfigPaths));
+  const discoveryStarted = performance.now();
+  const discoveredConfigs = discoverTsConfigs(absProjectDir).sort();
+  writeScanDiagnostic({
+    stage: "project_discovery",
+    elapsedMs: Math.round(performance.now() - discoveryStarted),
+    rssBytes: process.memoryUsage().rss,
+  });
+  const rootConfig = join(absProjectDir, "tsconfig.json");
+  let hasRootConfig = false;
+  try {
+    hasRootConfig = statSync(rootConfig).isFile();
+  } catch {
+    // A missing root config enables package-batched discovery.
   }
-  const snapshot = scanProject(project, packageMap) as GraphSnapshot;
+  let tsConfigPaths: string[];
+  let sourceFilePaths: string[];
+  let snapshot: GraphSnapshot;
+
+  if (!hasRootConfig && discoveredConfigs.length > 1) {
+    const batched = await scanProjectBatches(absProjectDir, {
+      onBatchCompleted: (diagnostic) => {
+        console.error(
+          `Batch ${diagnostic.batchIndex}/${diagnostic.batchCount}: ${diagnostic.fileCount} files from ${diagnostic.tsConfigPath} in ${diagnostic.elapsedMs}ms; RSS ${Math.round(diagnostic.rssBytes / 1024 / 1024)} MiB`,
+        );
+      },
+      onStageCompleted: (diagnostic) => {
+        const scope = diagnostic.batchIndex && diagnostic.batchCount
+          ? `${diagnostic.batchIndex}/${diagnostic.batchCount}`
+          : undefined;
+        writeScanDiagnostic(diagnostic, scope);
+      },
+    });
+    tsConfigPaths = batched.tsConfigPaths;
+    sourceFilePaths = batched.filePaths;
+    snapshot = batched.snapshot;
+    console.error(
+      `Scanned ${batched.tsConfigPaths.length} TypeScript configurations with at most ${batched.maxActiveProjects} active Project`,
+    );
+  } else {
+    const { project, tsConfigPaths: createdConfigs } = await createProject(absProjectDir);
+    tsConfigPaths = createdConfigs;
+    sourceFilePaths = project.getSourceFiles()
+      .map((sourceFile) => sourceFile.getFilePath())
+      .sort();
+    const monolithicPackageMap = new Map(sourceFilePaths.map((filePath) => [
+      filePath,
+      getPackageIdForFile(filePath, tsConfigPaths),
+    ]));
+    snapshot = scanProject(
+      project,
+      monolithicPackageMap,
+      (diagnostic) => writeScanDiagnostic(diagnostic),
+    ) as GraphSnapshot;
+  }
+
+  const packageMap = new Map(sourceFilePaths.map((filePath) => [
+    filePath,
+    getPackageIdForFile(filePath, tsConfigPaths),
+  ]));
   const config = loadConfig(absProjectDir, configPath);
   if (config?.customEdges) {
-    const customEdges = applyCustomEdges(snapshot.nodes, config.customEdges, snapshot.edges.filter((edge) => edge.type === "imports"));
+    const customEdges = applyCustomEdges(
+      snapshot.nodes,
+      config.customEdges,
+      snapshot.edges.filter((edge) => edge.type === "imports"),
+    );
     snapshot.edges.push(...customEdges);
     console.error(`Applied ${customEdges.length} custom edge(s) from config`);
   }
@@ -294,16 +372,36 @@ async function handleScan(projectDir: string, dbPath: string, configPath?: strin
     const existingIds = new Set(snapshot.nodes.map((node) => node.id));
     for (const filePath of includeFiles) {
       if (existingIds.has(`file:${filePath}`)) continue;
-      snapshot.nodes.push({ id: `file:${filePath}`, type: "file", name: filePath.split("/").pop() ?? filePath, filePath, lineStart: 1, lineEnd: 1, packageId: "root" });
+      snapshot.nodes.push({
+        id: `file:${filePath}`,
+        type: "file",
+        name: filePath.split("/").pop() ?? filePath,
+        filePath,
+        lineStart: 1,
+        lineEnd: 1,
+        packageId: "root",
+      });
       extraFiles.push(filePath);
       existingIds.add(`file:${filePath}`);
     }
     console.error(`Included ${extraFiles.length} file(s) from --include patterns`);
   }
 
-  persistSnapshotAtomically(dbPath, snapshot, project, { projectRoot: absProjectDir, packageMap, extraFiles });
+  const persistenceStarted = performance.now();
+  persistSnapshotFromFilesAtomically(dbPath, snapshot, sourceFilePaths, {
+    projectRoot: absProjectDir,
+    packageMap,
+    extraFiles,
+  });
+  writeScanDiagnostic({
+    stage: "persistence",
+    elapsedMs: Math.round(performance.now() - persistenceStarted),
+    rssBytes: process.memoryUsage().rss,
+  });
   const elapsed = Math.round(performance.now() - start);
-  console.error(`Scanned ${snapshot.nodes.length} nodes, ${snapshot.edges.length} edges in ${elapsed}ms`);
+  console.error(
+    `Scanned ${snapshot.nodes.length} nodes, ${snapshot.edges.length} edges in ${elapsed}ms`,
+  );
 }
 
 async function handleQuery(dbPath: string, sql: string, json: boolean): Promise<void> {

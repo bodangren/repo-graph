@@ -1,0 +1,15 @@
+{
+  "track_id": "scanner_memory_scalability_20260722",
+  "type": "chore",
+  "status": "in_progress",
+  "priority": "critical",
+  "created_at": "2026-07-22T07:00:00Z",
+  "updated_at": "2026-07-22T07:00:00Z",
+  "description": "Repair the canonical scanner's repeatable out-of-memory failure on the Reading Advantage monorepo while preserving deterministic graph semantics, atomic publication, and installed-artifact truth.",
+  "estimated_tasks": 10,
+  "actual_tasks": 0,
+  "deviation_notes": "",
+  "depends_on": [
+    "graph_correctness_jsdoc_ts7_20260715"
+  ]
+}

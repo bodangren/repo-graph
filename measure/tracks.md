@@ -68,6 +68,9 @@ This file tracks all major tracks for the project.
 
 _Status (verified 2026-07-15): the critical correctness track below is complete. The three product tracks are now unblocked for separate planning and implementation._
 
+- [~] **Track: Scanner Memory Scalability and Real-Monorepo Acceptance** — *critical remediation opened 2026-07-22*
+  *Link: [./tracks/scanner_memory_scalability_20260722/](./tracks/scanner_memory_scalability_20260722/)* — Remove superlinear scanner allocations, establish peak-memory instrumentation, and make a full atomic scan of the Reading Advantage monorepo a release gate. This track owns the blocker exposed when the canonical scanner was repeatedly OOM-killed before persistence.
+
 - [x] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *completed 2026-07-15*
   *Link: [./tracks/graph_correctness_jsdoc_ts7_20260715/](./tracks/graph_correctness_jsdoc_ts7_20260715/)*
   *Status: complete → 12 FRs, 37/37 top-level tasks | Priority: CRITICAL | Implementation: `9a1a602` | Supersedes: `binary_scanner_unification_20260627`*

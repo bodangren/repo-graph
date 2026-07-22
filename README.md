@@ -100,6 +100,25 @@ repo-graph query graph.db "SELECT * FROM edges WHERE metadata LIKE '%/api/lesson
 
 All commands print relative paths (e.g., `./src/auth.ts`) rather than absolute paths for readability.
 
+### Large monorepo scans
+
+When a repository has multiple TypeScript configurations and no usable root
+`tsconfig.json`, `repo-graph scan` assigns each source file to its deepest
+configuration and processes deterministic batches of at most 32 files. Only
+one syntax-only Project is retained at a time; call/import resolution remains
+global and the final database is promoted atomically.
+
+Scan lifecycle diagnostics are written to stderr for discovery, primary
+extraction, schema/framework/string/parameter/route passes, call resolution,
+deduplication, and persistence. Machine-readable stdout contracts are
+unchanged.
+
+`repo-graph audit` treats field and route nodes as explicit
+`unauditedSymbols` because standalone stale-symbol reconstruction for those
+derived forms requires a full scan. A current successful full scan plus zero
+missing files, stale symbols, orphan edges, and duplicate nodes is the accepted
+large-consumer integrity contract.
+
 ## Schema
 
 The SQLite database contains four tables:

@@ -114,3 +114,97 @@ between batches is mandatory before another consumer acceptance claim.
 
 Release remains pending. The indexed slice is not installed because the
 real-consumer gate failed.
+
+## Bounded Architecture Green
+
+- Commit: `70c084d`.
+- The planner assigns each source to its deepest TypeScript configuration and
+  splits ownership into deterministic batches of at most 32 files.
+- Only one syntax-only in-memory ts-morph Project is active at a time. Each
+  Project is released before the next batch.
+- AST-free symbol, import-binding, and deferred-call records resolve calls
+  globally after all batches. Module resolution is cached per tsconfig and
+  fails closed for files outside the planned source denominator.
+- Persistence writes a temporary database from exact source paths and promotes
+  it only after the complete snapshot validates.
+- Stderr diagnostics now cover project discovery, primary extraction, schema,
+  framework, string-literal, parameter-flow, and route passes, call resolution,
+  deduplication, and persistence. The CLI contract test proves stdout remains
+  unchanged.
+
+## Real-Consumer Acceptance — H, I, and release candidate J
+
+All candidates used the same Reading Advantage source denominator:
+
+- 43 TypeScript configurations.
+- 128 batches.
+- 3,285 uniquely owned TypeScript/TSX files.
+- Maximum active Projects: 1.
+
+Candidate H:
+
+- Exit 0 in 3:42.69.
+- Peak RSS 1,726,980 KiB.
+- 85,860 nodes, 113,651 edges, 3,285 files.
+- Zero missing edge sources, missing edge targets, and file errors.
+
+Candidate I produced the same complete database and final scan log. Its outer
+systemd wrapper received SIGTERM after completion, so no clean wrapper-exit or
+RSS claim is made. Normalized H/I symmetric differences were zero for nodes,
+edges excluding generated IDs, files excluding indexed timestamps, layers,
+tour steps, FTS, and metadata excluding `lastIndexedAt`.
+
+Release candidate J bound acceptance to the exact final source:
+
+- Exit 0 in 6:05.40 under `MemoryHigh=2200M`, `MemoryMax=2600M`, and
+  `MemorySwapMax=256M`.
+- Peak RSS 1,613,340 KiB: 50.7% below the 3,270,588-KiB failure baseline and
+  below the required 2,125,882-KiB ceiling.
+- 85,860 nodes, 113,651 edges, 3,285 files.
+- Zero missing edge sources, missing edge targets, and file errors.
+- Zero normalized node, edge, and file differences from H.
+- Stats and freshness reported 85,860 nodes, 113,651 edges, 3,285 files, with
+  no stale or missing files.
+- FTS search, exact-ID callers, and exact-ID inspect for
+  `createTenantDB` exited 0. Name-only search remains correctly ambiguous
+  because unresolved call placeholders share the display name.
+
+## Audit Acceptance
+
+The original audit path created a dependency-resolving Project per file and
+timed out at both 600 and 900 seconds. The bounded syntax-only implementation:
+
+- passes 28/28 audit tests;
+- completes the consumer audit in 1:35 at 1,313,132 KiB peak RSS;
+- reports zero missing files, stale symbols, orphan edges, and duplicate nodes.
+
+The audit exits 1 because 3,944 field/route nodes are explicitly
+`unauditedSymbols`. This is an accepted disclosure, not a hidden pass: current
+stale detection intentionally requires a full scanner rerun for those derived
+node forms, and candidate J is that current full rerun. The installed binary
+repeated the audit in 1:06 at 1,288,076 KiB with the same structural-zero /
+derived-disclosure contract.
+
+## Quality, Coverage, and Installation
+
+- Focused final gate: 43 passed, 0 failed, 148 assertions.
+- Complete suite: 462 passed, 0 failed, 1,124 assertions across 29 files.
+- Complete coverage: 97.63% functions and 95.39% lines.
+- Modified production line coverage:
+  - `scanner-core.ts`: 99.70%
+  - `batched-scan.ts`: 98.01%
+  - `persistence.ts`: 97.16%
+  - `audit.ts`: 95.54%
+  - `repo-graph.ts`: 86.96%
+- TypeScript 7, TypeScript 6 compatibility, configured lint, compiled build,
+  generated facts, and Measure doctor exited 0.
+- Implementation commit `70c084d` has an auditable Git note.
+- Source and installed binary SHA-256:
+  `e100ba33d629163d492e950214b330fb40c2fe87fbfcc2ade64cff3ae9aa7a71`.
+- Rollback binary:
+  `/tmp/repo-graph-installed-pre-scanner-memory-20260722`, SHA-256
+  `30cfb1adce91b69351d90a61dda1034f4ca8c7c94358e3798fed42fc5477adcf`.
+- Installed stats, FTS search, exact-ID callers/inspect/freshness, consumer
+  audit, and atomic monorepo-fixture scan all exercised the installed artifact.
+
+Decision: **PASS.** The scanner memory track is release-ready and may archive.

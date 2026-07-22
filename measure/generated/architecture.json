@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-22T10:44:19.851Z",
+  "generated_at": "2026-07-22T10:49:55.147Z",
   "project_root": ".",
   "measure_zone": "graphing-tools",
   "directories": {
@@ -886,7 +886,7 @@
         "type": "file",
         "path": "lessons-learned.md",
         "extension": "md",
-        "size": 3253
+        "size": 3720
       },
       {
         "type": "directory",
@@ -970,7 +970,7 @@
         "type": "file",
         "path": "tech-debt.md",
         "extension": "md",
-        "size": 1329
+        "size": 1923
       },
       {
         "type": "file",
@@ -1002,19 +1002,25 @@
                 "type": "file",
                 "path": "tracks/scanner_memory_scalability_20260722/plan.md",
                 "extension": "md",
-                "size": 4931
+                "size": 4980
               },
               {
                 "type": "file",
                 "path": "tracks/scanner_memory_scalability_20260722/metadata.json",
                 "extension": "json",
-                "size": 916
+                "size": 1282
               },
               {
                 "type": "file",
                 "path": "tracks/scanner_memory_scalability_20260722/verification.md",
                 "extension": "md",
-                "size": 4810
+                "size": 9119
+              },
+              {
+                "type": "file",
+                "path": "tracks/scanner_memory_scalability_20260722/independent-review-closure-20260722.md",
+                "extension": "md",
+                "size": 2137
               },
               {
                 "type": "file",

@@ -1,14 +1,14 @@
 {
   "track_id": "scanner_memory_scalability_20260722",
   "type": "chore",
-  "status": "in_progress",
+  "status": "completed",
   "priority": "critical",
   "created_at": "2026-07-22T05:48:52Z",
-  "updated_at": "2026-07-22T06:25:50Z",
+  "updated_at": "2026-07-22T10:50:00Z",
   "description": "Repair the canonical scanner's repeatable out-of-memory failure on the Reading Advantage monorepo while preserving deterministic graph semantics, atomic publication, and installed-artifact truth.",
   "estimated_tasks": 10,
-  "actual_tasks": 3,
-  "deviation_notes": "The behavior-preserving indexed symbol slice removed the two verified superlinear lookups and preserved normalized self-graph semantics. The first real-consumer candidate avoided OOM but timed out after 900 seconds at 2,313,020 KiB peak RSS, missing the 35% reduction ceiling and never reaching persistence; package-batched scanning is therefore required.",
+  "actual_tasks": 10,
+  "deviation_notes": "The indexed-only candidate missed the formal gate at 2,313,020 KiB and 900 seconds, so the activated fallback implemented deepest-tsconfig ownership, 32-file syntax-only batches, AST-free global resolution, and atomic path-based persistence. Independent review initially failed closeout on aggregate-only diagnostics, a default-timeout persistence test, stale verification, and audit disposition. Remediation added stage diagnostics, explicit integration timeouts, bounded syntax-only audit parsing, disambiguated-name correctness, and durable H/I/J evidence. The exact release candidate completed in 6:05 at 1,613,340 KiB peak RSS, a 50.7% reduction, and was atomically installed with matching checksum and rollback copy.",
   "depends_on": [
     "graph_correctness_jsdoc_ts7_20260715"
   ]

@@ -41,4 +41,22 @@ describe("repo-graph command dispatch", () => {
       expect(await main(["bun", "repo-graph", "help", command])).toBe(0);
     }
   });
+
+  it("includes GitHub feedback guidance in root help", async () => {
+    const output: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => output.push(args.join(" "));
+
+    try {
+      expect(await main(["bun", "repo-graph", "--help"])).toBe(0);
+    } finally {
+      console.log = originalLog;
+    }
+
+    const help = output.join("\n");
+    expect(help).toContain("build-graph skill problem");
+    expect(help).toContain("Create an issue with:");
+    expect(help).toContain("gh issue create --repo bodangren/repo-graph");
+    expect(help).not.toContain("Ask for approval");
+  });
 });

@@ -165,6 +165,11 @@ function printHelp(subcommand?: string): void {
     console.log("Options:");
     console.log("  --version, -v    Show version");
     console.log("  --help, -h       Show this help");
+    console.log("");
+    console.log("Feedback:");
+    console.log("  Found a repo-graph or build-graph skill problem, or have a feature request?");
+    console.log("  Create an issue with:");
+    console.log("  gh issue create --repo bodangren/repo-graph --title \"...\" --body \"...\"");
   }
 }
 

@@ -126,5 +126,15 @@ After changing signatures, imports, schemas, or JSX, refresh the graph:
 repo-graph update ./graph.db path/to/changed.ts
 ```
 
+## Continuous improvement
+
+When using `repo-graph` reveals a utility or `build-graph` skill problem, or
+an improvement worth requesting, summarize the observed behavior, expected
+behavior, and a minimal reproduction, then create a GitHub issue with:
+
+```bash
+gh issue create --repo bodangren/repo-graph --title "..." --body "..."
+```
+
 The skill is named `build-graph`; all executable examples invoke the canonical
 `repo-graph` binary. Never modify `measure/automation-supervisor.py`.

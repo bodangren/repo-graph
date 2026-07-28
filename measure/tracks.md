@@ -64,15 +64,15 @@ This file tracks all major tracks for the project.
 ## Superseded Tracks
 
 - [x] **Track: Binary & Scanner Unification** — *superseded before implementation on 2026-07-15*
-  *Link: [./archive/binary_scanner_unification_20260627/](./tracks/binary_scanner_unification_20260627/)*
-  *Superseded by: [graph_correctness_jsdoc_ts7_20260715](./tracks/graph_correctness_jsdoc_ts7_20260715/). All 8 planned tasks were unstarted and are absorbed into the comprehensive correctness release.*
+  *Link: [./archive/binary_scanner_unification_20260627/](./archive/binary_scanner_unification_20260627/)*
+  *Superseded by: [graph_correctness_jsdoc_ts7_20260715](./archive/graph_correctness_jsdoc_ts7_20260715/). All 8 planned tasks were unstarted and are absorbed into the comprehensive correctness release.*
 
 ## Upcoming Tracks
 
 _Status (verified 2026-07-22): the critical correctness and scanner-memory release tracks are complete. The product tracks below are unblocked for separate planning and implementation._
 
 - [x] **Track: Foundational Graph Correctness, JSDoc Audit, TypeScript 7, and Release Hardening** — *completed 2026-07-15*
-  *Link: [./archive/graph_correctness_jsdoc_ts7_20260715/](./tracks/graph_correctness_jsdoc_ts7_20260715/)*
+  *Link: [./archive/graph_correctness_jsdoc_ts7_20260715/](./archive/graph_correctness_jsdoc_ts7_20260715/)*
   *Status: complete → 12 FRs, 37/37 top-level tasks | Priority: CRITICAL | Implementation: `9a1a602` | Supersedes: `binary_scanner_unification_20260627`*
   *Scope: deterministic full/incremental scans, ordinary call edges, sound impact/affected traversal, live freshness/FTS, accurate integrity audit, structured JSDoc + `audit --docs`, comprehensive compiled-path tests, TS7/TS6 type gates, canonical help/skill, and verified executable/skill installation.*
 
